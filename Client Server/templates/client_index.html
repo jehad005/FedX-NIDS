@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Overview · SecureFed Client{% endblock %}
+{% block page_heading %}Edge Node Overview{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <!-- Quick Deployment Strip -->
+    <div class="bg-white dark:bg-[#13171d] border border-neutral-200 dark:border-[#232933] rounded-lg px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-md bg-neutral-100 dark:bg-[#181d25] border border-neutral-200 dark:border-[#2c3340] text-blue-700 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <i class="iconsax text-lg" icon-name="shield-tick"></i>
+            </div>
+            <div>
+                <h2 class="font-heading text-sm font-semibold text-neutral-900 dark:text-neutral-100">Edge Defense Pipeline</h2>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">Pull verified ensemble weights from HQ, run local DP-SGD epochs, and evaluate packet flows locally.</p>
+            </div>
+        </div>
+        <a href="/sync" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-medium text-xs transition-colors whitespace-nowrap">
+            <i class="iconsax text-sm" icon-name="cloud-add"></i>
+            <span>Sync Global Model</span>
+        </a>
+    </div>
+
+    <!-- Node Telemetry Strip -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-[#13171d] p-4 rounded-lg border border-neutral-200 dark:border-[#232933]">
+            <div class="flex items-center justify-between">
+                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Model Version</span>
+                <i class="iconsax text-base text-blue-600 dark:text-blue-400" icon-name="cpu-charge"></i>
+            </div>
+            <p id="card-version" class="font-mono text-xl font-semibold mt-2.5 text-neutral-900 dark:text-neutral-100 tabular-nums">Not Synced</p>
+        </div>
+
+        <div class="bg-white dark:bg-[#13171d] p-4 rounded-lg border border-neutral-200 dark:border-[#232933]">
+            <div class="flex items-center justify-between">
+                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Node Status</span>
+                <i class="iconsax text-base text-emerald-600 dark:text-emerald-400" icon-name="shield-tick"></i>
+            </div>
+            <p id="card-status" class="font-sans text-base font-semibold text-emerald-700 dark:text-emerald-400 mt-2.5 truncate">Idle</p>
+        </div>
+
+        <div class="bg-white dark:bg-[#13171d] p-4 rounded-lg border border-neutral-200 dark:border-[#232933]">
+            <div class="flex items-center justify-between">
+                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Architecture</span>
+                <i class="iconsax text-base text-neutral-500 dark:text-neutral-400" icon-name="grid-apps"></i>
+            </div>
+            <p id="card-arch" class="font-mono text-base font-semibold mt-2.5 text-neutral-900 dark:text-neutral-100 truncate">—</p>
+        </div>
+
+        <div class="bg-white dark:bg-[#13171d] p-4 rounded-lg border border-neutral-200 dark:border-[#232933]">
+            <div class="flex items-center justify-between">
+                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Input Features</span>
+                <i class="iconsax text-base text-neutral-500 dark:text-neutral-400" icon-name="bar-graph-1"></i>
+            </div>
+            <p id="card-dim" class="font-mono text-xl font-semibold mt-2.5 text-neutral-900 dark:text-neutral-100 tabular-nums">—</p>
+        </div>
+    </div>
+
+    <!-- Edge Workflows -->
+    <div>
+        <h3 class="font-mono text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3">Workflows</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <a href="/sync" class="bg-white dark:bg-[#13171d] rounded-lg border border-neutral-200 dark:border-[#232933] p-5 hover:border-blue-600 dark:hover:border-blue-500 transition-colors">
+                <div class="flex items-center gap-2.5 text-neutral-900 dark:text-neutral-100 font-semibold text-sm">
+                    <i class="iconsax text-lg text-blue-700 dark:text-blue-400" icon-name="cloud-add"></i>
+                    <span>1. HQ Synchronization</span>
+                </div>
+                <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed">Verify admin token, pull model weights from HQ API or upload a local .pt artifact, and submit DP deltas.</p>
+            </a>
+
+            <a href="/training" class="bg-white dark:bg-[#13171d] rounded-lg border border-neutral-200 dark:border-[#232933] p-5 hover:border-blue-600 dark:hover:border-blue-500 transition-colors">
+                <div class="flex items-center gap-2.5 text-neutral-900 dark:text-neutral-100 font-semibold text-sm">
+                    <i class="iconsax text-lg text-amber-600 dark:text-amber-400" icon-name="lock-1"></i>
+                    <span>2. DP Local Training</span>
+                </div>
+                <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed">Run on-device fine-tuning against private CSV traffic logs under clipping norm and noise constraints.</p>
+            </a>
+
+            <a href="/inference" class="bg-white dark:bg-[#13171d] rounded-lg border border-neutral-200 dark:border-[#232933] p-5 hover:border-blue-600 dark:hover:border-blue-500 transition-colors">
+                <div class="flex items-center gap-2.5 text-neutral-900 dark:text-neutral-100 font-semibold text-sm">
+                    <i class="iconsax text-lg text-emerald-600 dark:text-emerald-400" icon-name="search-normal-2"></i>
+                    <span>3. Traffic Inference &amp; XAI</span>
+                </div>
+                <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed">Classify packet flows into Benign or Attack with per-flow feature attribution scores.</p>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+async function refreshOverview() { 
+    const s = await refreshHeader(); 
+    if (!s) return; 
+    document.getElementById('card-version').textContent = s.current_model_version ? `v${s.current_model_version}` : 'Not Synced'; 
+    document.getElementById('card-status').textContent = s.status; 
+    document.getElementById('card-arch').textContent = s.model_info?.architecture || '—'; 
+    document.getElementById('card-dim').textContent = s.model_info?.input_dim || '—'; 
+}
+document.addEventListener('DOMContentLoaded', refreshOverview);
+</script>
+{% endblock %}

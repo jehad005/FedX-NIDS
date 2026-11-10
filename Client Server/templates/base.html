@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SecureFed-NIDS Client{% endblock %}</title>
+    <!-- Fonts: IBM Plex Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Iconsax Icons Package -->
+    <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"IBM Plex Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+                        heading: ['"IBM Plex Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .iconsax {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            line-height: 1;
+            font-style: normal;
+        }
+        body {
+            font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, h4, .font-heading {
+            font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+            letter-spacing: -0.015em;
+        }
+    </style>
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="bg-[#f3f4f6] dark:bg-[#0b0e12] text-neutral-900 dark:text-neutral-100 min-h-screen md:h-screen md:overflow-hidden">
+<div class="min-h-screen md:h-screen flex flex-col md:flex-row md:overflow-hidden">
+    <!-- Independent Fixed Left Navigation Rail -->
+    <aside class="w-full md:w-60 md:h-screen overflow-y-auto bg-white dark:bg-[#11151b] border-b md:border-b-0 md:border-r border-neutral-200 dark:border-[#222730] flex flex-col md:fixed md:inset-y-0 md:left-0 z-30">
+        <!-- Brand Header -->
+        <div class="px-4 py-4 border-b border-neutral-200 dark:border-[#222730] flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-md bg-neutral-100 dark:bg-[#181d25] border border-neutral-300 dark:border-[#2e3540] flex items-center justify-center text-blue-700 dark:text-blue-400">
+                    <i class="iconsax text-base" icon-name="shield-tick"></i>
+                </div>
+                <div>
+                    <div class="font-heading text-sm font-bold text-neutral-900 dark:text-neutral-100 leading-tight">SecureFed</div>
+                    <div class="font-mono text-[10px] uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Edge · Port 5000</div>
+                </div>
+            </div>
+            <button onclick="toggleDarkMode()" class="w-8 h-8 rounded-md bg-neutral-50 dark:bg-[#181d25] hover:bg-neutral-100 dark:hover:bg-[#212732] text-neutral-600 dark:text-neutral-300 flex items-center justify-center border border-neutral-200 dark:border-[#2a313c] transition-colors" title="Toggle Dark/Light Theme">
+                <i id="theme-icon" class="iconsax text-base" icon-name="sun"></i>
+            </button>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="flex-1 px-2.5 py-3 space-y-0.5 text-[13.5px] font-medium">
+            <div class="px-2.5 pb-1.5 pt-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Node Console</div>
+            
+            <a href="/" class="flex items-center gap-2.5 py-2 px-3 rounded-md border-l-2 transition-colors {% if active_page == 'overview' %}bg-blue-50 text-blue-700 border-blue-600 dark:bg-blue-950/35 dark:text-blue-400 dark:border-blue-500 font-semibold{% else %}border-transparent text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#1a2029] hover:text-neutral-900 dark:hover:text-neutral-100{% endif %}">
+                <i class="iconsax text-base" icon-name="grid-apps"></i>
+                <span>Node Overview</span>
+            </a>
+
+            <a href="/sync" class="flex items-center gap-2.5 py-2 px-3 rounded-md border-l-2 transition-colors {% if active_page == 'sync' %}bg-blue-50 text-blue-700 border-blue-600 dark:bg-blue-950/35 dark:text-blue-400 dark:border-blue-500 font-semibold{% else %}border-transparent text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#1a2029] hover:text-neutral-900 dark:hover:text-neutral-100{% endif %}">
+                <i class="iconsax text-base" icon-name="cloud-add"></i>
+                <span>HQ Synchronization</span>
+            </a>
+
+            <a href="/training" class="flex items-center gap-2.5 py-2 px-3 rounded-md border-l-2 transition-colors {% if active_page == 'training' %}bg-blue-50 text-blue-700 border-blue-600 dark:bg-blue-950/35 dark:text-blue-400 dark:border-blue-500 font-semibold{% else %}border-transparent text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#1a2029] hover:text-neutral-900 dark:hover:text-neutral-100{% endif %}">
+                <i class="iconsax text-base" icon-name="cpu-charge"></i>
+                <span>DP Local Training</span>
+            </a>
+
+            <a href="/inference" class="flex items-center gap-2.5 py-2 px-3 rounded-md border-l-2 transition-colors {% if active_page == 'inference' %}bg-blue-50 text-blue-700 border-blue-600 dark:bg-blue-950/35 dark:text-blue-400 dark:border-blue-500 font-semibold{% else %}border-transparent text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#1a2029] hover:text-neutral-900 dark:hover:text-neutral-100{% endif %}">
+                <i class="iconsax text-base" icon-name="shield-search"></i>
+                <span>Traffic Inference &amp; XAI</span>
+            </a>
+        </nav>
+
+        <!-- Node Status Footer -->
+        <div class="px-4 py-3 border-t border-neutral-200 dark:border-[#222730] bg-neutral-50 dark:bg-[#0e1116]">
+            <div class="flex items-center justify-between text-xs">
+                <span class="font-mono text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
+                    <i class="iconsax text-sm" icon-name="driver-2"></i> Edge Engine
+                </span>
+                <span class="inline-flex items-center gap-1.5 font-mono text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-500"></span>
+                    Online
+                </span>
+            </div>
+            <div class="text-[11px] text-neutral-500 dark:text-neutral-500 font-mono mt-1 truncate">Privacy: DP-SGD Local</div>
+        </div>
+    </aside>
+
+    <!-- Main Independent Scrollable Workspace -->
+    <div class="md:ml-60 flex-1 md:h-screen md:overflow-y-auto flex flex-col">
+        <!-- Top Header Bar -->
+        <header class="sticky top-0 z-20 bg-white dark:bg-[#13171d] border-b border-neutral-200 dark:border-[#232933] px-7 py-3.5 flex flex-wrap justify-between items-center gap-4">
+            <div>
+                <h1 class="font-heading text-base font-semibold text-neutral-900 dark:text-neutral-100">{% block page_heading %}Client Node Management{% endblock %}</h1>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400">Local DP-SGD &amp; Intrusion Detection Node</p>
+            </div>
+            <div class="flex items-center gap-2.5 text-xs font-mono">
+                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-neutral-100 dark:bg-[#181d25] border border-neutral-200 dark:border-[#2a313c] text-neutral-700 dark:text-neutral-200">
+                    <i class="iconsax text-sm text-blue-600 dark:text-blue-400" icon-name="user-1"></i>
+                    <span id="header-client-id" class="font-semibold">client_node_01</span>
+                </div>
+                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-neutral-100 dark:bg-[#181d25] border border-neutral-200 dark:border-[#2a313c] text-neutral-600 dark:text-neutral-300">
+                    <i class="iconsax text-sm text-emerald-600 dark:text-emerald-400" icon-name="link-2"></i>
+                    <span id="header-hq-url">http://localhost:8000</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="p-7 max-w-6xl w-full mx-auto flex-1">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<script>
+function updateThemeIcon() {
+    const isDark = document.documentElement.classList.contains('dark');
+    const icon = document.getElementById('theme-icon');
+    if (!icon) return;
+    icon.setAttribute('icon-name', isDark ? 'sun' : 'moon');
+}
+
+function toggleDarkMode() {
+    if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+    } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+    }
+    updateThemeIcon();
+}
+
+document.addEventListener('DOMContentLoaded', updateThemeIcon);
+
+async function getState() {
+    const response = await fetch('/api/client/status');
+    const data = await response.json();
+    return data.client_state;
+}
+
+async function refreshHeader() {
+    try {
+        const state = await getState();
+        const clientId = document.getElementById('header-client-id');
+        const hqUrl = document.getElementById('header-hq-url');
+        if (clientId) clientId.textContent = state.client_id;
+        if (hqUrl) hqUrl.textContent = state.hq_url;
+        const syncBadge = document.getElementById('sync-status-badge');
+        if (syncBadge) {
+            syncBadge.textContent = state.current_model_version ? `Active: v${state.current_model_version}` : 'Awaiting HQ Push';
+        }
+        return state;
+    } catch (error) { console.error(error); return null; }
+}
+
+function showResult(elementId, data) {
+    const box = document.getElementById(elementId);
+    if (!box) return;
+    box.classList.remove('hidden');
+    box.textContent = JSON.stringify(data, null, 2);
+}
+
+function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+async function postJSON(url, payload) {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+    return {response, data: await response.json()};
+}
+
+function getAdminKey() {
+    const el = document.getElementById('input-admin-key');
+    if (el && el.value) {
+        sessionStorage.setItem('securefed_admin_key', el.value.trim());
+        return el.value.trim();
+    }
+    return sessionStorage.getItem('securefed_admin_key') || 'securefed-admin-token-2026';
+}
+
+async function saveConfig() {
+    const {data} = await postJSON('/api/client/configure', {
+        hq_url: document.getElementById('input-hq-url').value,
+        client_id: document.getElementById('input-client-id').value,
+        admin_key: getAdminKey()
+    });
+    showResult('sync-result', data);
+    refreshHeader();
+}
+
+async function pullModel() {
+    showResult('sync-result', {status: 'connecting', message: 'Authorizing with Admin Key and downloading Global Ensemble...'});
+    const hqEl = document.getElementById('input-hq-url');
+    const {data} = await postJSON('/api/client/pull-model', {
+        admin_key: getAdminKey(),
+        version: 'latest',
+        hq_url: hqEl ? hqEl.value.trim() : ''
+    });
+    showResult('sync-result', data);
+    refreshHeader();
+}
+
+async function uploadManualModel(event) {
+    event.preventDefault();
+    const file = document.getElementById('manual-model-file').files[0];
+    if (!file) { showResult('sync-result', {status: 'error', message: 'Choose a .pt model file first.'}); return; }
+    showResult('sync-result', {status: 'verifying', message: 'Verifying Admin Key and deploying model weights...'});
+    const file_b64 = await readFileAsBase64(file);
+    const ver = (document.getElementById('manual-model-ver') ? document.getElementById('manual-model-ver').value : '') || 'v1.0.8-airgap';
+    const {data} = await postJSON('/api/client/upload-model-file', {
+        file_b64: file_b64,
+        admin_key: getAdminKey(),
+        version_label: ver
+    });
+    showResult('sync-result', data);
+    refreshHeader();
+}
+
+async function pushUpdate() {
+    showResult('sync-result', {status: 'transmitting', message: 'Authorizing with Admin Key and transmitting DP delta to HQ...'});
+    const {data} = await postJSON('/api/client/push-update', {
+        admin_key: getAdminKey()
+    });
+    showResult('sync-result', data);
+    refreshHeader();
+}
+
+async function startTraining(event) {
+    event.preventDefault();
+    const file = document.getElementById('train-file').files[0];
+    if (!file) { showResult('training-output', {status: 'error', message: 'Choose a CSV file first.'}); return; }
+    showResult('training-output', {status: 'working', message: 'DP local training is running...'});
+    const file_b64 = await readFileAsBase64(file);
+    const {data} = await postJSON('/api/client/train-local', {
+        file_b64: file_b64,
+        epochs: Number(document.getElementById('train-epochs').value),
+        batch_size: Number(document.getElementById('train-batch').value),
+        learning_rate: Number(document.getElementById('train-lr').value),
+        clipping_norm: Number(document.getElementById('train-clip').value),
+        noise_multiplier: Number(document.getElementById('train-noise').value)
+    });
+    showResult('training-output', data);
+    refreshHeader();
+}
+
+async function runInference(event) {
+    event.preventDefault();
+    const file = document.getElementById('inference-file').files[0];
+    if (!file) { showResult('inference-error', {status: 'error', message: 'Choose a CSV file first.'}); return; }
+    const file_b64 = await readFileAsBase64(file);
+    const {response, data} = await postJSON('/api/client/inference', {file_b64: file_b64});
+    if (!response.ok) { showResult('inference-error', data); return; }
+    document.getElementById('inference-error').classList.add('hidden');
+    document.getElementById('inference-results').classList.remove('hidden');
+    document.getElementById('inference-summary').textContent = `Showing ${data.analyzed_rows} of ${data.total_rows} traffic records`;
+    const bodyEl = document.getElementById('inference-tbody');
+    bodyEl.innerHTML = data.predictions.map(p => {
+        const indicatorsHtml = (p.top_indicators || []).map(ind => {
+            const isAttack = p.prediction.includes('Attack');
+            const badgeBg = isAttack ? 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/70' : 'bg-neutral-100 dark:bg-[#1b2029] text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-[#2c3340]';
+            return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono ${badgeBg}"><span>${ind.feature}</span><span class="opacity-75 font-semibold">(${ind.impact > 0 ? '+' : ''}${ind.impact})</span></span>`;
+        }).join(' ') || '<span class="text-xs text-neutral-400">N/A</span>';
+
+        return `<tr class="border-t border-neutral-200 dark:border-[#232933] hover:bg-neutral-50 dark:hover:bg-[#181d25] transition-colors">
+            <td class="px-4 py-3 text-neutral-900 dark:text-neutral-100 font-mono text-xs">${p.row_index}</td>
+            <td class="px-4 py-3 font-semibold text-xs">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border ${p.prediction.includes('Attack') ? 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/70' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/70'}">
+                    <i class="iconsax text-sm" icon-name="${p.prediction.includes('Attack') ? 'shield-slash' : 'shield-tick'}"></i>
+                    ${p.prediction}
+                </span>
+            </td>
+            <td class="px-4 py-3 font-mono font-semibold text-neutral-800 dark:text-neutral-200">${p.confidence}%</td>
+            <td class="px-4 py-3"><div class="flex flex-wrap gap-1.5">${indicatorsHtml}</div></td>
+            <td class="px-4 py-3 text-neutral-600 dark:text-neutral-400 font-mono text-xs">${p.probabilities.benign}</td>
+            <td class="px-4 py-3 text-neutral-600 dark:text-neutral-400 font-mono text-xs">${p.probabilities.attack}</td>
+        </tr>`;
+    }).join('');
+}
+
+refreshHeader();
+</script>
+</body>
+</html>

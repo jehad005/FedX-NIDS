@@ -1,0 +1,15 @@
+{
+  "client_id": "BUBT_Bank_01",
+  "server_url": "http://localhost:8000",
+  "model_name": "SecureFed-Global-Ensemble",
+  "preferred_version": "latest",
+  "input_dim": 83,
+  "num_classes": 2,
+  "local_epochs": 3,
+  "batch_size": 64,
+  "learning_rate": 0.001,
+  "sync_interval_seconds": 300,
+  "dp_enabled": true,
+  "dp_epsilon": 1.0,
+  "dp_noise_multiplier": 1.1
+}

@@ -1,0 +1,35 @@
+# Python & Virtual Environments
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Databases, Logs & Experiment Tracking
+*.db
+*.sqlite
+*.sqlite3
+mlruns/
+*.log
+
+# Large Datasets & Model Artifacts
+hq_store/
+data/*.csv
+data/*.parquet
+data/*.pq
+Client Server/local_models/
+*.pt
+*.pth
+!edge_deployment/client_config.json
+
+# Environment & Secrets
+.env
+.env.*
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureFed-NIDS HQ Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/modern_hq.css?v=5">
+    <script src="/static/js/hq_theme.js?v=1"></script>
+</head>
+<body>
+    <div class="container-fluid"><div class="row">
+        <aside class="col-md-3 col-lg-2 sidebar">
+            <div class="brand-container">
+                <div class="d-flex align-items-center justify-content-between gap-2">
+                    <div class="brand-title">
+                    <div class="brand-icon"><i class="iconsax" icon-name="shield-tick"></i></div>
+                    <div>
+                        <div>SecureFed</div>
+                        <small style="font-size: 0.68rem; letter-spacing: 0.08em; color: var(--text-muted); font-family: var(--font-mono);">HQ · CONTROL PLANE</small>
+                    </div>
+                </div>
+                    <button type="button" class="theme-toggle-btn" onclick="toggleHqTheme()" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
+                        <i id="hq-theme-icon" class="iconsax" icon-name="moon"></i>
+                    </button>
+                </div>
+            </div>
+            <nav class="nav flex-column">
+                <a class="nav-link active" href="/"><i class="iconsax" icon-name="grid-apps"></i> Dashboard</a>
+                <a class="nav-link" href="/models"><i class="iconsax" icon-name="cpu-charge"></i> Model Versions</a>
+                <a class="nav-link" href="/clients"><i class="iconsax" icon-name="user-2"></i> Clients</a>
+                <a class="nav-link" href="/updates"><i class="iconsax" icon-name="cloud-notif"></i> Updates</a>
+                <a class="nav-link" href="/training"><i class="iconsax" icon-name="cloud-add"></i> Model Training</a>
+                <a class="nav-link" href="/analytics"><i class="iconsax" icon-name="bar-graph-1"></i> Analytics</a>
+                <a class="nav-link" href="/xai"><i class="iconsax" icon-name="bulb"></i> Explainable AI</a>
+            </nav>
+            <div class="status-footer mt-auto">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted">HQ Engine</span>
+                    <span class="system-status"><span class="system-indicator"></span> Online</span>
+                </div>
+            </div>
+        </aside>
+        <main class="col-md-9 col-lg-10 main-content">
+            <header class="page-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="iconsax text-primary" icon-name="grid-apps"></i> Dashboard Overview</h1>
+                    <p class="text-muted mb-0">Central control tower for federated training, privacy enforcement & global ensembles</p>
+                </div>
+                <div class="text-end">
+                    <div class="small text-muted">Last updated</div>
+                    <div class="font-mono small fw-semibold" id="lastUpdate">{{ timestamp[:19] }}</div>
+                    <button class="btn btn-primary btn-sm mt-2 d-inline-flex align-items-center gap-1" onclick="refreshSummary()">
+                        <i class="iconsax" icon-name="refresh"></i> Refresh
+                    </button>
+                </div>
+            </header>
+
+            <section class="row g-3 mb-4" aria-label="Operational summary">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="summary-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="summary-value" id="latestVersion">{% if model_stats.latest_version is mapping %}{% if model_stats.latest_version.version %}v{{ model_stats.latest_version.version }}{% else %}N/A{% endif %}{% elif model_stats.latest_version %}v{{ model_stats.latest_version }}{% else %}N/A{% endif %}</div>
+                                <div class="summary-label">Latest Model Version</div>
+                            </div>
+                            <div class="summary-icon blue"><i class="iconsax" icon-name="cpu-charge"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="summary-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="summary-value" id="activeClients">{{ client_stats.active_clients }}</div>
+                                <div class="summary-label">Active Clients</div>
+                            </div>
+                            <div class="summary-icon green"><i class="iconsax" icon-name="user-2"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="summary-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="summary-value" id="processedUpdates">{{ update_stats.processed_updates }}</div>
+                                <div class="summary-label">Processed Updates</div>
+                            </div>
+                            <div class="summary-icon orange"><i class="iconsax" icon-name="cloud-notif"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="summary-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="summary-value" id="successRate">{{ (update_stats.success_rate * 100)|round(1) }}%</div>
+                                <div class="summary-label">Update Success Rate</div>
+                            </div>
+                            <div class="summary-icon slate"><i class="iconsax" icon-name="shield-tick"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="workspace-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h4 class="mb-1" style="font-size: 1rem;">Operations & Modules</h4>
+                        <p class="text-muted mb-0" style="font-size: 0.84rem;">Manage published models, client nodes, federated aggregation, and attribution audits.</p>
+                    </div>
+                    <i class="iconsax text-muted fs-5" icon-name="setting-2"></i>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4"><a class="workspace-link" href="/models"><div><h5><i class="iconsax text-primary me-2" icon-name="cpu-charge"></i>Model Versions & API</h5><p>Inspect published ensembles, copy Edge endpoints, and download weights.</p></div><i class="iconsax" icon-name="link-square"></i></a></div>
+                    <div class="col-md-4"><a class="workspace-link" href="/clients"><div><h5><i class="iconsax text-success me-2" icon-name="user-2"></i>Edge Clients</h5><p>Monitor registered nodes, sync telemetry, and participation status.</p></div><i class="iconsax" icon-name="link-square"></i></a></div>
+                    <div class="col-md-4"><a class="workspace-link" href="/updates"><div><h5><i class="iconsax text-warning me-2" icon-name="cloud-notif"></i>Updates & Aggregation</h5><p>Merge DP client deltas with FedAvg, Trimmed Mean, Median, or Krum.</p></div><i class="iconsax" icon-name="link-square"></i></a></div>
+                    <div class="col-md-4"><a class="workspace-link" href="/xai"><div><h5><i class="iconsax text-info me-2" icon-name="bulb"></i>Explainable AI (SHAP)</h5><p>Inspect feature attributions and traffic anomaly drivers.</p></div><i class="iconsax" icon-name="link-square"></i></a></div>
+                    <div class="col-md-4"><a class="workspace-link" href="/training"><div><h5><i class="iconsax text-primary me-2" icon-name="cloud-add"></i>Model Training</h5><p>Train DL candidates with k-fold validation on custom NIDS datasets.</p></div><i class="iconsax" icon-name="link-square"></i></a></div>
+                    <div class="col-md-4"><a class="workspace-link" href="/analytics"><div><h5><i class="iconsax text-danger me-2" icon-name="bar-graph-1"></i>Analytics</h5><p>Track validation accuracy, throughput metrics, and update ratios.</p></div><i class="iconsax" icon-name="link-square"></i></a></div>
+                </div>
+            </section>
+        </main>
+    </div></div>
+    <script>
+        function refreshSummary() {
+            fetch('/api/dashboard/stats').then(r=>r.json()).then(data=>{
+                if(data.status!=='success') return;
+                const latest=data.model_stats.latest_version;
+                const version=latest&&typeof latest==='object'?latest.version:latest;
+                document.getElementById('latestVersion').textContent=version?`v${version}`:'N/A';
+                document.getElementById('activeClients').textContent=data.client_stats.active_clients??0;
+                document.getElementById('processedUpdates').textContent=data.update_stats.processed_updates??0;
+                document.getElementById('successRate').textContent=`${((data.update_stats.success_rate||0)*100).toFixed(1)}%`;
+                document.getElementById('lastUpdate').textContent=new Date().toLocaleTimeString();
+            }).catch(error=>console.error('Error refreshing dashboard summary:',error));
+        }
+        setInterval(refreshSummary,30000);
+    </script>
+</body>
+</html>

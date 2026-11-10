@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clients - SecureFed-NIDS HQ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/modern_hq.css?v=5">
+    <style>
+        .client-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .status-connected { background: #16a34a; }
+        .status-disconnected { background: #dc2626; }
+        .status-pending { background: #d97706; }
+    </style>
+    <script src="/static/js/hq_theme.js?v=1"></script>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar">
+                <div class="brand-container">
+                <div class="d-flex align-items-center justify-content-between gap-2">
+                    <div class="brand-title">
+                        <div class="brand-icon"><i class="iconsax" icon-name="shield-tick"></i></div>
+                        <div>
+                            <div>SecureFed</div>
+                            <small style="font-size: 0.68rem; letter-spacing: 0.08em; color: var(--text-muted); font-family: var(--font-mono);">HQ · CONTROL PLANE</small>
+                        </div>
+                    </div>
+                    <button type="button" class="theme-toggle-btn" onclick="toggleHqTheme()" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
+                        <i id="hq-theme-icon" class="iconsax" icon-name="moon"></i>
+                    </button>
+                </div>
+            </div>
+                <nav class="nav flex-column">
+                    <a class="nav-link" href="/">
+                        <i class="iconsax" icon-name="grid-apps"></i> Dashboard
+                    </a>
+                    <a class="nav-link" href="/models">
+                        <i class="iconsax" icon-name="cpu-charge"></i> Model Versions
+                    </a>
+                    <a class="nav-link active" href="/clients">
+                        <i class="iconsax" icon-name="user-2"></i> Clients
+                    </a>
+                    <a class="nav-link" href="/updates">
+                        <i class="iconsax" icon-name="cloud-notif"></i> Updates
+                    </a>
+                    <a class="nav-link" href="/training">
+                        <i class="iconsax" icon-name="cloud-add"></i> Model Training
+                    </a>
+                    <a class="nav-link" href="/analytics">
+                        <i class="iconsax" icon-name="bar-graph-1"></i> Analytics
+                    </a>
+                    <a class="nav-link" href="/xai">
+                        <i class="iconsax" icon-name="bulb"></i> Explainable AI
+                    </a>
+                </nav>
+                <div class="status-footer mt-auto">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">HQ Engine</span>
+                        <span class="system-status"><span class="system-indicator"></span> Online</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- Header -->
+                <div class="page-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1><i class="iconsax me-2" icon-name="user-2"></i>Connected Clients</h1>
+                        <p class="text-muted mb-0">Monitor edge client connections and activity</p>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary d-inline-flex align-items-center gap-1" onclick="refreshClients()">
+                            <i class="iconsax" icon-name="refresh"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Clients Table -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="iconsax me-2" icon-name="user-2"></i>Client Registry</span>
+                                <span class="badge bg-info">{{ total_clients }} total</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                    <table class="table data-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Client Node</th>
+                                                <th>Status</th>
+                                                <th>IP Address</th>
+                                                <th>Last Seen</th>
+                                                <th>Version</th>
+                                                <th>Downloads</th>
+                                                <th>Uploads</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="clientsTable">
+                                            <tr>
+                                                <td colspan="7" class="text-center py-4 text-muted">
+                                                    Loading clients...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Client Stats -->
+                <div class="row g-3 mt-2">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="summary-card">
+                            <div class="summary-value" id="activeCount">0</div>
+                            <div class="summary-label"><span class="client-dot status-connected"></span>Active Clients</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="summary-card">
+                            <div class="summary-value" id="downloadCount">0</div>
+                            <div class="summary-label">Total Downloads</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="summary-card">
+                            <div class="summary-value" id="uploadCount">0</div>
+                            <div class="summary-label">Total Uploads</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        async function loadClients() {
+            try {
+                const response = await fetch('/api/dashboard/clients');
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    const clients = data.clients;
+                    const tbody = document.getElementById('clientsTable');
+
+                    if (clients.length === 0) {
+                        tbody.innerHTML = `
+                                            <tr>
+                                                <td colspan="7" class="text-center py-4 text-muted">
+                                                    No client data available yet
+                                                </td>
+                                            </tr>
+                                        `;
+                        return;
+                    }
+
+                    let html = '';
+                    clients.forEach(c => {
+                        const statusClass = c.status === 'active' ? 'connected' :
+                                          c.status === 'inactive' ? 'pending' : 'disconnected';
+                        const statusText = c.status === 'active' ? 'Connected' :
+                                          c.status === 'inactive' ? 'Inactive' : 'Disconnected';
+                        html += `
+                                            <tr>
+                                                <td>
+                                                    <strong>${c.client_id}</strong>
+                                                    <br><small class="text-muted">${c.client_name || 'N/A'}</small>
+                                                </td>
+                                                <td>
+                                                    <span class="client-dot status-${statusClass}"></span>
+                                                    ${statusText}
+                                                </td>
+                                                <td><span class="font-mono">${c.ip_address || 'N/A'}</span></td>
+                                                <td><span class="font-mono">${c.last_seen ? c.last_seen.slice(0, 19) : 'Never'}</span></td>
+                                                <td><span class="version-badge">${c.model_version || 'N/A'}</span></td>
+                                                <td>${c.download_count || 0}</td>
+                                                <td>${c.upload_count || 0}</td>
+                                            </tr>
+                        `;
+                    });
+
+                    tbody.innerHTML = html;
+
+                    // Update stats
+                    document.getElementById('activeCount').textContent =
+                        clients.filter(c => c.status === 'active').length;
+                    document.getElementById('downloadCount').textContent =
+                        clients.reduce((sum, c) => sum + (c.download_count || 0), 0);
+                    document.getElementById('uploadCount').textContent =
+                        clients.reduce((sum, c) => sum + (c.upload_count || 0), 0);
+                }
+            } catch (error) {
+                console.error('Error loading clients:', error);
+                document.getElementById('clientsTable').innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-danger">
+                            Failed to load clients: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function refreshClients() {
+            loadClients();
+        }
+
+        // Initial load
+        loadClients();
+    </script>
+</body>
+</html>

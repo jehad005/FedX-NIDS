@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureFed-NIDS - FL Protection</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #f5f7fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .btn-back {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+        }
+        .client-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .client-online { background: #27ae60; }
+        .client-offline { background: #e74c3c; }
+        .client-training { background: #f39c12; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container-fluid">
+            <button class="btn btn-back mb-3" onclick="history.back()">
+                <i class="bi bi-arrow-left"></i> Back to Options
+            </button>
+            <h2 class="mb-2"><i class="bi bi-network"></i> Federated Learning Training</h2>
+            <p class="mb-0">SCAFFOLD algorithm with distributed edge clients</p>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Dataset Selection -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-folder"></i> Dataset Selection
+                    </div>
+                    <div class="card-body">
+                        <div id="dataset-list" class="row"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Training Controls -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-gear"></i> FL Configuration
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Rounds</label>
+                                <input type="number" class="form-control" id="fl_rounds" value="10" min="1" max="100">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Clients per Round</label>
+                                <input type="number" class="form-control" id="fl_clients" value="4" min="1" max="10">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Local Epochs</label>
+                                <input type="number" class="form-control" id="fl_local_epochs" value="5" min="1" max="50">
+                            </div>
+                        </div>
+                        <button class="btn btn-info mt-3" onclick="startFLTraining()">
+                            <i class="bi bi-play"></i> Start Federated Training
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Status -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-people"></i> Edge Clients
+                    </div>
+                    <div class="card-body" id="client-list">
+                        <p class="text-muted">Waiting for clients to connect...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Training Results -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-graph-up"></i> Federated Training Results
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="metric-value" id="fl-acc">--</div>
+                                    <div class="metric-label">Global Accuracy</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="metric-value" id="fl-prec">--</div>
+                                    <div class="metric-label">Precision</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="metric-value" id="fl-rec">--</div>
+                                    <div class="metric-label">Recall</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="metric-value" id="fl-f1">--</div>
+                                    <div class="metric-label">F1-Score</div>
+                                </div>
+                            </div>
+                        </div>
+                        <canvas id="fl-chart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let flChart = null;
+        let flData = { rounds: [], accuracy: [], loss: [] };
+        let selectedDataset = null;
+        let clients = [];
+
+        window.onload = function() {
+            loadDatasets();
+            loadClients();
+            startWS();
+        };
+
+        async function loadDatasets() {
+            const container = document.getElementById('dataset-list');
+            const datasets = [
+                {name: 'Monday-WorkingHours', size: '50K'},
+                {name: 'Tuesday-WorkingHours', size: '45K'},
+                {name: 'Wednesday-workingHours', size: '40K'}
+            ];
+            datasets.forEach(ds => {
+                const el = document.createElement('div');
+                el.className = 'col-md-4 col-sm-6';
+                el.innerHTML = `
+                    <div class="card dataset-option" onclick="selectDataset(this)">
+                        <div class="card-body text-center">
+                            <i class="bi bi-database fs-1 text-info"></i>
+                            <h6 class="mt-2">${ds.name}</h6>
+                            <small class="text-muted">${ds.size}</small>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function selectDataset(element) {
+            selectedDataset = element.querySelector('h6').textContent;
+            document.querySelectorAll('.dataset-option').style.borderColor = '#ccc';
+            element.style.borderColor = '#27ae60';
+        }
+
+        async function loadClients() {
+            try {
+                const response = await fetch('/api/dashboard/clients');
+                const data = await response.json();
+                const container = document.getElementById('client-list');
+
+                if (data.clients && data.clients.length > 0) {
+                    let html = '';
+                    data.clients.forEach(c => {
+                        html += `<div class="d-flex justify-content-between py-2">
+                            <span><span class="client-status client-online"></span>${c.client_id}</span>
+                            <span class="text-muted">${c.download_count} downloads</span>
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                }
+            } catch (e) {
+                console.log('Client load error:', e);
+            }
+        }
+
+        function startWS() {
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/client`);
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.type === 'status_update') {
+                    console.log('WS:', data);
+                }
+            };
+        }
+
+        async function startFLTraining() {
+            if (!selectedDataset) {
+                alert('Select a dataset first!');
+                return;
+            }
+
+            const rounds = document.getElementById('fl_rounds').value;
+            const clientsPerRound = document.getElementById('fl_clients').value;
+            const localEpochs = document.getElementById('fl_local_epochs').value;
+
+            const response = await fetch('/api/train/fl', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    dataset: selectedDataset,
+                    rounds: parseInt(rounds),
+                    clients_per_round: parseInt(clientsPerRound),
+                    local_epochs: parseInt(localEpochs)
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'started') {
+                // Simulate updating chart over rounds
+                data.rounds.forEach((r, i) => {
+                    flData.rounds.push(r);
+                    flData.accuracy.push(data.history.val_acc[i]);
+                    flData.loss.push(data.history.val_loss[i]);
+                });
+
+                document.getElementById('fl-acc').textContent = (data.history.val_acc[data.history.val_acc.length-1] * 100).toFixed(1) + '%';
+                document.getElementById('fl-f1').textContent = (data.history.val_f1[data.history.val_f1.length-1] * 100).toFixed(1) + '%';
+
+                renderFLChart();
+            }
+        }
+
+        function renderFLChart() {
+            const ctx = document.getElementById('fl-chart').getContext('2d');
+            if (flChart) flChart.destroy();
+
+            flChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: flData.rounds,
+                    datasets: [{
+                        label: 'Global Accuracy',
+                        data: flData.accuracy,
+                        borderColor: '#3498db',
+                        fill: true
+                    }, {
+                        label: 'Average Loss',
+                        data: flData.loss,
+                        borderColor: '#e74c3c',
+                        borderColorDash: [5, 5]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { min: 0, max: 1 }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

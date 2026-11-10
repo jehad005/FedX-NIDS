@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explainable AI (XAI) - SecureFed-NIDS HQ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/modern_hq.css?v=5">
+    <script src="/static/js/hq_theme.js?v=1"></script>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar">
+                <div class="brand-container">
+                <div class="d-flex align-items-center justify-content-between gap-2">
+                    <div class="brand-title">
+                        <div class="brand-icon"><i class="iconsax" icon-name="shield-tick"></i></div>
+                        <div>
+                            <div>SecureFed</div>
+                            <small style="font-size: 0.68rem; letter-spacing: 0.08em; color: var(--text-muted); font-family: var(--font-mono);">HQ · CONTROL PLANE</small>
+                        </div>
+                    </div>
+                    <button type="button" class="theme-toggle-btn" onclick="toggleHqTheme()" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
+                        <i id="hq-theme-icon" class="iconsax" icon-name="moon"></i>
+                    </button>
+                </div>
+            </div>
+                <nav class="nav flex-column">
+                    <a class="nav-link" href="/">
+                        <i class="iconsax" icon-name="grid-apps"></i> Dashboard
+                    </a>
+                    <a class="nav-link" href="/models">
+                        <i class="iconsax" icon-name="cpu-charge"></i> Model Versions
+                    </a>
+                    <a class="nav-link" href="/clients">
+                        <i class="iconsax" icon-name="user-2"></i> Clients
+                    </a>
+                    <a class="nav-link" href="/updates">
+                        <i class="iconsax" icon-name="cloud-notif"></i> Updates
+                    </a>
+                    <a class="nav-link" href="/training">
+                        <i class="iconsax" icon-name="cloud-add"></i> Model Training
+                    </a>
+                    <a class="nav-link" href="/analytics">
+                        <i class="iconsax" icon-name="bar-graph-1"></i> Analytics
+                    </a>
+                    <a class="nav-link active" href="/xai">
+                        <i class="iconsax" icon-name="bulb"></i> Explainable AI
+                    </a>
+                </nav>
+                <div class="status-footer mt-auto">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">HQ Engine</span>
+                        <span class="system-status"><span class="system-indicator"></span> Online</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <div class="page-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1><i class="iconsax me-2 text-primary" icon-name="bulb"></i>Explainable AI (XAI)</h1>
+                        <p class="text-muted mb-0">Feature attribution analysis for global model transparency and intrusion verification</p>
+                    </div>
+                </div>
+
+                <!-- Dataset Selection -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center gap-2">
+                                <i class="iconsax text-primary" icon-name="external-drive"></i> 1. Select Network Dataset
+                            </div>
+                            <div class="card-body">
+                                <div id="dataset-list" class="row"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Model Selection -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center gap-2">
+                                <i class="iconsax text-primary" icon-name="cpu-charge"></i> 2. Select Model & Generate Attribution
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3 align-items-center">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Target Architecture</label>
+                                        <select class="form-select" id="model-select">
+                                            <option value="ensemble" selected>SecureFed Global Ensemble (Published v1.0.x)</option>
+                                            <option value="bilstm">BiLSTM Model</option>
+                                            <option value="transformer">Transformer Model</option>
+                                            <option value="cnn">1D-CNN Model</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 pt-md-4">
+                                        <button class="btn btn-primary px-4 py-2" onclick="generateExplanation()">
+                                            <i class="iconsax me-1" icon-name="bulb"></i> Compute SHAP Explanations
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SHAP Visualization -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center justify-content-between">
+                                <span><i class="iconsax me-2 text-primary" icon-name="bar-graph-1"></i>Feature Importance & Causality Attribution</span>
+                                <span class="badge bg-primary">KernelSHAP</span>
+                            </div>
+                            <div class="card-body" id="explanation-content">
+                                <div class="text-center text-muted py-5">
+                                    <i class="iconsax fs-1 d-block mb-3" icon-name="bulb" style="color: #cbd5e1;"></i>
+                                    <h5>No Explanation Generated Yet</h5>
+                                    <p class="text-muted">Select a dataset and click "Compute SHAP Explanations" above to analyze flow causality.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadDatasets() {
+            const container = document.getElementById('dataset-list');
+            container.innerHTML = '<div class="col-12 text-muted"><i class="iconsax spin" icon-name="refresh"></i> Loading datasets...</div>';
+            try {
+                const response = await fetch('/api/xai/datasets');
+                const data = await response.json();
+                const datasets = (data.datasets && data.datasets.length > 0) ? data.datasets : ['RT_IOT2022', 'Friday-WorkingHours-Afternoon-DDos'];
+                container.innerHTML = '';
+                datasets.forEach((name, idx) => {
+                    const el = document.createElement('div');
+                    el.className = 'col-md-4 col-sm-6 mb-3';
+                    const activeClass = idx === 0 ? 'selected' : '';
+                    if (idx === 0) window.selectedDataset = name;
+                    el.innerHTML = `
+                        <div class="card dataset-option p-2 ${activeClass}" onclick="selectDataset(this, '${name}')">
+                            <div class="card-body text-center p-3">
+                                <i class="iconsax fs-2 text-primary" icon-name="driver-2"></i>
+                                <h6 class="mt-2 mb-0 text-truncate font-mono" style="font-size: 0.85rem;" title="${name}">${name}</h6>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(el);
+                });
+            } catch (err) {
+                container.innerHTML = '<div class="col-12 text-danger">Error loading datasets from API</div>';
+            }
+        }
+
+        function selectDataset(element, name) {
+            document.querySelectorAll('.dataset-option').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            window.selectedDataset = name || element.querySelector('h6').textContent;
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDatasets);
+
+        async function generateExplanation() {
+            if (!window.selectedDataset) {
+                alert('Select a dataset first!');
+                return;
+            }
+
+            const model = document.getElementById('model-select').value;
+            const container = document.getElementById('explanation-content');
+            container.innerHTML = '<div class="text-center text-muted py-4"><i class="iconsax fs-2 mb-2" icon-name="refresh"></i><div>Running model inference & computing attributions...</div></div>';
+
+            const response = await fetch('/api/explain', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    dataset: window.selectedDataset,
+                    model: model
+                })
+            });
+
+            const data = await response.json();
+            renderExplanation(data);
+        }
+
+        function renderExplanation(data) {
+            const container = document.getElementById('explanation-content');
+
+            if (data.status === 'error') {
+                container.innerHTML = `<div class="alert alert-danger">${data.message || 'Explanation error'}</div>`;
+                return;
+            }
+
+            if (!data.features || data.features.length === 0) {
+                container.innerHTML = '<p class="text-muted">No features available for explanation</p>';
+                return;
+            }
+
+            let html = '<div class="row" style="max-height: 400px; overflow-y: auto;">';
+
+            // Sort by absolute attribution value
+            const sorted = [...data.features].sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+            const maxVal = Math.max(...sorted.map(f => Math.abs(f.value)), 1e-6);
+
+            sorted.forEach(f => {
+                const barWidth = (Math.abs(f.value) / maxVal) * 100;
+                const color = f.value > 0 ? '#dc2626' : '#2563eb';
+                html += `
+                    <div class="col-12 col-md-6">
+                        <div class="feature-label mb-1">${f.name}
+                            <span class="text-muted">(${f.value > 0 ? '+' : ''}${f.value.toFixed(3)})</span>
+                        </div>
+                        <div class="feature-bar">
+                            <div class="feature-bar-fill" style="width: ${barWidth}%; background: ${color}"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+
+            // Summary stats
+            html += `
+                <div class="mt-4 xai-summary-panel">
+                    <h6 class="fw-semibold mb-3"><i class="iconsax text-primary me-2" icon-name="bulb"></i>Attribution Summary</h6>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <div class="xai-stat-box">
+                                <small class="text-muted d-block">Top Indicator</small>
+                                <span class="fw-semibold text-primary font-mono">${data.top_feature}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="xai-stat-box">
+                                <small class="text-muted d-block">Confidence Score</small>
+                                <span class="fw-semibold text-success font-mono">${(data.confidence * 100).toFixed(1)}%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="xai-stat-box">
+                                <small class="text-muted d-block">Predicted Class</small>
+                                <span class="badge ${data.prediction.includes('Attack') ? 'bg-danger' : 'bg-success'}">${data.prediction}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
