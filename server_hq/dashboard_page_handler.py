@@ -106,43 +106,18 @@ def setup_dashboard_routes(app, registry):
     @app.get("/updates", response_class=HTMLResponse)
     async def updates_page(request: Request):
         try:
-            import sqlite3
-            conn = sqlite3.connect(registry.db_path)
-            cursor = conn.cursor()
-
-            # Get updates
-            cursor.execute('''
-                SELECT update_id, client_id, version_from, version_to,
-                       accuracy, dp_epsilon, status, created_at
-                FROM dashboard_updates
-                ORDER BY created_at DESC
-                LIMIT 50
-            ''')
-            columns = [desc[0] for desc in cursor.description]
-            updates = []
-            for row in cursor.fetchall():
-                update = dict(zip(columns, row))
-                updates.append(update)
-
-            # Get stats
-            cursor.execute('SELECT COUNT(*) FROM dashboard_updates')
-            total = cursor.fetchone()[0]
-            cursor.execute("SELECT COUNT(*) FROM dashboard_updates WHERE status = 'processed'")
-            processed = cursor.fetchone()[0]
-            cursor.execute("SELECT COUNT(*) FROM dashboard_updates WHERE status = 'pending'")
-            pending = cursor.fetchone()[0]
-            cursor.execute("SELECT COUNT(*) FROM dashboard_updates WHERE status = 'failed'")
-            failed = cursor.fetchone()[0]
-
-            conn.close()
-
+            updates = registry.list_updates()
+            total = len(updates)
+            processed = sum(1 for u in updates if u.get("status") in ("aggregated", "processed"))
+            pending = sum(1 for u in updates if u.get("status") in ("received", "pending"))
+            failed = sum(1 for u in updates if u.get("status") == "failed")
             stats = {
                 "total_updates": total,
                 "processed_updates": processed,
                 "pending_updates": pending,
-                "failed_updates": failed
+                "failed_updates": failed,
             }
-        except Exception as e:
+        except Exception:
             updates = []
             stats = {"total_updates": 0, "processed_updates": 0, "pending_updates": 0, "failed_updates": 0}
 
@@ -151,13 +126,16 @@ def setup_dashboard_routes(app, registry):
             "updates.html",
             {
                 "request": request,
-                "updates": _clean_for_json(updates),
+                "updates": _clean_for_json(updates[:50]),
                 "total_updates": stats["total_updates"],
                 "processed_updates": stats["processed_updates"],
                 "pending_updates": stats["pending_updates"],
                 "failed_updates": stats["failed_updates"],
-                "timestamp": datetime.now().isoformat()
-            }
+                "latest_version": registry.latest_version(),
+                "open_round": registry.get_open_round(),
+                "aggregated_folder": str(registry.aggregated_updates_dir),
+                "timestamp": datetime.now().isoformat(),
+            },
         )
 
     @app.get("/training", response_class=HTMLResponse)

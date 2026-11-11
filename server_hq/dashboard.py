@@ -17,8 +17,9 @@ import asyncio
 import os
 import shutil
 import sys
+import threading
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 try:
@@ -31,7 +32,7 @@ from server_hq.visualization import (
     create_version_detail_plots,
 )
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -64,16 +65,22 @@ def _clean_for_json(obj: Any) -> Any:
     return str(obj)
 
 
+class _TrainingStoppedError(Exception):
+    """Raised internally when a background training job is stopped by the user."""
+
+
 class Dashboard:
-    def __init__(self):
+    def __init__(self, registry: Optional[ModelRegistry] = None):
         self.app = FastAPI(title="SecureFed-NIDS HQ Dashboard", version="2.0.0")
-        self.registry = ModelRegistry()
+        self.registry = registry if registry is not None else ModelRegistry()
 
         # Setup templates with default Jinja2
         self.templates = Jinja2Templates(directory=str(ROOT / "server_hq" / "templates"))
 
-        # Active WebSocket connections
+        # Active WebSocket connections & background training task registries
         self.active_connections: List[WebSocket] = []
+        self._stop_events: Dict[str, threading.Event] = {}
+        self._training_tasks: Dict[str, asyncio.Task] = {}
 
         # HQ training workspace
         self.training_uploads_dir = ROOT / "hq_store" / "training_uploads"
@@ -135,6 +142,16 @@ class Dashboard:
         # Register the dedicated dashboard pages (/models, /clients, /updates, /analytics).
         setup_dashboard_routes(self.app, self.registry)
         self.setup_events()
+
+    @staticmethod
+    def _verify_admin_header(x_admin_key: Optional[str]) -> str:
+        """Validate optional X-Admin-Key consistently with server_api (strict if REQUIRE_DASHBOARD_ADMIN_KEY=1)."""
+        expected = os.getenv("ADMIN_KEY", os.getenv("ADMIN_API_KEY", "securefed-admin-token-2026")).strip()
+        if x_admin_key is not None and x_admin_key.strip() != expected:
+            raise HTTPException(status_code=403, detail="Forbidden: Invalid Admin Secret Key for HQ Dashboard API.")
+        if x_admin_key is None and os.getenv("REQUIRE_DASHBOARD_ADMIN_KEY", "0") == "1":
+            raise HTTPException(status_code=403, detail="Forbidden: Missing X-Admin-Key header.")
+        return expected
 
     def setup_routes(self):
         """Define all dashboard routes."""
@@ -334,9 +351,12 @@ class Dashboard:
 
         @self.app.get("/api/dashboard/updates")
         @self.app.get("/api/v1/updates")
-        async def get_updates(limit: int = 50):
-            """API endpoint for recent updates."""
+        async def get_updates(limit: int = 100):
+            """API endpoint for pending and archived aggregated updates."""
             updates = self.registry.list_updates()
+            pending_cnt = sum(1 for u in updates if u["status"] in ("received", "pending"))
+            aggregated_cnt = sum(1 for u in updates if u["status"] in ("aggregated", "processed"))
+            failed_cnt = sum(1 for u in updates if u["status"] == "failed")
             return JSONResponse({
                 "status": "success",
                 "updates": [
@@ -348,16 +368,53 @@ class Dashboard:
                         "samples": u["samples"],
                         "received_at": u["received_at"],
                         "status": u["status"],
+                        "weights_path": u.get("weights_path"),
+                        "aggregated_version": u.get("aggregated_version"),
+                        "aggregation_method": u.get("aggregation_method"),
+                        "aggregated_at": u.get("aggregated_at"),
+                        "archive_path": u.get("archive_path"),
+                        "dp_clipping_norm": u.get("dp_clipping_norm"),
+                        "dp_noise_multiplier": u.get("dp_noise_multiplier"),
+                        "local_steps": u.get("local_steps"),
                     }
                     for u in updates[:limit]
                 ],
                 "total_updates": len(updates),
+                "pending_updates": pending_cnt,
+                "aggregated_updates": aggregated_cnt,
+                "failed_updates": failed_cnt,
+                "latest_version": self.registry.latest_version(),
+                "open_round": self.registry.get_open_round(),
+                "aggregated_folder": str(self.registry.aggregated_updates_dir),
                 "timestamp": datetime.now().isoformat()
             })
 
+        @self.app.get("/api/v1/round")
+        async def dashboard_open_round():
+            """Return active base model version, open FL round, and DP upload policy."""
+            from server_hq.central_aggregator import (
+                MAX_CLIPPING_NORM,
+                MIN_CLIPPING_NORM,
+                MIN_NOISE_MULTIPLIER,
+                SUPPORTED_FL_METHODS,
+            )
+            return JSONResponse({
+                "status": "success",
+                "base_version": self.registry.latest_version(),
+                "open_round": self.registry.get_open_round(),
+                "supported_methods": list(SUPPORTED_FL_METHODS),
+                "dp_policy": {
+                    "require_clipped_and_noised": True,
+                    "min_clipping_norm": MIN_CLIPPING_NORM,
+                    "max_clipping_norm": MAX_CLIPPING_NORM,
+                    "min_noise_multiplier": MIN_NOISE_MULTIPLIER,
+                },
+            })
+
         @self.app.post("/api/v1/model/aggregate")
-        async def run_aggregation_endpoint(request: Request):
-            """Trigger federated aggregation of pending client updates."""
+        async def run_aggregation_endpoint(request: Request, x_admin_key: Optional[str] = Header(None)):
+            """Trigger federated aggregation of validated pending DP updates."""
+            self._verify_admin_header(x_admin_key)
             from server_hq.central_aggregator import run_federated_round
             try:
                 body = {}
@@ -369,15 +426,42 @@ class Dashboard:
                 method = body.get("method", "fedavg")
                 base_version = body.get("base_version", "latest")
                 notes = body.get("notes", "")
+                min_updates = int(body.get("min_updates", 1))
                 result = run_federated_round(
                     registry=self.registry,
                     base_version=base_version,
                     method=method,
                     notes=notes,
+                    min_updates=min_updates,
                 )
                 return JSONResponse(result)
             except Exception as exc:
-                return JSONResponse(status_code=400, content={"status": "error", "message": str(exc)})
+                return JSONResponse(status_code=400, content={"status": "error", "detail": str(exc), "message": str(exc)})
+
+        @self.app.post("/api/v1/model/aggregate/compare")
+        async def compare_methods_endpoint(request: Request, x_admin_key: Optional[str] = Header(None)):
+            """Evaluate all 5 FL methods (FedAvg, FedProx, SCAFFOLD, FedNova, MOON) on the same pending deltas."""
+            self._verify_admin_header(x_admin_key)
+            from server_hq.central_aggregator import compare_aggregation_methods
+            try:
+                body = {}
+                try:
+                    body = await request.json()
+                except Exception:
+                    form = await request.form()
+                    body = dict(form)
+                methods = body.get("methods")
+                if isinstance(methods, str):
+                    methods = [m.strip() for m in methods.split(",") if m.strip()]
+                result = compare_aggregation_methods(
+                    registry=self.registry,
+                    methods=methods,
+                    base_version=str(body.get("base_version", "latest")),
+                    min_updates=int(body.get("min_updates", 1)),
+                )
+                return JSONResponse(result)
+            except Exception as exc:
+                return JSONResponse(status_code=400, content={"status": "error", "detail": str(exc), "message": str(exc)})
 
         @self.app.get("/api/v1/model/file/{version}")
         async def dashboard_download_weights_file(version: str):
@@ -406,8 +490,9 @@ class Dashboard:
             )
 
         @self.app.post("/api/dashboard/models/{version}/push")
-        async def push_model_to_edge(version: str, request: Request):
+        async def push_model_to_edge(version: str, request: Request, x_admin_key: Optional[str] = Header(None)):
             """Push a published HQ model version directly to registered Client Edge node(s)."""
+            admin_key = self._verify_admin_header(x_admin_key)
             import requests
             from config import API_CONFIG
 
@@ -436,7 +521,6 @@ class Dashboard:
             hq_host = request.url.hostname or "127.0.0.1"
             api_port = int(API_CONFIG.get("port", 8000))
             hq_api_url = f"http://{hq_host}:{api_port}"
-            admin_key = os.getenv("ADMIN_KEY", os.getenv("ADMIN_API_KEY", "securefed-admin-token-2026"))
 
             results = []
             success_count = 0
@@ -466,6 +550,22 @@ class Dashboard:
                     "results": results,
                 },
             )
+
+        @self.app.delete("/api/dashboard/models/{version}")
+        async def delete_model_version(version: str, x_admin_key: Optional[str] = Header(None)):
+            """Delete a published model version from HQ registry and disk."""
+            self._verify_admin_header(x_admin_key)
+            try:
+                res = self.registry.delete_version(version)
+            except ValueError as val_err:
+                raise HTTPException(status_code=400, detail=str(val_err)) from val_err
+            if res is None:
+                raise HTTPException(status_code=404, detail=f"Model version '{version}' not found.")
+            return JSONResponse({
+                "status": "success",
+                "message": f"Deleted model version v{res['deleted_version']}.",
+                **res,
+            })
 
         @self.app.get("/api/dashboard/stats")
         async def get_dashboard_stats():
@@ -514,8 +614,9 @@ class Dashboard:
             ''', (job_id, dataset_name, str(dataset_path), dataset_format, target_column, epochs, kfold, ensemble_method, voting_type, f"{self.training_logs_dir}/{job_id}.log"))
             conn.commit()
             conn.close()
-            # Start background training
-            asyncio.create_task(self._run_training_job(
+            # Start background training off the event loop with stop signal support
+            self._stop_events[job_id] = threading.Event()
+            self._training_tasks[job_id] = asyncio.create_task(self._run_training_job(
                 job_id, str(dataset_path), dataset_format, target_column,
                 epochs, kfold, ensemble_method, voting_type
             ))
@@ -566,25 +667,43 @@ class Dashboard:
 
         @self.app.post("/api/dashboard/training/stop/{job_id}")
         async def training_stop(job_id: str):
-            """Stop a training job (best-effort)."""
+            """Request cooperative stop for a running/queued training job."""
             conn = sqlite3.connect(self.registry.db_path)
-            cursor = conn.cursor()
-            # Mark as stopped
-            cursor.execute('UPDATE training_jobs SET status = \'stopped\' WHERE job_id = ?', (job_id,))
-            conn.commit()
-            conn.close()
-            # Kill any process if needed (placeholder)
-            return JSONResponse({"status": "success", "job_id": job_id, "message": "Stop requested."})
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT job_id FROM training_jobs WHERE job_id = ?", (job_id,))
+                if not cursor.fetchone():
+                    raise HTTPException(status_code=404, detail="Training job not found.")
+                stop_ev = self._stop_events.setdefault(job_id, threading.Event())
+                stop_ev.set()
+                cursor.execute(
+                    "UPDATE training_jobs SET status = 'stopped', message = 'Stop requested by user.' WHERE job_id = ?",
+                    (job_id,),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+            return JSONResponse({"status": "success", "job_id": job_id, "message": "Stop signal sent."})
 
         @self.app.post("/api/dashboard/training/resume/{job_id}")
         async def training_resume(job_id: str):
             """Resume a stopped/queued training job."""
+            existing_task = self._training_tasks.get(job_id)
+            if existing_task and not existing_task.done():
+                return JSONResponse({"status": "success", "job_id": job_id, "message": "Training job already running."})
+
             conn = sqlite3.connect(self.registry.db_path)
-            cursor = conn.cursor()
-            cursor.execute('UPDATE training_jobs SET status = \'running\' WHERE job_id = ?', (job_id,))
-            conn.commit()
-            conn.close()
-            asyncio.create_task(self._run_training_job(job_id))
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT job_id FROM training_jobs WHERE job_id = ?", (job_id,))
+                if not cursor.fetchone():
+                    raise HTTPException(status_code=404, detail="Training job not found.")
+                self._stop_events[job_id] = threading.Event()
+                cursor.execute("UPDATE training_jobs SET status = 'queued', message = 'Resume requested.' WHERE job_id = ?", (job_id,))
+                conn.commit()
+            finally:
+                conn.close()
+            self._training_tasks[job_id] = asyncio.create_task(self._run_training_job(job_id))
             return JSONResponse({"status": "success", "job_id": job_id, "message": "Resume requested."})
 
         @self.app.post("/api/dashboard/training/cleanup/{job_id}")
@@ -634,22 +753,39 @@ class Dashboard:
 
         @self.app.post("/api/dashboard/training/cleanup")
         async def training_cleanup():
-            """Remove old completed/failed training artifacts."""
+            """Remove old completed/failed/stopped training artifacts."""
             keep_days = int(os.environ.get("TRAINING_KEEP_DAYS", "30"))
-            cutoff = datetime.now() - __import__("datetime").timedelta(days=keep_days)
+            cutoff_iso = (datetime.now() - timedelta(days=keep_days)).isoformat()
             conn = sqlite3.connect(self.registry.db_path)
-            cursor = conn.cursor()
-            cursor.execute('SELECT job_id, log_path FROM training_jobs WHERE status IN (\'completed\',\'failed\',\'stopped\') AND completed_at < ?', (cutoff,))
-            old_jobs = cursor.fetchall()
-            for job_id, log_path in old_jobs:
-                try:
-                    if log_path and os.path.exists(log_path):
-                        os.remove(log_path)
-                except Exception:
-                    pass
-                cursor.execute('DELETE FROM training_jobs WHERE job_id = ?', (job_id,))
-            conn.commit()
-            conn.close()
+            try:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT job_id, log_path, dataset_path, plot_paths FROM training_jobs "
+                    "WHERE status IN ('completed','failed','stopped') AND completed_at IS NOT NULL AND completed_at < ?",
+                    (cutoff_iso,),
+                )
+                old_jobs = cursor.fetchall()
+                for old_id, log_path, dataset_path, plot_paths_json in old_jobs:
+                    for p in (log_path, dataset_path):
+                        if p and os.path.exists(p):
+                            try:
+                                os.remove(p)
+                            except Exception:
+                                pass
+                    if plot_paths_json:
+                        try:
+                            for p in (json.loads(plot_paths_json) or {}).values():
+                                if isinstance(p, str) and os.path.exists(p):
+                                    try:
+                                        os.remove(p)
+                                    except Exception:
+                                        pass
+                        except Exception:
+                            pass
+                    cursor.execute("DELETE FROM training_jobs WHERE job_id = ?", (old_id,))
+                conn.commit()
+            finally:
+                conn.close()
             return JSONResponse({"status": "success", "cleaned": len(old_jobs)})
 
         @self.app.websocket("/ws/dashboard")
@@ -678,7 +814,10 @@ class Dashboard:
         @self.app.get("/dashboard/version/{version_id}")
         async def version_detail(request: Request, version_id: str):
             """Detailed view for a specific model version."""
-            version = self.registry.get_version(version_id)
+            try:
+                version = self.registry.get_version(version_id)
+            except ValueError as exc:
+                return JSONResponse({"error": str(exc)}, status_code=400)
             if not version:
                 return JSONResponse({"error": "Version not found"}, status_code=404)
 
@@ -710,7 +849,8 @@ class Dashboard:
                 conn.close()
                 for (jid,) in queued:
                     print(f"Restarting queued job {jid}")
-                    asyncio.create_task(self._run_training_job(jid))
+                    self._stop_events[jid] = threading.Event()
+                    self._training_tasks[jid] = asyncio.create_task(self._run_training_job(jid))
             except Exception as e:
                 print(f"Error restarting queued jobs: {e}")
 
@@ -752,17 +892,41 @@ class Dashboard:
         conn.close()
         return dict(zip(columns, row)) if row else None
 
+    def _is_job_stopped(self, job_id: str, stop_event: Optional[threading.Event] = None) -> bool:
+        if stop_event is not None and stop_event.is_set():
+            return True
+        row = self._training_job_row(job_id)
+        return bool(row and row.get("status") == "stopped")
+
     async def _run_training_job(self, job_id: str, dataset_path: Optional[str] = None,
                                 dataset_format: str = "", target_column: str = "",
                                 epochs: int = 3, kfold: int = 5,
                                 ensemble_method: str = "voting",
                                 voting_type: str = "soft") -> None:
-        """Run the HQ model-training pipeline in the background.
+        """Run the CPU-bound HQ training pipeline off the event loop in a worker thread."""
+        stop_event = self._stop_events.setdefault(job_id, threading.Event())
+        try:
+            await asyncio.to_thread(
+                self._execute_training_pipeline_sync,
+                job_id, dataset_path, dataset_format, target_column,
+                epochs, kfold, ensemble_method, voting_type, stop_event,
+            )
+        finally:
+            self._stop_events.pop(job_id, None)
+            self._training_tasks.pop(job_id, None)
+
+    def _execute_training_pipeline_sync(
+        self, job_id: str, dataset_path: Optional[str],
+        dataset_format: str, target_column: str,
+        epochs: int, kfold: int, ensemble_method: str, voting_type: str,
+        stop_event: threading.Event,
+    ) -> None:
+        """Run the HQ model-training pipeline synchronously on a background thread.
 
         Trains the 6 candidate DL models on the uploaded dataset, selects the
         top-2 ensemble, saves the weights under hq_store/models, and publishes
-        a new version to the registry.  Progress is written to training_jobs
-        so the dashboard can poll it.
+        a new version to the registry. Progress and stop state are checked via
+        SQLite and stop_event so stopping a job cancels further stages cleanly.
         """
         job = self._training_job_row(job_id)
         if job is None:
@@ -783,7 +947,12 @@ class Dashboard:
             log_handle.write(f"[{datetime.now().isoformat(timespec='seconds')}] {message}\n")
             log_handle.flush()
 
+        def ensure_not_stopped() -> None:
+            if self._is_job_stopped(job_id, stop_event):
+                raise _TrainingStoppedError("Training job stopped by user.")
+
         try:
+            ensure_not_stopped()
             if not dataset_path or not Path(dataset_path).exists():
                 raise FileNotFoundError(f"Dataset not found: {dataset_path}")
 
@@ -806,6 +975,8 @@ class Dashboard:
 
             X_train, y_train, X_val, y_val, X_test, y_test, feature_names = \
                 load_and_preprocess_dataset(dataset_path, target_column or None)
+            ensure_not_stopped()
+            scaler_stats = getattr(load_and_preprocess_dataset, "last_scaler", None) or {}
             input_dim = X_train.shape[1]
             num_classes = int(len(np.unique(y_train)))
             log(f"Preprocessing done | {X_train.shape[0]} train / {X_val.shape[0]} val samples, "
@@ -819,7 +990,7 @@ class Dashboard:
             histories: Dict[str, Dict[str, Any]] = {}
             cv_results: Dict[str, Dict[str, Any]] = {}
 
-            # Stage 2: a single stratified K-fold run per candidate model.  The
+            # Stage 2: a single stratified K-fold run per candidate model. The
             # train+validation split is used here; the untouched test split is
             # reserved for the final ensemble evaluation.
             from models.evaluation import (
@@ -829,6 +1000,7 @@ class Dashboard:
             X_cv = np.vstack([X_train, X_val])
             y_cv = np.concatenate([y_train, y_val])
             for i, name in enumerate(model_names, start=1):
+                ensure_not_stopped()
                 log(f"{name.upper()}: running {kfold}-fold CV and final training ({i}/{len(model_names)}) ...")
                 try:
                     cv_res = run_kfold_cv(
@@ -873,9 +1045,10 @@ class Dashboard:
                     )
                 except Exception as exc:
                     log(f"{name.upper()} failed: {type(exc).__name__}: {exc}")
+                ensure_not_stopped()
                 self._set_training_job(job_id, progress=15 + int(55 * i / len(model_names)))
-                await asyncio.sleep(0)
 
+            ensure_not_stopped()
             if not models:
                 raise RuntimeError("No candidate model could be trained — check the dataset contents.")
 
@@ -1021,6 +1194,18 @@ class Dashboard:
             # feature rows, predictions, or traffic are copied into the registry.
             # If the optional detail generator failed, retain the successful
             # top-level training plots rather than publishing an empty manifest.
+            ensure_not_stopped()
+            try:
+                self.registry.save_eval_holdout(
+                    X_test=X_test,
+                    y_test=y_test,
+                    input_dim=input_dim,
+                    feature_names=feature_names,
+                    dataset_name=Path(dataset_path).name,
+                )
+            except Exception as holdout_exc:
+                log(f"Warning: could not cache eval holdout: {holdout_exc}")
+
             if not version_plot_manifest:
                 version_plot_manifest = plot_files
             published = self.registry.publish_ensemble(
@@ -1032,6 +1217,8 @@ class Dashboard:
                 notes=f"dashboard training job {job_id[:8]} | ensemble={ensemble_method}",
                 extra_metadata={
                     "training_job_id": job_id,
+                    "scaler_mean": scaler_stats.get("mean"),
+                    "scaler_scale": scaler_stats.get("scale"),
                     "training_config": {
                         "epochs": epochs,
                         "kfold": kfold,
@@ -1059,6 +1246,12 @@ class Dashboard:
                 ensemble_metrics=json.dumps(_clean_for_json(ensemble_metrics_for_db)),
                 completed_at=datetime.now().isoformat())
             log("Job completed successfully.")
+        except _TrainingStoppedError:
+            log("Job stopped cleanly by user request.")
+            self._set_training_job(
+                job_id, status="stopped",
+                message="Training stopped by user.",
+                completed_at=datetime.now().isoformat())
         except Exception as exc:
             log(f"Job failed: {type(exc).__name__}: {exc}")
             self._set_training_job(
@@ -1222,48 +1415,67 @@ class Dashboard:
         }
 
     def get_update_stats(self) -> Dict[str, Any]:
-        """Get update statistics."""
+        """Get update statistics unified across client_updates, dashboard_updates, and model_versions."""
         conn = sqlite3.connect(self.registry.db_path)
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
 
-        cursor.execute('SELECT COUNT(*) FROM dashboard_updates')
-        total_updates = cursor.fetchone()[0]
+            # Prefer live FL updates table (`client_updates`) as source of truth
+            cursor.execute("SELECT COUNT(*) FROM client_updates")
+            cu_total = cursor.fetchone()[0] or 0
 
-        cursor.execute("SELECT COUNT(*) FROM dashboard_updates WHERE status = 'processed'")
-        processed_updates = cursor.fetchone()[0]
+            if cu_total > 0:
+                total_updates = cu_total
+                cursor.execute("SELECT COUNT(*) FROM client_updates WHERE status IN ('aggregated', 'processed')")
+                processed_updates = cursor.fetchone()[0] or 0
+                cursor.execute("SELECT COUNT(*) FROM client_updates WHERE status IN ('received', 'pending')")
+                pending_updates = cursor.fetchone()[0] or 0
+                cursor.execute("SELECT COUNT(*) FROM client_updates WHERE status = 'failed'")
+                failed_updates = cursor.fetchone()[0] or 0
+            else:
+                cursor.execute("SELECT COUNT(*) FROM dashboard_updates")
+                total_updates = cursor.fetchone()[0] or 0
+                cursor.execute("SELECT COUNT(*) FROM dashboard_updates WHERE status IN ('processed', 'aggregated')")
+                processed_updates = cursor.fetchone()[0] or 0
+                cursor.execute("SELECT COUNT(*) FROM dashboard_updates WHERE status IN ('pending', 'received')")
+                pending_updates = cursor.fetchone()[0] or 0
+                cursor.execute("SELECT COUNT(*) FROM dashboard_updates WHERE status = 'failed'")
+                failed_updates = cursor.fetchone()[0] or 0
 
-        cursor.execute("SELECT COUNT(*) FROM dashboard_updates WHERE status = 'pending'")
-        pending_updates = cursor.fetchone()[0]
+            cursor.execute("SELECT AVG(accuracy) FROM dashboard_updates WHERE accuracy IS NOT NULL")
+            avg_accuracy = cursor.fetchone()[0]
+            if avg_accuracy is None:
+                cursor.execute("SELECT AVG(accuracy) FROM model_versions WHERE accuracy IS NOT NULL")
+                avg_accuracy = cursor.fetchone()[0] or 0.0
 
-        cursor.execute("SELECT COUNT(*) FROM dashboard_updates WHERE status = 'failed'")
-        failed_updates = cursor.fetchone()[0]
+            cursor.execute("SELECT AVG(dp_epsilon) FROM dashboard_updates WHERE dp_epsilon IS NOT NULL")
+            avg_epsilon = cursor.fetchone()[0] or 0.0
 
-        cursor.execute('SELECT AVG(accuracy) FROM dashboard_updates WHERE accuracy IS NOT NULL')
-        avg_accuracy = cursor.fetchone()[0] or 0
-
-        cursor.execute('SELECT AVG(dp_epsilon) FROM dashboard_updates WHERE dp_epsilon IS NOT NULL')
-        avg_epsilon = cursor.fetchone()[0] or 0
-
-        conn.close()
-
-        return {
-            "total_updates": total_updates,
-            "processed_updates": processed_updates,
-            "pending_updates": pending_updates,
-            "failed_updates": failed_updates,
-            "avg_accuracy": avg_accuracy,
-            "avg_epsilon": avg_epsilon,
-            "success_rate": processed_updates / max(total_updates, 1)
-        }
+            return {
+                "total_updates": total_updates,
+                "processed_updates": processed_updates,
+                "pending_updates": pending_updates,
+                "failed_updates": failed_updates,
+                "avg_accuracy": float(avg_accuracy or 0.0),
+                "avg_epsilon": float(avg_epsilon or 0.0),
+                "success_rate": processed_updates / max(total_updates, 1),
+            }
+        finally:
+            conn.close()
 
     def count_updates(self) -> int:
-        """Count total updates."""
+        """Count total updates across primary FL registry (falling back to legacy dashboard_updates)."""
         conn = sqlite3.connect(self.registry.db_path)
-        cursor = conn.cursor()
-        cursor.execute('SELECT COUNT(*) FROM dashboard_updates')
-        count = cursor.fetchone()[0]
-        conn.close()
-        return count
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM client_updates")
+            cu_count = cursor.fetchone()[0] or 0
+            if cu_count > 0:
+                return int(cu_count)
+            cursor.execute("SELECT COUNT(*) FROM dashboard_updates")
+            return int(cursor.fetchone()[0] or 0)
+        finally:
+            conn.close()
 
     def count_active_clients(self) -> int:
         """Count active clients."""

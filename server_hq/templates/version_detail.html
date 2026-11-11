@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Version v{{ version.version }} - SecureFed-NIDS HQ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/modern_hq.css?v=8">
+    <script src="/static/js/hq_theme.js?v=2"></script>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3 col-lg-2 sidebar">
+                <div class="brand-container">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <a href="/" class="brand-title text-decoration-none" title="Go to HQ Dashboard">
+                            <div class="brand-icon"><i class="iconsax" icon-name="shield-tick"></i></div>
+                            <div>
+                                <div>SecureFed</div>
+                                <small style="font-size: 0.68rem; letter-spacing: 0.08em; color: var(--text-muted); font-family: var(--font-mono);">HQ · CONTROL PLANE</small>
+                            </div>
+                        </a>
+                        <button type="button" class="theme-toggle-btn" onclick="toggleHqTheme()" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
+                            <i id="hq-theme-icon" class="iconsax" icon-name="moon"></i>
+                        </button>
+                    </div>
+                </div>
+                <nav class="nav flex-column">
+                    <a class="nav-link" href="/"><i class="iconsax" icon-name="grid-apps"></i> Dashboard</a>
+                    <a class="nav-link active" href="/models"><i class="iconsax" icon-name="cpu-charge"></i> Model Versions</a>
+                    <a class="nav-link" href="/clients"><i class="iconsax" icon-name="user-2"></i> Clients</a>
+                    <a class="nav-link" href="/updates"><i class="iconsax" icon-name="cloud-notif"></i> Updates</a>
+                    <a class="nav-link" href="/training"><i class="iconsax" icon-name="cloud-add"></i> Model Training</a>
+                    <a class="nav-link" href="/analytics"><i class="iconsax" icon-name="bar-graph-1"></i> Analytics</a>
+                    <a class="nav-link" href="/xai"><i class="iconsax" icon-name="bulb"></i> Explainable AI</a>
+                </nav>
+                <div class="status-footer mt-auto">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">HQ Engine</span>
+                        <span class="system-status"><span class="system-indicator"></span> Online</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-9 col-lg-10 main-content">
+                <div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h1 class="mb-0"><i class="iconsax me-2" icon-name="cpu-charge"></i>Model Version <span class="font-mono">v{{ version.version }}</span></h1>
+                            {% if version.is_latest %}
+                            <span class="badge badge-latest">Latest</span>
+                            {% endif %}
+                        </div>
+                        <p class="text-muted mb-0 mt-1">{{ version.notes or 'Published global ensemble artifact & training dossier' }}</p>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/models" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
+                            <i class="iconsax" icon-name="arrow-left-2"></i> Back to Versions
+                        </a>
+                        <a href="/api/v1/model/file/{{ version.version }}" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" download>
+                            <i class="iconsax" icon-name="download-1"></i> Weights (.pt)
+                        </a>
+                        <a href="/api/v1/model/package/{{ version.version }}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
+                            <i class="iconsax" icon-name="driver-2"></i> Package
+                        </a>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="summary-card">
+                            <div class="summary-value font-mono">{{ version.architecture or 'EnsembleTop2' }}</div>
+                            <div class="summary-label">Architecture</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-card">
+                            <div class="summary-value font-mono">{{ version.fl_method or 'N/A' }}</div>
+                            <div class="summary-label">FL Method</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-card">
+                            <div class="summary-value font-mono">{{ version.input_dim if version.input_dim is not none else 'N/A' }} / {{ version.num_classes if version.num_classes is not none else 'N/A' }}</div>
+                            <div class="summary-label">Features / Classes</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-card">
+                            <div class="summary-value">{% if version.accuracy is not none %}{{ '%.2f'|format(version.accuracy * 100) }}%{% else %}N/A{% endif %}</div>
+                            <div class="summary-label">Validation Accuracy</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="iconsax me-2" icon-name="document-code-1"></i>Version Dossier &amp; Artifact Manifest</span>
+                        <span class="small text-muted font-mono">{{ (version.created_at or '')[:19] }}</span>
+                    </div>
+                    <div class="card-body" id="versionDossierBody">
+                        <div class="text-muted py-3">Loading version details...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const targetVersion = {{ version.version | tojson }};
+
+        function escHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[ch]));
+        }
+
+        function prettyMetric(value, digits = 4) {
+            const number = Number(value);
+            return Number.isFinite(number) ? number.toFixed(digits) : '—';
+        }
+
+        function percentMetric(value) {
+            const number = Number(value);
+            return Number.isFinite(number) ? `${(number * 100).toFixed(2)}%` : '—';
+        }
+
+        function normalizePlotUrl(url) {
+            if (typeof url !== 'string' || !url) return null;
+            if (url.startsWith('/static/plots/') || url.startsWith('/api/dashboard/plot/')) return url;
+            const norm = url.replace(/\\/g, '/');
+            const basename = norm.split('/').pop();
+            return (basename && basename.toLowerCase().endsWith('.png')) ? `/static/plots/${encodeURIComponent(basename)}` : url;
+        }
+
+        async function loadVersionDossier() {
+            const container = document.getElementById('versionDossierBody');
+            try {
+                const resp = await fetch(`/api/dashboard/versions/${encodeURIComponent(targetVersion)}/package`);
+                const data = await resp.json();
+                if (!resp.ok || data.status !== 'success') {
+                    container.innerHTML = `<div class="alert alert-danger">${escHtml(data.detail || 'Could not load version details.')}</div>`;
+                    return;
+                }
+
+                const meta = data.meta || {};
+                const job = data.training_result || {};
+                const metrics = meta.candidate_test_metrics || meta.model_metrics || job.model_metrics || {};
+                const ensemble = meta.ensemble_metrics || job.ensemble_metrics || {};
+                const visualization = data.visualization || meta.plot_manifest || {};
+
+                let html = '';
+                const metricRows = Object.entries(metrics);
+                if (metricRows.length) {
+                    const names = ['accuracy', 'precision', 'recall', 'f1', 'mcc', 'specificity', 'auc'];
+                    html += `
+                        <h6 class="fw-bold mb-2">Model Evaluation Metrics</h6>
+                        <div class="table-responsive mb-4">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr><th>Model</th>${names.map(n => `<th>${n.toUpperCase()}</th>`).join('')}<th>Train</th><th>Infer</th></tr>
+                                </thead>
+                                <tbody>
+                                    ${metricRows.map(([name, m]) => `
+                                        <tr>
+                                            <th class="font-mono">${escHtml(name.toUpperCase())}</th>
+                                            ${names.map(n => `<td>${percentMetric(m?.[n])}</td>`).join('')}
+                                            <td>${prettyMetric(m?.training_time_seconds, 2)}s</td>
+                                            <td>${prettyMetric(m?.inference_time_per_sample_ms, 3)}ms</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>`;
+                }
+
+                if (Object.keys(ensemble).length) {
+                    html += `
+                        <div class="alert alert-info py-2 small mb-4">
+                            <strong>Ensemble:</strong>
+                            Accuracy <strong>${percentMetric(ensemble.accuracy)}</strong> ·
+                            Precision ${prettyMetric(ensemble.precision)} ·
+                            Recall ${prettyMetric(ensemble.recall)} ·
+                            F1 ${prettyMetric(ensemble.f1)} ·
+                            MCC ${prettyMetric(ensemble.mcc)} ·
+                            AUC ${prettyMetric(ensemble.auc)}
+                        </div>`;
+                }
+
+                const plots = [];
+                const visit = (val, label = '') => {
+                    if (typeof val === 'string' && val.toLowerCase().includes('.png')) plots.push([label, val]);
+                    else if (val && typeof val === 'object') Object.entries(val).forEach(([k, v]) => visit(v, label ? `${label} · ${k}` : k));
+                };
+                visit(visualization);
+                if (plots.length) {
+                    const dedup = [...new Map(plots.map(([lbl, url]) => [url, lbl])).entries()];
+                    html += `<h6 class="fw-bold mb-2">Visualizations</h6><div class="row g-3 mb-4">` +
+                        dedup.map(([url, lbl]) => {
+                            const pub = normalizePlotUrl(url);
+                            return pub ? `<div class="col-md-6"><div class="border rounded p-2 text-center bg-light"><a href="${escHtml(pub)}" target="_blank" rel="noopener"><img src="${escHtml(pub)}" class="img-fluid rounded mb-2" loading="lazy" alt="${escHtml(lbl)}"></a><div class="small fw-semibold">${escHtml(lbl.replace(/_/g, ' ').toUpperCase())}</div></div></div>` : '';
+                        }).join('') + `</div>`;
+                }
+
+                html += `<h6 class="fw-bold mb-2">Artifact &amp; Metadata Manifest</h6>
+                    <pre class="p-3 rounded small" style="background:#101820;color:#d1fae5;white-space:pre-wrap;">${escHtml(JSON.stringify({record: data.record, files: data.files, package: data.package, fl_method: meta.fl_method, round: meta.round, clients: meta.clients}, null, 2))}</pre>`;
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = `<div class="alert alert-danger">Failed to load version details: ${escHtml(err.message)}</div>`;
+            }
+        }
+
+        loadVersionDossier();
+    </script>
+</body>
+</html>

@@ -74,7 +74,8 @@ class SHAPExplainer:
             "top_5_features": [f[0] for f in sorted_f[:5]]
         }
 
-def perturbation_test(model: nn.Module, X: np.ndarray, explanation: dict, top_k: int = 5) -> float:
+def perturbation_test(model: nn.Module, X: np.ndarray, explanation: dict, top_k: int = 5,
+                      feature_names: list | None = None) -> float:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     model.eval()
@@ -82,16 +83,21 @@ def perturbation_test(model: nn.Module, X: np.ndarray, explanation: dict, top_k:
     with torch.no_grad():
         orig = model(torch.FloatTensor(X).to(device)).argmax(dim=1).cpu().numpy()
 
+    ordered_names = list(feature_names) if feature_names else list(explanation.get("feature_importance", {}).keys())
+    name_to_idx = {str(name): idx for idx, name in enumerate(ordered_names)}
+
     top_feats = explanation.get("top_5_features", [])[:top_k]
     X_pert = X.copy()
 
     for f_name in top_feats:
         try:
-            if f_name.startswith("Feature_"):
-                idx = int(f_name.split("_")[1]) - 1
+            if f_name in name_to_idx:
+                idx = name_to_idx[f_name]
+            elif str(f_name).startswith("Feature_"):
+                idx = int(str(f_name).split("_")[1]) - 1
             else:
-                idx = 0
-            if idx < X.shape[1]:
+                continue
+            if 0 <= idx < X.shape[1]:
                 noise = np.random.normal(0, 0.5 * (np.std(X[:, idx]) + 1e-6), X.shape[0])
                 X_pert[:, idx] += noise
         except Exception:

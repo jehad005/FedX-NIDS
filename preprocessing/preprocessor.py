@@ -45,10 +45,12 @@ class DataPreprocessor:
         elif method == "fill":
             # Fill numeric columns with median, categorical with mode
             for col in df.columns:
-                if df[col].dtype in ['float64', 'int64']:
-                    df[col].fillna(df[col].median(), inplace=True)
+                if pd.api.types.is_numeric_dtype(df[col]):
+                    df[col] = df[col].fillna(df[col].median())
                 else:
-                    df[col].fillna(df[col].mode()[0] if len(df[col].mode()) > 0 else "Unknown", inplace=True)
+                    mode_vals = df[col].mode()
+                    fill_val = mode_vals.iloc[0] if len(mode_vals) > 0 else "Unknown"
+                    df[col] = df[col].fillna(fill_val)
         elif method == "interpolate":
             # Linear interpolation for numeric columns
             df = df.interpolate(method='linear', limit_direction='both')
@@ -156,22 +158,26 @@ class DataPreprocessor:
         print("\n[3/6] Separating features and labels...")
         y_df, y = self.encode_labels(df, target_col)
 
-        # Step 4: Feature selection
-        print("\n[4/6] Selecting features...")
-        X = self.select_features(y_df.values, y, fit=True)
-
-        # Step 5: Feature scaling
-        print("\n[5/6] Scaling features...")
-        X_scaled = self.scale_features(X, fit=True)
-
-        # Step 6: Train-test split
-        print("\n[6/6] Splitting data...")
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_scaled, y,
+        # Step 4: Split before feature selection & scaling to prevent train/test leakage
+        print("\n[4/6] Splitting data...")
+        min_count = int(np.min(np.bincount(y))) if len(y) > 0 else 0
+        strat = y if min_count >= 2 else None
+        X_train_raw, X_test_raw, y_train, y_test = train_test_split(
+            y_df.values, y,
             test_size=test_size,
             random_state=random_state,
-            stratify=y
+            stratify=strat
         )
+
+        # Step 5: Feature selection (fit on training split only)
+        print("\n[5/6] Selecting features...")
+        X_train_sel = self.select_features(X_train_raw, y_train, fit=True)
+        X_test_sel = self.select_features(X_test_raw, y_test, fit=False)
+
+        # Step 6: Feature scaling (fit on training split only)
+        print("\n[6/6] Scaling features...")
+        X_train = self.scale_features(X_train_sel, fit=True)
+        X_test = self.scale_features(X_test_sel, fit=False)
 
         print("\n" + "="*60)
         print("Preprocessing Complete!")

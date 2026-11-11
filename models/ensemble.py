@@ -57,64 +57,52 @@ class EnsembleModel(nn.Module):
     def _voting_forward(self, x: torch.Tensor) -> torch.Tensor:
         """Voting ensemble forward pass (Soft or Hard)."""
         all_probs = []
+        grad_enabled = self.training or x.requires_grad
 
-        if self.training or self.voting_type == "soft":
-            # Fully differentiable Soft Voting: Average probabilities or logits
+        with torch.set_grad_enabled(grad_enabled):
             for model in self.models:
                 logits = model(x)
                 probs = torch.softmax(logits, dim=1)
                 all_probs.append(probs)
             avg_probs = torch.mean(torch.stack(all_probs), dim=0)
+
+        if self.training or self.voting_type == "soft":
             return torch.log(avg_probs + 1e-10)
-        else:
-            # Hard voting for inference evaluation
-            for model in self.models:
-                with torch.no_grad():
-                    logits = model(x)
-                    probs = torch.softmax(logits, dim=1)
-                all_probs.append(probs)
 
-            votes = torch.stack([p.argmax(dim=1) for p in all_probs], dim=1)
-            majority = torch.mode(votes, dim=1).values
-
-            result = torch.zeros_like(all_probs[0])
-            result.scatter_(1, majority.unsqueeze(1), 1.0)
-            return torch.log(result + 1e-10)
+        # Hard voting for inference evaluation; preserve gradients via STE when x.requires_grad is set
+        votes = torch.stack([p.argmax(dim=1) for p in all_probs], dim=1)
+        majority = torch.mode(votes, dim=1).values
+        result = torch.zeros_like(avg_probs)
+        result.scatter_(1, majority.unsqueeze(1), 1.0)
+        if grad_enabled:
+            result = result + (avg_probs - avg_probs.detach())
+        return torch.log(result + 1e-10)
 
     def _weighted_forward(self, x: torch.Tensor) -> torch.Tensor:
         """Weighted average soft voting ensemble."""
         weighted_probs = []
+        grad_enabled = self.training or x.requires_grad
 
-        if self.training:
+        with torch.set_grad_enabled(grad_enabled):
             for model, weight in zip(self.models, self.weights):
                 logits = model(x)
                 probs = torch.softmax(logits, dim=1)
                 weighted_probs.append(probs * weight)
-        else:
-            for model, weight in zip(self.models, self.weights):
-                with torch.no_grad():
-                    logits = model(x)
-                    probs = torch.softmax(logits, dim=1)
-                weighted_probs.append(probs * weight)
-
-        avg_probs = sum(weighted_probs)
-        return torch.log(avg_probs + 1e-10)
+            avg_probs = sum(weighted_probs)
+            return torch.log(avg_probs + 1e-10)
 
     def _stacking_forward(self, x: torch.Tensor) -> torch.Tensor:
         """Stacking ensemble using PyTorch Meta-Learner."""
         all_probs = []
-        for model in self.models:
-            if not self.training:
-                with torch.no_grad():
-                    logits = model(x)
-                    probs = torch.softmax(logits, dim=1)
-            else:
+        grad_enabled = self.training or x.requires_grad
+
+        with torch.set_grad_enabled(grad_enabled):
+            for model in self.models:
                 logits = model(x)
                 probs = torch.softmax(logits, dim=1)
-            all_probs.append(probs)
-
-        meta_features = torch.cat(all_probs, dim=1)
-        return self.meta_learner(meta_features)
+                all_probs.append(probs)
+            meta_features = torch.cat(all_probs, dim=1)
+            return self.meta_learner(meta_features)
 
     def fit_meta_learner(
         self,

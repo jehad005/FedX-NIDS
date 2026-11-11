@@ -78,7 +78,8 @@ class DPSGD:
                     mean=0,
                     std=self.noise_multiplier * self.clipping_norm,
                     size=param.grad.shape,
-                    device=self.device
+                    device=param.grad.device,
+                    dtype=param.grad.dtype,
                 )
                 param.grad.data.add_(noise)
 
@@ -168,14 +169,19 @@ class DPTrainer:
         Returns:
             Tuple of (average_loss, accuracy)
         """
+        if len(X_train) == 0:
+            raise ValueError("Training set X_train cannot be empty.")
+        batch_size = max(1, int(batch_size))
+
         self.model.train()
         total_loss = 0.0
         correct = 0
         total = 0
+        num_batches = 0
 
         # Create batches
         indices = np.random.permutation(len(X_train))
-        sampling_rate = batch_size / len(X_train)
+        sampling_rate = min(1.0, batch_size / len(X_train))
 
         for i in range(0, len(X_train), batch_size):
             batch_indices = indices[i:i+batch_size]
@@ -207,6 +213,7 @@ class DPTrainer:
 
             # Update privacy accounting
             self.dp_sgd.steps += 1
+            num_batches += 1
 
         # Compute privacy spent
         self.dp_sgd.privacy_spent = self.dp_sgd.compute_privacy_spent(
@@ -214,8 +221,8 @@ class DPTrainer:
             steps=self.dp_sgd.steps
         )
 
-        avg_loss = total_loss / (len(X_train) // batch_size)
-        accuracy = correct / total
+        avg_loss = total_loss / max(1, num_batches)
+        accuracy = correct / max(total, 1)
 
         return avg_loss, accuracy
 
@@ -234,6 +241,8 @@ class DPTrainer:
         print(f"Noise Multiplier: {self.dp_sgd.noise_multiplier}")
         print(f"Clipping Norm: {self.dp_sgd.clipping_norm}")
         print("="*70)
+
+        val_acc = self.evaluate(X_val, y_val) if len(X_val) > 0 and epochs <= 0 else 0.0
 
         for epoch in range(epochs):
             # Train

@@ -2,107 +2,112 @@
 {% block title %}HQ Synchronization · SecureFed Client{% endblock %}
 {% block page_heading %}HQ Connection &amp; Sync{% endblock %}
 {% block content %}
-<div class="max-w-4xl space-y-5">
+<div class="edge-stagger-stack max-w-4xl space-y-5">
 
     <!-- Main Simple HQ Link Card -->
-    <section class="bg-white dark:bg-[#13171d] p-5 rounded-lg border border-neutral-200 dark:border-[#232933] space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b pb-3.5 border-neutral-200 dark:border-[#232933]">
+    <section class="edge-card bg-white dark:bg-[#131820] p-6 rounded-2xl border border-slate-200 dark:border-[#222a36] space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b pb-4 border-slate-200 dark:border-[#222a36]">
             <div>
-                <h2 class="font-heading text-sm font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
-                    <i class="iconsax text-blue-700 dark:text-blue-400 text-lg" icon-name="cloud-add"></i>
+                <h2 class="font-heading text-[15px] font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <i class="iconsax text-blue-600 dark:text-blue-400 text-lg" icon-name="cloud-add"></i>
                     HQ Model Link
-                    <span id="sync-status-badge" class="font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-neutral-100 dark:bg-[#1b2029] text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-[#2d3440]">Checking...</span>
+                    <span id="sync-status-badge" class="font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 border border-blue-600/20">Checking...</span>
                 </h2>
-                <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                    Models are deployed here only when pushed from HQ (<code class="font-mono text-[11px]">/models &rarr; Push to Edge</code>) or pulled manually below.
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Models are deployed here only when pushed from HQ (<code class="font-mono text-[11px] bg-slate-100 dark:bg-[#1a212c] px-1.5 py-0.5 rounded">/models &rarr; Push to Edge</code>) or pulled manually below.
                 </p>
             </div>
-            <span class="font-mono text-[11px] font-semibold px-2.5 py-1 rounded bg-neutral-100 dark:bg-[#181d25] text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#2d3440]">Explicit Push Only</span>
+            <span class="font-mono text-[11px] font-semibold px-3 py-1 rounded-lg bg-slate-50 dark:bg-[#181d25] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-[#2d3440]">Explicit Push Only</span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label class="block font-mono text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider mb-1">HQ API URL</label>
+                <label class="block font-mono text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">HQ API URL</label>
                 <div class="relative">
-                    <i class="iconsax text-neutral-400 text-sm absolute left-3 top-2.5" icon-name="link-2"></i>
-                    <input id="input-hq-url" type="text" value="http://localhost:8000" class="w-full pl-9 pr-3 py-2 border border-neutral-300 dark:border-[#2d3440] bg-neutral-50 dark:bg-[#0d1015] rounded-md text-xs text-neutral-900 dark:text-neutral-100 font-mono focus:border-blue-600 focus:outline-none">
+                    <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-2.5" icon-name="link-2"></i>
+                    <input id="input-hq-url" type="text" value="http://localhost:8000" class="w-full pl-9 pr-3 py-2 border border-slate-300 dark:border-[#2d3748] bg-white dark:bg-[#0d1117] rounded-[10px] text-xs text-slate-900 dark:text-slate-100 font-mono focus:border-blue-600 focus:ring-[3px] focus:ring-blue-600/15 focus:outline-none transition-all">
                 </div>
             </div>
             <div>
-                <label class="block font-mono text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider mb-1">Client Node ID</label>
+                <label class="block font-mono text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">Client Node ID</label>
                 <div class="relative">
-                    <i class="iconsax text-neutral-400 text-sm absolute left-3 top-2.5" icon-name="user-1"></i>
-                    <input id="input-client-id" type="text" value="client_node_01" class="w-full pl-9 pr-3 py-2 border border-neutral-300 dark:border-[#2d3440] bg-neutral-50 dark:bg-[#0d1015] rounded-md text-xs text-neutral-900 dark:text-neutral-100 font-mono focus:border-blue-600 focus:outline-none">
+                    <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-2.5" icon-name="user-1"></i>
+                    <input id="input-client-id" type="text" value="client_node_01" class="w-full pl-9 pr-3 py-2 border border-slate-300 dark:border-[#2d3748] bg-white dark:bg-[#0d1117] rounded-[10px] text-xs text-slate-900 dark:text-slate-100 font-mono focus:border-blue-600 focus:ring-[3px] focus:ring-blue-600/15 focus:outline-none transition-all">
                 </div>
             </div>
         </div>
 
         <div class="flex flex-wrap gap-2.5 pt-1">
-            <button onclick="pullModel()" class="px-4 py-2 rounded-md bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-medium text-xs inline-flex items-center gap-1.5 transition-colors">
+            <button onclick="pullModel()" class="edge-btn edge-btn-sheen px-4 py-2.5 rounded-[10px] bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold text-xs inline-flex items-center gap-1.5 shadow-[0_4px_12px_-2px_rgba(37,99,235,0.28)]">
                 <i class="iconsax text-sm" icon-name="refresh"></i>
                 <span>Sync Latest Model Now</span>
             </button>
-            <button onclick="saveConfig()" class="px-3.5 py-2 rounded-md bg-neutral-100 hover:bg-neutral-200 dark:bg-[#1b2029] dark:hover:bg-[#252c38] text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-[#2d3440] font-medium text-xs inline-flex items-center gap-1.5 transition-colors">
+            <button onclick="saveConfig()" class="edge-btn px-4 py-2.5 rounded-[10px] bg-white hover:bg-slate-50 dark:bg-[#181e29] dark:hover:bg-[#222a38] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-[#2d3748] font-semibold text-xs inline-flex items-center gap-1.5">
                 <i class="iconsax text-sm" icon-name="setting-2"></i>
                 <span>Save Connection</span>
             </button>
         </div>
     </section>
 
-    <!-- Federated Return Loop -->
-    <section class="bg-white dark:bg-[#13171d] p-5 rounded-lg border border-neutral-200 dark:border-[#232933] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <h2 class="font-heading text-sm font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
-                <i class="iconsax text-emerald-600 dark:text-emerald-400 text-lg" icon-name="shield-tick"></i>
-                Send DP Training Update to HQ
-            </h2>
-            <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
-                After local DP-SGD training completes, push the clipped weight delta back to HQ for aggregation.
-            </p>
+    <!-- Federated Return Loop (Automatic) -->
+    <section class="edge-card bg-white dark:bg-[#131820] p-6 rounded-2xl border border-slate-200 dark:border-[#222a36] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-600/[0.09] dark:bg-emerald-500/15 border border-emerald-600/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
+                <i class="iconsax text-lg" icon-name="shield-tick"></i>
+            </div>
+            <div>
+                <h2 class="font-heading text-[15px] font-bold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
+                    <span>Automatic DP Training Update to HQ</span>
+                    <span id="auto-push-badge" class="font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-600/20">Auto-Push Active</span>
+                </h2>
+                <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    After local DP-SGD training completes, the clipped &amp; noised weight delta is pushed automatically to HQ for aggregation.
+                </p>
+            </div>
         </div>
-        <button onclick="pushUpdate()" class="px-4 py-2 rounded-md bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-medium text-xs inline-flex items-center gap-1.5 transition-colors shrink-0">
-            <i class="iconsax text-sm" icon-name="upload-2"></i>
-            <span>Push DP Update to HQ</span>
-        </button>
+        <div class="inline-flex items-center gap-2 font-mono text-[11px] font-semibold px-3.5 py-2 rounded-xl bg-emerald-600/[0.08] dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-600/20 shrink-0">
+            <span class="edge-live-dot h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span id="last-push-pill">Auto · After Training</span>
+        </div>
     </section>
 
     <!-- Collapsible Advanced / Offline Section -->
-    <details class="bg-white dark:bg-[#13171d] rounded-lg border border-neutral-200 dark:border-[#232933]">
-        <summary class="px-5 py-3.5 cursor-pointer select-none flex items-center justify-between text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+    <details class="edge-card bg-white dark:bg-[#131820] rounded-2xl border border-slate-200 dark:border-[#222a36] overflow-hidden">
+        <summary class="px-6 py-4 cursor-pointer select-none flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50/70 dark:hover:bg-[#181e28] transition-colors">
             <span class="flex items-center gap-2">
-                <i class="iconsax text-base text-neutral-500" icon-name="setting-2"></i>
+                <i class="iconsax text-base text-slate-500" icon-name="setting-2"></i>
                 Advanced: Offline .pt Upload &amp; Admin Token
             </span>
-            <span id="admin-badge" class="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-mono font-semibold rounded bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/70">Authentication Required</span>
+            <span id="admin-badge" class="inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-mono font-semibold rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/70">Authentication Required</span>
         </summary>
-        <div class="px-5 pb-5 pt-2 border-t border-neutral-200 dark:border-[#232933] space-y-5">
+        <div class="px-6 pb-6 pt-3 border-t border-slate-200 dark:border-[#222a36] space-y-5">
             <!-- Admin Secret Key -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <div class="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">Admin Secret Key</div>
-                    <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">Used to authorize model deployment and HQ changes.</p>
+                    <div class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Admin Secret Key</div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Used to authorize model deployment and HQ changes.</p>
                 </div>
                 <div class="flex items-center gap-1.5">
-                    <input id="input-admin-key" type="password" value="securefed-admin-token-2026" placeholder="Admin Secret Key" class="px-3 py-1.5 text-xs font-mono rounded-md bg-neutral-50 dark:bg-[#0d1015] border border-neutral-300 dark:border-[#2d3440] text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-blue-600 w-52" oninput="updateAdminStatus()">
-                    <button type="button" onclick="toggleAdminKeyVisibility()" class="w-8 h-8 rounded-md bg-neutral-100 dark:bg-[#181d25] hover:bg-neutral-200 dark:hover:bg-[#222834] border border-neutral-200 dark:border-[#2d3440] text-neutral-600 dark:text-neutral-300 flex items-center justify-center transition-colors" title="Show/Hide Secret Key">
+                    <input id="input-admin-key" type="password" value="securefed-admin-token-2026" placeholder="Admin Secret Key" class="px-3 py-2 text-xs font-mono rounded-[10px] bg-white dark:bg-[#0d1117] border border-slate-300 dark:border-[#2d3748] text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-600 focus:ring-[3px] focus:ring-blue-600/15 w-52 transition-all" oninput="updateAdminStatus()">
+                    <button type="button" onclick="toggleAdminKeyVisibility()" class="edge-btn w-9 h-9 rounded-[10px] bg-slate-50 dark:bg-[#181d25] hover:bg-slate-100 dark:hover:bg-[#222834] border border-slate-200 dark:border-[#2d3748] text-slate-600 dark:text-slate-300 flex items-center justify-center" title="Show/Hide Secret Key">
                         <i id="eye-icon" class="iconsax text-base" icon-name="eye"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Offline Manual Model Upload -->
-            <div class="border-t border-neutral-200 dark:border-[#232933] pt-4">
-                <div class="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 mb-2">Manual Model File Upload (Air-Gapped .pt Fallback)</div>
+            <div class="border-t border-slate-200 dark:border-[#222a36] pt-4">
+                <div class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">Manual Model File Upload (Air-Gapped .pt Fallback)</div>
                 <form onsubmit="uploadManualModel(event)" class="flex flex-col sm:flex-row gap-3 items-end">
                     <div class="flex-1 w-full">
-                        <label class="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Select .pt File</label>
-                        <input type="file" id="manual-model-file" accept=".pt" required class="block w-full text-xs text-neutral-900 dark:text-neutral-100 border border-neutral-300 dark:border-[#2d3440] rounded-md p-2 bg-neutral-50 dark:bg-[#0d1015] cursor-pointer">
+                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Select .pt File</label>
+                        <input type="file" id="manual-model-file" accept=".pt" required class="block w-full text-xs text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-[#2d3748] rounded-[10px] p-2 bg-slate-50 dark:bg-[#0d1117] cursor-pointer">
                     </div>
                     <div class="w-full sm:w-40">
-                        <label class="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">Version Tag</label>
-                        <input type="text" id="manual-model-ver" value="v1.0.8-airgap" class="w-full border border-neutral-300 dark:border-[#2d3440] bg-neutral-50 dark:bg-[#0d1015] rounded-md p-2 text-xs font-mono">
+                        <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Version Tag</label>
+                        <input type="text" id="manual-model-ver" value="v1.0.8-airgap" class="w-full border border-slate-300 dark:border-[#2d3748] bg-white dark:bg-[#0d1117] rounded-[10px] p-2 text-xs font-mono focus:border-blue-600 focus:ring-[3px] focus:ring-blue-600/15 focus:outline-none">
                     </div>
-                    <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs inline-flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap">
+                    <button type="submit" class="edge-btn edge-btn-sheen w-full sm:w-auto px-4 py-2.5 rounded-[10px] bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold text-xs inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                         <i class="iconsax text-sm" icon-name="upload-1"></i>
                         <span>Verify &amp; Push</span>
                     </button>
@@ -112,7 +117,7 @@
     </details>
 
     <!-- Feedback Console -->
-    <pre id="sync-result" class="hidden overflow-auto text-xs bg-[#0b0e12] text-emerald-400 p-4 rounded-lg border border-neutral-800 font-mono"></pre>
+    <pre id="sync-result" class="hidden overflow-auto text-xs bg-[#0f172a] text-emerald-400 p-4 rounded-xl border border-slate-800 shadow-inner font-mono"></pre>
 </div>
 
 <script>
@@ -132,11 +137,11 @@ function updateAdminStatus() {
     const key = document.getElementById('input-admin-key').value.trim();
     const badge = document.getElementById('admin-badge');
     if (key.length > 5) {
-        badge.className = "inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-mono font-semibold rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/70";
+        badge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-mono font-semibold rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/70";
         badge.innerHTML = '<i class="iconsax text-xs" icon-name="shield-tick"></i> Admin Key Provided';
         sessionStorage.setItem('securefed_admin_key', key);
     } else {
-        badge.className = "inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-mono font-semibold rounded bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/70";
+        badge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-mono font-semibold rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/70";
         badge.textContent = "Authentication Required";
     }
 }

@@ -2,88 +2,105 @@
 {% block title %}Overview · SecureFed Client{% endblock %}
 {% block page_heading %}Edge Node Overview{% endblock %}
 {% block content %}
-<div class="space-y-6">
+<div class="edge-stagger-stack space-y-6">
     <!-- Quick Deployment Strip -->
-    <div class="bg-white dark:bg-[#13171d] border border-neutral-200 dark:border-[#232933] rounded-lg px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-md bg-neutral-100 dark:bg-[#181d25] border border-neutral-200 dark:border-[#2c3340] text-blue-700 dark:text-blue-400 flex items-center justify-center shrink-0">
-                <i class="iconsax text-lg" icon-name="shield-tick"></i>
+    <div class="edge-card bg-white dark:bg-[#131820] border border-slate-200 dark:border-[#222a36] rounded-2xl px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-xl bg-blue-600/[0.09] dark:bg-blue-500/15 border border-blue-600/20 dark:border-blue-500/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <i class="iconsax text-xl" icon-name="shield-tick"></i>
             </div>
             <div>
-                <h2 class="font-heading text-sm font-semibold text-neutral-900 dark:text-neutral-100">Edge Defense Pipeline</h2>
-                <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">Pull verified ensemble weights from HQ, run local DP-SGD epochs, and evaluate packet flows locally.</p>
+                <h2 class="font-heading text-[15px] font-bold text-slate-900 dark:text-slate-100">Edge Defense Pipeline</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Pull verified ensemble weights from HQ, run local DP-SGD epochs, and evaluate packet flows locally.</p>
             </div>
         </div>
-        <a href="/sync" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-medium text-xs transition-colors whitespace-nowrap">
+        <a href="/sync" class="edge-btn edge-btn-sheen inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-[10px] bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold text-xs shadow-[0_4px_12px_-2px_rgba(37,99,235,0.28)] whitespace-nowrap">
             <i class="iconsax text-sm" icon-name="cloud-add"></i>
             <span>Sync Global Model</span>
         </a>
     </div>
 
     <!-- Node Telemetry Strip -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-[#13171d] p-4 rounded-lg border border-neutral-200 dark:border-[#232933]">
+    <div class="edge-stagger-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="edge-metric-card bg-white dark:bg-[#131820] p-5 rounded-[14px] border border-slate-200 dark:border-[#222a36]">
             <div class="flex items-center justify-between">
-                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Model Version</span>
-                <i class="iconsax text-base text-blue-600 dark:text-blue-400" icon-name="cpu-charge"></i>
+                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Model Version</span>
+                <div class="edge-metric-icon w-9 h-9 rounded-xl bg-blue-600/[0.09] dark:bg-blue-500/15 border border-blue-600/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                    <i class="iconsax text-base" icon-name="cpu-charge"></i>
+                </div>
             </div>
-            <p id="card-version" class="font-mono text-xl font-semibold mt-2.5 text-neutral-900 dark:text-neutral-100 tabular-nums">Not Synced</p>
+            <p id="card-version" class="font-mono text-xl font-bold mt-2.5 text-slate-900 dark:text-slate-100 tabular-nums">Not Synced</p>
         </div>
 
-        <div class="bg-white dark:bg-[#13171d] p-4 rounded-lg border border-neutral-200 dark:border-[#232933]">
+        <div class="edge-metric-card bg-white dark:bg-[#131820] p-5 rounded-[14px] border border-slate-200 dark:border-[#222a36]">
             <div class="flex items-center justify-between">
-                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Node Status</span>
-                <i class="iconsax text-base text-emerald-600 dark:text-emerald-400" icon-name="shield-tick"></i>
+                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Node Status</span>
+                <div class="edge-metric-icon w-9 h-9 rounded-xl bg-emerald-600/[0.09] dark:bg-emerald-500/15 border border-emerald-600/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <i class="iconsax text-base" icon-name="shield-tick"></i>
+                </div>
             </div>
-            <p id="card-status" class="font-sans text-base font-semibold text-emerald-700 dark:text-emerald-400 mt-2.5 truncate">Idle</p>
+            <p id="card-status" class="font-heading text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-2.5 truncate">Idle</p>
         </div>
 
-        <div class="bg-white dark:bg-[#13171d] p-4 rounded-lg border border-neutral-200 dark:border-[#232933]">
+        <div class="edge-metric-card bg-white dark:bg-[#131820] p-5 rounded-[14px] border border-slate-200 dark:border-[#222a36]">
             <div class="flex items-center justify-between">
-                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Architecture</span>
-                <i class="iconsax text-base text-neutral-500 dark:text-neutral-400" icon-name="grid-apps"></i>
+                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Architecture</span>
+                <div class="edge-metric-icon w-9 h-9 rounded-xl bg-sky-600/[0.09] dark:bg-sky-500/15 border border-sky-600/20 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                    <i class="iconsax text-base" icon-name="grid-apps"></i>
+                </div>
             </div>
-            <p id="card-arch" class="font-mono text-base font-semibold mt-2.5 text-neutral-900 dark:text-neutral-100 truncate">—</p>
+            <p id="card-arch" class="font-mono text-base font-bold mt-3 text-slate-900 dark:text-slate-100 truncate">—</p>
         </div>
 
-        <div class="bg-white dark:bg-[#13171d] p-4 rounded-lg border border-neutral-200 dark:border-[#232933]">
+        <div class="edge-metric-card bg-white dark:bg-[#131820] p-5 rounded-[14px] border border-slate-200 dark:border-[#222a36]">
             <div class="flex items-center justify-between">
-                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Input Features</span>
-                <i class="iconsax text-base text-neutral-500 dark:text-neutral-400" icon-name="bar-graph-1"></i>
+                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Input Features</span>
+                <div class="edge-metric-icon w-9 h-9 rounded-xl bg-amber-600/[0.10] dark:bg-amber-500/15 border border-amber-600/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                    <i class="iconsax text-base" icon-name="bar-graph-1"></i>
+                </div>
             </div>
-            <p id="card-dim" class="font-mono text-xl font-semibold mt-2.5 text-neutral-900 dark:text-neutral-100 tabular-nums">—</p>
+            <p id="card-dim" class="font-mono text-xl font-bold mt-2.5 text-slate-900 dark:text-slate-100 tabular-nums">—</p>
         </div>
     </div>
 
     <!-- Edge Workflows -->
-    <div>
-        <h3 class="font-mono text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3">Workflows</h3>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <a href="/sync" class="bg-white dark:bg-[#13171d] rounded-lg border border-neutral-200 dark:border-[#232933] p-5 hover:border-blue-600 dark:hover:border-blue-500 transition-colors">
-                <div class="flex items-center gap-2.5 text-neutral-900 dark:text-neutral-100 font-semibold text-sm">
-                    <i class="iconsax text-lg text-blue-700 dark:text-blue-400" icon-name="cloud-add"></i>
-                    <span>1. HQ Synchronization</span>
+    <section class="edge-card bg-white dark:bg-[#131820] border border-slate-200 dark:border-[#222a36] rounded-2xl p-6">
+        <h3 class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">Edge Node Workflows</h3>
+        <div class="edge-stagger-grid grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <a href="/sync" class="edge-workflow-card group bg-slate-50/90 dark:bg-[#0e1218] hover:bg-white dark:hover:bg-[#161c26] rounded-xl border border-slate-200 dark:border-[#222a36] p-5">
+                <div class="flex items-center justify-between gap-2 text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 font-heading font-bold text-sm transition-colors">
+                    <span class="flex items-center gap-2.5">
+                        <i class="iconsax text-lg text-blue-600 dark:text-blue-400" icon-name="cloud-add"></i>
+                        <span>1. HQ Synchronization</span>
+                    </span>
+                    <i class="iconsax text-base text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" icon-name="arrow-right-3"></i>
                 </div>
-                <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed">Verify admin token, pull model weights from HQ API or upload a local .pt artifact, and submit DP deltas.</p>
+                <p class="text-xs text-slate-600 dark:text-slate-400 mt-2.5 leading-relaxed">Verify admin token, pull model weights from HQ API or upload a local .pt artifact, and submit DP deltas.</p>
             </a>
 
-            <a href="/training" class="bg-white dark:bg-[#13171d] rounded-lg border border-neutral-200 dark:border-[#232933] p-5 hover:border-blue-600 dark:hover:border-blue-500 transition-colors">
-                <div class="flex items-center gap-2.5 text-neutral-900 dark:text-neutral-100 font-semibold text-sm">
-                    <i class="iconsax text-lg text-amber-600 dark:text-amber-400" icon-name="lock-1"></i>
-                    <span>2. DP Local Training</span>
+            <a href="/training" class="edge-workflow-card group bg-slate-50/90 dark:bg-[#0e1218] hover:bg-white dark:hover:bg-[#161c26] rounded-xl border border-slate-200 dark:border-[#222a36] p-5">
+                <div class="flex items-center justify-between gap-2 text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 font-heading font-bold text-sm transition-colors">
+                    <span class="flex items-center gap-2.5">
+                        <i class="iconsax text-lg text-amber-600 dark:text-amber-400" icon-name="lock-1"></i>
+                        <span>2. DP Local Training</span>
+                    </span>
+                    <i class="iconsax text-base text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" icon-name="arrow-right-3"></i>
                 </div>
-                <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed">Run on-device fine-tuning against private CSV traffic logs under clipping norm and noise constraints.</p>
+                <p class="text-xs text-slate-600 dark:text-slate-400 mt-2.5 leading-relaxed">Run on-device fine-tuning against private CSV traffic logs under clipping norm and noise constraints.</p>
             </a>
 
-            <a href="/inference" class="bg-white dark:bg-[#13171d] rounded-lg border border-neutral-200 dark:border-[#232933] p-5 hover:border-blue-600 dark:hover:border-blue-500 transition-colors">
-                <div class="flex items-center gap-2.5 text-neutral-900 dark:text-neutral-100 font-semibold text-sm">
-                    <i class="iconsax text-lg text-emerald-600 dark:text-emerald-400" icon-name="search-normal-2"></i>
-                    <span>3. Traffic Inference &amp; XAI</span>
+            <a href="/inference" class="edge-workflow-card group bg-slate-50/90 dark:bg-[#0e1218] hover:bg-white dark:hover:bg-[#161c26] rounded-xl border border-slate-200 dark:border-[#222a36] p-5">
+                <div class="flex items-center justify-between gap-2 text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 font-heading font-bold text-sm transition-colors">
+                    <span class="flex items-center gap-2.5">
+                        <i class="iconsax text-lg text-emerald-600 dark:text-emerald-400" icon-name="search-normal-2"></i>
+                        <span>3. Traffic Inference &amp; XAI</span>
+                    </span>
+                    <i class="iconsax text-base text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" icon-name="arrow-right-3"></i>
                 </div>
-                <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed">Classify packet flows into Benign or Attack with per-flow feature attribution scores.</p>
+                <p class="text-xs text-slate-600 dark:text-slate-400 mt-2.5 leading-relaxed">Classify packet flows into Benign or Attack with per-flow feature attribution scores.</p>
             </a>
         </div>
-    </div>
+    </section>
 </div>
 
 <script>

@@ -203,15 +203,13 @@ def load_and_preprocess_dataset(dataset_path, target_column=None):
             X[:, i] = vals.astype(np.float32)
 
     # NaN/Inf safety
-    X = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
-
-    scaler = StandardScaler()
-    X = scaler.fit_transform(X).astype(np.float32)
+    X = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
 
     print(f"Dataset Dimensions : {X.shape[0]} samples, {X.shape[1]} features ({'canonical RT-IoT' if is_canonical else 'dynamic dataset schema'})")
     print(f"Target Column      : {target_col}")
     print(f"Classes Found      : {len(np.unique(y))} classes | distribution: {dict(zip(*np.unique(y, return_counts=True)))}")
 
+    # Split BEFORE fitting StandardScaler to prevent validation/test normalization leakage
     min_count = int(np.min(np.bincount(y))) if len(y) > 0 else 0
     strat = y if min_count >= 2 else None
     X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.3, random_state=42, stratify=strat)
@@ -219,6 +217,15 @@ def load_and_preprocess_dataset(dataset_path, target_column=None):
     min_temp_count = int(np.min(np.bincount(y_temp))) if len(y_temp) > 0 else 0
     strat_temp = y_temp if min_temp_count >= 2 else None
     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42, stratify=strat_temp)
+
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train).astype(np.float32)
+    X_val = scaler.transform(X_val).astype(np.float32) if len(X_val) > 0 else X_val
+    X_test = scaler.transform(X_test).astype(np.float32) if len(X_test) > 0 else X_test
+    load_and_preprocess_dataset.last_scaler = {
+        "mean": scaler.mean_.tolist(),
+        "scale": scaler.scale_.tolist(),
+    }
 
     print(f"Partitioning       : Train = {len(X_train)} | Validation = {len(X_val)} | Test = {len(X_test)}")
     return X_train, y_train, X_val, y_val, X_test, y_test, active_features
@@ -447,7 +454,7 @@ def main():
         info = exp["feature_importance"][feat_name]
         print(f"  {rank}. {feat_name:<20} | SHAP Value: {info['shap_value']:+.4f} | {info['impact']}")
 
-    change_rate = perturbation_test(models_dict[comparison["best_single_model"]], X_test, exp)
+    change_rate = perturbation_test(models_dict[comparison["best_single_model"]], X_test, exp, feature_names=feature_names)
     print(f"\nPerturbation Test Stability Rate: {change_rate:.4f} (Validates feature causality)")
 
     # ==========================================
@@ -465,7 +472,8 @@ def main():
     torch.save(global_model, global_model_path)
     print(f"✓ Global Ensemble Model saved to: {global_model_path}")
 
-    # Save edge deployment package
+    # Save edge deployment package (including scaler parameters for consistent edge inference)
+    last_scaler = getattr(load_and_preprocess_dataset, "last_scaler", None) or {}
     edge_package = {
         "model_name": "SecureFed-Global-Ensemble",
         "architecture": f"EnsembleTop2_{args.ensemble_method}",
@@ -473,6 +481,8 @@ def main():
         "input_dim": input_dim,
         "num_classes": num_classes,
         "feature_names": feature_names,
+        "scaler_mean": last_scaler.get("mean"),
+        "scaler_scale": last_scaler.get("scale"),
         "accuracy": comparison["ensemble_accuracy"],
         "model_state_dict": global_model.state_dict()
     }
@@ -480,13 +490,21 @@ def main():
     torch.save(edge_package, edge_path)
     print(f"✓ Edge Deployment Package saved to: {edge_path}")
 
-    # Publish to HQ Model Registry
+    # Publish to HQ Model Registry & cache server holdout test split for post-aggregation evaluation
     try:
         from server_hq.publish import publish_from_artifacts
+        from server_hq.registry import ModelRegistry
         published = publish_from_artifacts(
             weights=Path(global_model_path),
             package=Path(edge_path),
             notes=f"pipeline run | method={args.ensemble_method} | fl={best_fl_method} | acc={comparison['ensemble_accuracy']:.4f}",
+        )
+        ModelRegistry().save_eval_holdout(
+            X_test=X_test,
+            y_test=y_test,
+            input_dim=input_dim,
+            feature_names=feature_names,
+            dataset_name=Path(dataset_path).name,
         )
         print(f"✓ HQ published version v{published['version']} (latest) → hq_store/models/v{published['version']}/")
     except Exception as publish_err:

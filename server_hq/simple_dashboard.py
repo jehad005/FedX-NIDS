@@ -13,7 +13,6 @@ from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
-import cgi
 
 ROOT = Path(__file__).parent.parent
 PORT = 8001
@@ -79,15 +78,16 @@ class SimpleDashboardHandler(BaseHTTPRequestHandler):
         db_path = ROOT / 'data' / 'securefed_nids.db'
         if db_path.exists():
             conn = sqlite3.connect(str(db_path))
-            cursor = conn.cursor()
             try:
+                cursor = conn.cursor()
                 cursor.execute('SELECT job_id, dataset_name, status, progress, message FROM training_jobs ORDER BY created_at DESC LIMIT 10')
                 rows = cursor.fetchall()
                 jobs = [{'job_id': r[0], 'dataset_name': r[1], 'status': r[2], 'progress': r[3], 'message': r[4]} for r in rows]
                 return {'status': 'success', 'jobs': jobs}
-            except:
-                pass
-            conn.close()
+            except Exception:
+                return {'status': 'success', 'jobs': []}
+            finally:
+                conn.close()
         return {'status': 'success', 'jobs': []}
 
     def get_index(self):

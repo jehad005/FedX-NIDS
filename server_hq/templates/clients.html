@@ -6,7 +6,7 @@
     <title>Clients - SecureFed-NIDS HQ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/modern_hq.css?v=5">
+    <link rel="stylesheet" href="/static/css/modern_hq.css?v=7">
     <style>
         .client-dot {
             width: 8px;
@@ -19,7 +19,7 @@
         .status-disconnected { background: #dc2626; }
         .status-pending { background: #d97706; }
     </style>
-    <script src="/static/js/hq_theme.js?v=1"></script>
+    <script src="/static/js/hq_theme.js?v=2"></script>
 </head>
 <body>
     <div class="container-fluid">
@@ -28,13 +28,13 @@
             <div class="col-md-3 col-lg-2 sidebar">
                 <div class="brand-container">
                 <div class="d-flex align-items-center justify-content-between gap-2">
-                    <div class="brand-title">
+                    <a href="/" class="brand-title text-decoration-none" title="Go to HQ Dashboard">
                         <div class="brand-icon"><i class="iconsax" icon-name="shield-tick"></i></div>
                         <div>
                             <div>SecureFed</div>
                             <small style="font-size: 0.68rem; letter-spacing: 0.08em; color: var(--text-muted); font-family: var(--font-mono);">HQ · CONTROL PLANE</small>
                         </div>
-                    </div>
+                    </a>
                     <button type="button" class="theme-toggle-btn" onclick="toggleHqTheme()" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
                         <i id="hq-theme-icon" class="iconsax" icon-name="moon"></i>
                     </button>
@@ -149,6 +149,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function escHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[ch]));
+        }
+
         async function loadClients() {
             try {
                 const response = await fetch('/api/dashboard/clients');
@@ -178,16 +184,16 @@
                         html += `
                                             <tr>
                                                 <td>
-                                                    <strong>${c.client_id}</strong>
-                                                    <br><small class="text-muted">${c.client_name || 'N/A'}</small>
+                                                    <strong>${escHtml(c.client_id)}</strong>
+                                                    <br><small class="text-muted">${escHtml(c.client_name || 'N/A')}</small>
                                                 </td>
                                                 <td>
                                                     <span class="client-dot status-${statusClass}"></span>
                                                     ${statusText}
                                                 </td>
-                                                <td><span class="font-mono">${c.ip_address || 'N/A'}</span></td>
-                                                <td><span class="font-mono">${c.last_seen ? c.last_seen.slice(0, 19) : 'Never'}</span></td>
-                                                <td><span class="version-badge">${c.model_version || 'N/A'}</span></td>
+                                                <td><span class="font-mono">${escHtml(c.ip_address || 'N/A')}</span></td>
+                                                <td><span class="font-mono">${c.last_seen ? escHtml(c.last_seen.slice(0, 19)) : 'Never'}</span></td>
+                                                <td><span class="version-badge">${escHtml(c.model_version || 'N/A')}</span></td>
                                                 <td>${c.download_count || 0}</td>
                                                 <td>${c.upload_count || 0}</td>
                                             </tr>
@@ -208,8 +214,8 @@
                 console.error('Error loading clients:', error);
                 document.getElementById('clientsTable').innerHTML = `
                     <tr>
-                        <td colspan="8" class="text-center py-4 text-danger">
-                            Failed to load clients: ${error.message}
+                        <td colspan="7" class="text-center py-4 text-danger">
+                            Failed to load clients: ${escHtml(error.message)}
                         </td>
                     </tr>
                 `;

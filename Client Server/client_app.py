@@ -11,6 +11,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+from typing import Optional
 
 # Add parent project root to path so we can import model architectures, DP, preprocessing
 ROOT = Path(__file__).resolve().parent.parent
@@ -22,6 +23,7 @@ import zlib
 import pickle
 import json
 import threading
+from contextlib import contextmanager
 import numpy as np
 import pandas as pd
 import torch
@@ -58,6 +60,9 @@ CLIENT_STATE = {
     "model_loaded": False,
     "model_info": {},
     "last_sync": "Never",
+    "last_push": "Never",
+    "last_push_info": None,
+    "auto_push": True,
     "status": "Idle",
     "training_logs": [],
 }
@@ -95,6 +100,153 @@ def get_active_model():
 
 def clone_state_dict(model: nn.Module) -> dict:
     return {name: value.detach().cpu().clone() for name, value in model.state_dict().items()}
+
+
+_STATE_FILE = BASE_DIR / "local_models" / "client_state.json"
+
+
+@contextmanager
+def _temp_csv_file(raw_bytes: bytes, prefix: str = "securefed_"):
+    """Write uploaded CSV bytes to a temporary file, closing the FD and always deleting afterwards."""
+    fd, tmp_path = tempfile.mkstemp(prefix=prefix, suffix=".csv")
+    os.close(fd)
+    path = Path(tmp_path)
+    try:
+        path.write_bytes(raw_bytes)
+        yield path
+    finally:
+        path.unlink(missing_ok=True)
+
+
+def _save_persisted_state() -> None:
+    """Persist non-sensitive Edge sync/model metadata locally so state survives restarts."""
+    try:
+        _STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "client_id": CLIENT_STATE.get("client_id"),
+            "hq_url": CLIENT_STATE.get("hq_url"),
+            "current_model_version": CLIENT_STATE.get("current_model_version"),
+            "model_info": CLIENT_STATE.get("model_info") or {},
+            "feature_names": CLIENT_STATE.get("feature_names") or [],
+            "last_sync": CLIENT_STATE.get("last_sync"),
+            "last_push": CLIENT_STATE.get("last_push"),
+            "last_push_info": CLIENT_STATE.get("last_push_info"),
+            "auto_push": bool(CLIENT_STATE.get("auto_push", True)),
+            "status": CLIENT_STATE.get("status"),
+            "privacy": CLIENT_STATE.get("privacy"),
+            "training_logs": (CLIENT_STATE.get("training_logs") or [])[-20:],
+            "weights_path": LOCAL_MODEL_CONTAINER.get("weights_path"),
+            "update_path": LOCAL_MODEL_CONTAINER.get("update_path"),
+            "sample_count": int(LOCAL_MODEL_CONTAINER.get("sample_count", 0)),
+            "round": int(LOCAL_MODEL_CONTAINER.get("round", 0)),
+        }
+        _STATE_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _restore_persisted_state() -> None:
+    """Restore persisted Edge sync state and reload cached local model on startup."""
+    import re
+    saved = {}
+    if _STATE_FILE.exists():
+        try:
+            saved = json.loads(_STATE_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            saved = {}
+
+    if saved.get("client_id"):
+        CLIENT_STATE["client_id"] = saved["client_id"]
+    if saved.get("hq_url"):
+        CLIENT_STATE["hq_url"] = saved["hq_url"]
+    if "auto_push" in saved:
+        CLIENT_STATE["auto_push"] = bool(saved["auto_push"])
+    for key in ("last_sync", "last_push", "last_push_info", "privacy", "training_logs"):
+        if saved.get(key) is not None:
+            CLIENT_STATE[key] = saved[key]
+
+    weights_candidate = Path(saved["weights_path"]) if saved.get("weights_path") else None
+    if not weights_candidate or not weights_candidate.exists():
+        models_dir = BASE_DIR / "local_models"
+        if models_dir.exists():
+            pts = sorted(models_dir.glob("ensemble_v*.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
+            preferred = [p for p in pts if "-airgap" not in p.stem]
+            weights_candidate = (preferred or pts)[0] if (preferred or pts) else None
+
+    if not weights_candidate or not weights_candidate.exists():
+        return
+
+    try:
+        try:
+            loaded_raw = torch.load(weights_candidate, map_location="cpu", weights_only=False)
+        except TypeError:
+            loaded_raw = torch.load(weights_candidate, map_location="cpu")
+        if isinstance(loaded_raw, nn.Module):
+            loaded_model = loaded_raw
+        elif isinstance(loaded_raw, dict) and "model_state_dict" in loaded_raw:
+            loaded_model = _build_model_from_package_dict(loaded_raw)
+        else:
+            return
+
+        loaded_model.to("cpu")
+        for param in loaded_model.parameters():
+            param.requires_grad_(True)
+
+        inferred_dim = infer_model_input_dim(loaded_model)
+        ver_label = saved.get("current_model_version")
+        if not ver_label:
+            m = re.match(r"ensemble_v(.+)", weights_candidate.stem)
+            ver_label = m.group(1) if m else "local"
+
+        model_info = dict(saved.get("model_info") or {})
+        feature_names = model_info.get("feature_names") or saved.get("feature_names") or []
+        if len(feature_names) != inferred_dim:
+            ver_match = re.match(r"^(\d+\.\d+\.\d+)", str(ver_label))
+            if ver_match:
+                meta_path = ROOT / "hq_store" / "models" / f"v{ver_match.group(1)}" / "meta.json"
+                if meta_path.exists():
+                    try:
+                        meta_json = json.loads(meta_path.read_text(encoding="utf-8"))
+                        if len(meta_json.get("feature_names", [])) == inferred_dim:
+                            feature_names = meta_json["feature_names"]
+                            model_info.setdefault("model_name", meta_json.get("model_name"))
+                            model_info.setdefault("architecture", meta_json.get("architecture"))
+                            model_info.setdefault("scaler_mean", meta_json.get("scaler_mean"))
+                            model_info.setdefault("scaler_scale", meta_json.get("scaler_scale"))
+                    except Exception:
+                        pass
+        if len(feature_names) != inferred_dim and inferred_dim == 83:
+            try:
+                from config import DATASET_CONFIG
+                feature_names = DATASET_CONFIG.get("canonical_feature_names", [])
+            except Exception:
+                pass
+        if len(feature_names) != inferred_dim:
+            feature_names = [f"feature_{i}" for i in range(inferred_dim)]
+
+        model_info.setdefault("model_name", "SecureFed-Global-Ensemble")
+        model_info.setdefault("architecture", getattr(loaded_model, "method", "EnsembleTop2"))
+        model_info["input_dim"] = inferred_dim
+        model_info["num_classes"] = int(getattr(loaded_model, "num_classes", 2))
+        model_info["feature_names"] = feature_names
+
+        LOCAL_MODEL_CONTAINER["model"] = loaded_model
+        LOCAL_MODEL_CONTAINER["weights_path"] = str(weights_candidate)
+        LOCAL_MODEL_CONTAINER["base_state"] = clone_state_dict(loaded_model)
+        LOCAL_MODEL_CONTAINER["sample_count"] = int(saved.get("sample_count", 0))
+        LOCAL_MODEL_CONTAINER["round"] = max(1, int(saved.get("round", 1) or 1))
+        if saved.get("update_path") and Path(saved["update_path"]).exists():
+            LOCAL_MODEL_CONTAINER["update_path"] = saved["update_path"]
+
+        CLIENT_STATE["current_model_version"] = ver_label
+        CLIENT_STATE["model_loaded"] = True
+        CLIENT_STATE["model_info"] = model_info
+        CLIENT_STATE["feature_names"] = feature_names
+        if not saved.get("last_sync"):
+            CLIENT_STATE["last_sync"] = "Restored from local cache"
+        CLIENT_STATE["status"] = saved.get("status") or f"Restored v{ver_label} from local cache"
+    except Exception:
+        pass
 
 
 def infer_model_input_dim(model: nn.Module) -> int:
@@ -305,6 +457,11 @@ class UploadModelFileRequest(BaseModel):
     version_label: str = "manual"
 
 
+class AutoPushConfigRequest(BaseModel):
+    enabled: bool = True
+    admin_key: str = ""
+
+
 class TrainLocalRequest(BaseModel):
     file_b64: str
     epochs: int = 3
@@ -312,6 +469,7 @@ class TrainLocalRequest(BaseModel):
     learning_rate: float = 0.001
     clipping_norm: float = 1.0
     noise_multiplier: float = 1.1
+    auto_push: Optional[bool] = None
 
 
 class InferenceRequest(BaseModel):
@@ -350,7 +508,22 @@ def configure_client(payload: ConfigureRequest):
     clean_base, _ = _parse_hq_and_version(payload.hq_url, "latest")
     CLIENT_STATE["hq_url"] = clean_base or CLIENT_STATE["hq_url"]
     _register_client_heartbeat(CLIENT_STATE["hq_url"])
+    _save_persisted_state()
     return {"status": "success", "message": "Client configuration updated with Admin Authorization.", "state": CLIENT_STATE}
+
+
+@app.post("/api/client/auto-push")
+def set_auto_push(payload: AutoPushConfigRequest):
+    """Enable or disable automatic DP update push to HQ after local training."""
+    verify_admin_access(payload.admin_key)
+    CLIENT_STATE["auto_push"] = bool(payload.enabled)
+    _save_persisted_state()
+    mode_label = "enabled" if CLIENT_STATE["auto_push"] else "disabled"
+    return {
+        "status": "success",
+        "auto_push": CLIENT_STATE["auto_push"],
+        "message": f"Automatic DP update push to HQ is now {mode_label}.",
+    }
 
 
 def _edge_self_url() -> str:
@@ -361,9 +534,12 @@ def _edge_self_url() -> str:
 def _register_client_heartbeat(hq_url: str):
     """Inform HQ of this active Edge Client ID and reachable callback URL (never pulls models)."""
     try:
+        form_data = {"client_id": CLIENT_STATE["client_id"], "display_name": _edge_self_url()}
+        if CLIENT_STATE.get("current_model_version"):
+            form_data["model_version"] = str(CLIENT_STATE["current_model_version"])
         resp = requests.post(
             f"{hq_url}/api/v1/clients/register",
-            data={"client_id": CLIENT_STATE["client_id"], "display_name": _edge_self_url()},
+            data=form_data,
             timeout=5,
         )
         if resp.status_code == 200 and CLIENT_STATE.get("status") == "Idle":
@@ -380,7 +556,7 @@ def _sync_model_from_hq(raw_hq: str, requested_version: str, admin_key: str, sou
     CLIENT_STATE["hq_url"] = hq_url
 
     endpoint = f"{hq_url}/api/v1/model/download/{version}"
-    headers = {"X-Admin-Key": admin_key.strip()}
+    headers = {"X-Admin-Key": admin_key.strip(), "X-Client-ID": str(CLIENT_STATE["client_id"])}
     with _SYNC_LOCK:
         resp = requests.get(endpoint, headers=headers, timeout=30)
         if resp.status_code != 200:
@@ -423,7 +599,8 @@ def _sync_model_from_hq(raw_hq: str, requested_version: str, admin_key: str, sou
         LOCAL_MODEL_CONTAINER["weights_path"] = str(local_weights_path)
         LOCAL_MODEL_CONTAINER["base_state"] = clone_state_dict(loaded_model)
         LOCAL_MODEL_CONTAINER["sample_count"] = 0
-        LOCAL_MODEL_CONTAINER["round"] += 1
+        hq_open_round = data.get("open_round")
+        LOCAL_MODEL_CONTAINER["round"] = int(hq_open_round) if hq_open_round is not None else max(1, int(LOCAL_MODEL_CONTAINER.get("round", 0)) + 1)
 
         CLIENT_STATE["current_model_version"] = ver_label
         CLIENT_STATE["model_loaded"] = True
@@ -442,6 +619,7 @@ def _sync_model_from_hq(raw_hq: str, requested_version: str, admin_key: str, sou
         CLIENT_STATE["status"] = f"Synced v{ver_label} ({source_tag})"
         CLIENT_STATE["last_sync"] = data.get("created_at", "Just now")
         _register_client_heartbeat(hq_url)
+        _save_persisted_state()
         return {"status": "success", "message": f"Loaded global ensemble v{ver_label} from HQ ({source_tag}).", "version": ver_label}
 
 
@@ -551,7 +729,7 @@ async def upload_model_file(payload: UploadModelFileRequest):
         LOCAL_MODEL_CONTAINER["weights_path"] = str(local_weights_path)
         LOCAL_MODEL_CONTAINER["base_state"] = clone_state_dict(loaded_model)
         LOCAL_MODEL_CONTAINER["sample_count"] = 0
-        LOCAL_MODEL_CONTAINER["round"] += 1
+        LOCAL_MODEL_CONTAINER["round"] = max(1, int(LOCAL_MODEL_CONTAINER.get("round", 0)) + 1)
 
         # Match feature schema and optional scaler stats to inferred model input_dim
         import re
@@ -598,6 +776,7 @@ async def upload_model_file(payload: UploadModelFileRequest):
         CLIENT_STATE["feature_names"] = feature_names
         CLIENT_STATE["status"] = f"Manual admin model deployed (v{ver_label})"
         CLIENT_STATE["last_sync"] = "Just now (Admin Manual Push)"
+        _save_persisted_state()
 
         return {
             "status": "success",
@@ -627,17 +806,16 @@ async def train_local_model(payload: TrainLocalRequest):
 
     try:
         content = base64.b64decode(payload.file_b64)
-        tmp_csv = Path(tempfile.mkstemp(prefix="securefed_train_", suffix=".csv")[1])
-        tmp_csv.write_bytes(content)
 
-        # Raw CSV never leaves this client. Training requires a trustworthy
-        # binary label column; inference does not.
+        # Raw CSV never leaves or persists on this client. Training requires a
+        # trustworthy binary label column; inference does not.
         feature_names = CLIENT_STATE["model_info"].get("feature_names") or []
         if not feature_names:
             # The API currently returns model metadata but not feature names.
             # The client therefore refuses to invent/reorder model inputs.
             raise ValueError("HQ has not supplied the published feature schema. Expose model meta.json through the HQ API before client training.")
-        X_train, y_train, _, matched_features = canonicalize_csv(tmp_csv, feature_names, require_labels=True)
+        with _temp_csv_file(content, prefix="securefed_train_") as tmp_csv:
+            X_train, y_train, _, matched_features = canonicalize_csv(tmp_csv, feature_names, require_labels=True)
         if y_train is None or len(np.unique(y_train)) < 2:
             raise ValueError("Local training needs both benign and attack samples.")
 
@@ -692,21 +870,28 @@ async def train_local_model(payload: TrainLocalRequest):
         if base_state is None:
             raise ValueError("Missing base global model state; pull the global model again.")
         protected_delta = clip_and_noise_model_delta(model, base_state, clipping_norm, noise_multiplier)
+        training_steps = epochs * int(np.ceil(samples_count / batch_size))
         update_path = BASE_DIR / "local_models" / f"dp_update_{CLIENT_STATE['client_id']}.pt"
         update_path.parent.mkdir(parents=True, exist_ok=True)
         torch.save({
             "format": "securefed_dp_delta_v1",
             "base_version": CLIENT_STATE["current_model_version"],
             "client_id": CLIENT_STATE["client_id"],
+            "round": int(LOCAL_MODEL_CONTAINER.get("round", 1)),
             "samples": samples_count,
+            "local_steps": int(training_steps),
+            "epochs": int(epochs),
+            "batch_size": int(batch_size),
+            "learning_rate": float(learning_rate),
             "clipping_norm": float(clipping_norm),
             "noise_multiplier": float(noise_multiplier),
+            "clipped": True,
+            "noised": True,
             "delta_state_dict": protected_delta,
         }, update_path)
         LOCAL_MODEL_CONTAINER["update_path"] = str(update_path)
         LOCAL_MODEL_CONTAINER["sample_count"] = samples_count
 
-        training_steps = epochs * int(np.ceil(samples_count / batch_size))
         epsilon_spent = dp_sgd.compute_privacy_spent(batch_size / samples_count, training_steps)
         CLIENT_STATE["training_logs"] = history_log
         CLIENT_STATE["privacy"] = {
@@ -715,25 +900,75 @@ async def train_local_model(payload: TrainLocalRequest):
             "clipping_norm": float(clipping_norm),
             "noise_multiplier": float(noise_multiplier),
         }
-        CLIENT_STATE["status"] = "DP local training finished; protected update ready for HQ."
+        should_auto_push = bool(CLIENT_STATE.get("auto_push", True)) if payload.auto_push is None else bool(payload.auto_push)
+        if should_auto_push:
+            try:
+                push_res = _transmit_dp_update_to_hq(is_auto=True)
+                hq_resp = push_res.get("hq_response") or {}
+                update_id = hq_resp.get("update_id")
+                auto_push_result = {
+                    "enabled": True,
+                    "pushed": True,
+                    "status": "success",
+                    "message": push_res["message"],
+                    "hq_response": hq_resp,
+                }
+                result_message = (
+                    f"Local training finished and DP delta automatically pushed to HQ"
+                    + (f" (Update #{update_id})." if update_id is not None else ".")
+                )
+            except HTTPException as push_err:
+                auto_push_result = {
+                    "enabled": True,
+                    "pushed": False,
+                    "status": "failed",
+                    "detail": push_err.detail,
+                }
+                CLIENT_STATE["status"] = "DP local training finished; auto-push to HQ failed (retry available)."
+                result_message = (
+                    "Local training finished and DP delta saved locally, but automatic push to HQ failed. "
+                    "You can retry manually from HQ Synchronization."
+                )
+            except Exception as push_err:
+                auto_push_result = {
+                    "enabled": True,
+                    "pushed": False,
+                    "status": "failed",
+                    "detail": str(push_err),
+                }
+                CLIENT_STATE["status"] = "DP local training finished; auto-push to HQ failed (retry available)."
+                result_message = (
+                    "Local training finished and DP delta saved locally, but automatic push to HQ failed. "
+                    "You can retry manually from HQ Synchronization."
+                )
+        else:
+            CLIENT_STATE["status"] = "DP local training finished; protected update ready for HQ."
+            auto_push_result = {
+                "enabled": False,
+                "pushed": False,
+                "status": "skipped",
+                "message": "Auto-push is disabled; push manually from HQ Synchronization when ready.",
+            }
+            result_message = "Local training finished. Only a clipped/noised parameter delta is ready to send; raw CSV stays on this client."
+
+        _save_persisted_state()
         return {
             "status": "success",
-            "message": "Local training finished. Only a clipped/noised parameter delta is ready to send; raw CSV stays on this client.",
+            "message": result_message,
             "samples": samples_count,
             "matched_features": matched_features,
             "epochs": epochs,
             "history": history_log,
             "epsilon_read_only": round(epsilon_spent, 4),
             "delta_read_only": 1e-5,
+            "auto_push": auto_push_result,
         }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@app.post("/api/client/push-update")
-def push_update_to_hq(payload: AdminActionRequest):
-    """Send DP-noised weight updates back to HQ. Requires Admin Key."""
-    verify_admin_access(payload.admin_key)
+def _transmit_dp_update_to_hq(is_auto: bool = False) -> dict:
+    """Register with HQ and upload the current protected DP parameter delta."""
     model = get_active_model()
     if model is None:
         raise HTTPException(status_code=400, detail="No model active on client.")
@@ -750,7 +985,14 @@ def push_update_to_hq(payload: AdminActionRequest):
         # legacy pickles, but torch's .pt container is not a pickle payload.
         raw_bytes = update_path.read_bytes()
         try:
-            requests.post(f"{hq_url}/api/v1/clients/register", data={"client_id": CLIENT_STATE["client_id"]}, timeout=5).raise_for_status()
+            reg_data = {"client_id": CLIENT_STATE["client_id"], "display_name": _edge_self_url()}
+            if CLIENT_STATE.get("current_model_version"):
+                reg_data["model_version"] = str(CLIENT_STATE["current_model_version"])
+            requests.post(
+                f"{hq_url}/api/v1/clients/register",
+                data=reg_data,
+                timeout=5,
+            ).raise_for_status()
         except requests.RequestException as exc:
             raise HTTPException(status_code=503, detail=f"Could not register with HQ: {exc}") from exc
 
@@ -766,16 +1008,43 @@ def push_update_to_hq(payload: AdminActionRequest):
         if resp.status_code != 200:
             raise HTTPException(status_code=resp.status_code, detail=f"HQ update failed: {resp.text}")
 
-        CLIENT_STATE["status"] = "Protected parameter delta queued at HQ."
+        hq_json = resp.json()
+        update_id = hq_json.get("update_id")
+        CLIENT_STATE["last_push"] = hq_json.get("received_at") or "Just now"
+        CLIENT_STATE["last_push_info"] = {
+            "update_id": update_id,
+            "base_version": hq_json.get("base_version"),
+            "round": hq_json.get("round"),
+            "samples": hq_json.get("samples"),
+            "mode": "automatic" if is_auto else "manual",
+        }
+        mode_tag = "auto-pushed" if is_auto else "queued"
+        CLIENT_STATE["status"] = (
+            f"Protected parameter delta {mode_tag} at HQ (update #{update_id})."
+            if update_id is not None
+            else f"Protected parameter delta {mode_tag} at HQ."
+        )
+        _save_persisted_state()
         return {
             "status": "success",
-            "message": "Clipped/noised parameter delta transmitted to HQ; no raw traffic or full local model was sent. HQ aggregation remains an HQ-side operation.",
-            "hq_response": resp.json(),
+            "message": (
+                "Clipped/noised parameter delta automatically transmitted to HQ; no raw traffic or full local model was sent."
+                if is_auto
+                else "Clipped/noised parameter delta transmitted to HQ; no raw traffic or full local model was sent. HQ aggregation remains an HQ-side operation."
+            ),
+            "hq_response": hq_json,
         }
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/api/client/push-update")
+def push_update_to_hq(payload: AdminActionRequest):
+    """Send DP-noised weight updates back to HQ manually (fallback/retry). Requires Admin Key."""
+    verify_admin_access(payload.admin_key)
+    return _transmit_dp_update_to_hq(is_auto=False)
 
 
 @app.post("/api/client/inference")
@@ -787,13 +1056,11 @@ async def run_client_inference(payload: InferenceRequest):
 
     try:
         content = base64.b64decode(payload.file_b64)
-        tmp_csv = Path(tempfile.mkstemp(prefix="securefed_inference_", suffix=".csv")[1])
-        tmp_csv.write_bytes(content)
-
         feature_names = CLIENT_STATE["model_info"].get("feature_names") or []
         if not feature_names:
             raise ValueError("HQ has not supplied the published feature schema. Expose model meta.json through the HQ API before client inference.")
-        X, _, df, _ = canonicalize_csv(tmp_csv, feature_names, require_labels=False)
+        with _temp_csv_file(content, prefix="securefed_inference_") as tmp_csv:
+            X, _, df, _ = canonicalize_csv(tmp_csv, feature_names, require_labels=False)
 
         model.eval()
         tensor_x = torch.FloatTensor(X)
@@ -863,6 +1130,7 @@ def _heartbeat_worker():
 @app.on_event("startup")
 def _start_heartbeat_daemon():
     CLIENT_STATE["edge_port"] = int(os.getenv("EDGE_PORT", CLIENT_STATE.get("edge_port", 5000)))
+    _restore_persisted_state()
     if os.getenv("DISABLE_AUTO_SYNC_THREAD") == "1":
         return
     _STOP_HEARTBEAT_EVENT.clear()

@@ -202,7 +202,7 @@ ENSEMBLE_CONFIG = {
     "top_k": 2,
     "selection_metric": "accuracy",
     "ensemble_method": "voting",
-    "voting_type": "hard",
+    "voting_type": "soft",
 }
 
 FL_CONFIG = {
@@ -210,6 +210,7 @@ FL_CONFIG = {
     "rounds": 20,
     "local_epochs": 5,
     "aggregation": "fedavg",
+    "supported_methods": ["fedavg", "fedprox", "scaffold", "fednova", "moon"],
     "fedprox_mu": 0.01,
     "moon_temperature": 0.5,
     "moon_mu": 0.01,
@@ -222,6 +223,9 @@ DP_CONFIG = {
     "clipping_norm": 1.0,
     "noise_multiplier": 1.1,
     "max_grad_norm": 1.0,
+    "min_clipping_norm": 0.1,
+    "max_clipping_norm": 10.0,
+    "min_noise_multiplier": 0.5,
     "privacy_levels": {
         "low": {"epsilon": 2.0, "noise_multiplier": 0.5},
         "medium": {"epsilon": 1.0, "noise_multiplier": 1.0},

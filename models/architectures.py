@@ -75,12 +75,9 @@ class MLP(BaseModel):
         return self.network(x)
 
     def get_features(self, x: torch.Tensor) -> torch.Tensor:
-        # Return representation from second-to-last layer
-        with torch.no_grad():
-            for i, layer in enumerate(self.network):
-                if isinstance(layer, nn.Linear) and i == len(self.network) - 3:
-                    x = layer(x)
-                    break
+        # Return penultimate representation before the final classification layer
+        for layer in list(self.network)[:-1]:
+            x = layer(x)
         return x
 
 

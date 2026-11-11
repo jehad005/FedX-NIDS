@@ -6,8 +6,8 @@
     <title>Updates - SecureFed-NIDS HQ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/modern_hq.css?v=5">
-    <script src="/static/js/hq_theme.js?v=1"></script>
+    <link rel="stylesheet" href="/static/css/modern_hq.css?v=7">
+    <script src="/static/js/hq_theme.js?v=2"></script>
 </head>
 <body>
     <div class="container-fluid">
@@ -16,13 +16,13 @@
             <div class="col-md-3 col-lg-2 sidebar">
                 <div class="brand-container">
                 <div class="d-flex align-items-center justify-content-between gap-2">
-                    <div class="brand-title">
+                    <a href="/" class="brand-title text-decoration-none" title="Go to HQ Dashboard">
                         <div class="brand-icon"><i class="iconsax" icon-name="shield-tick"></i></div>
                         <div>
                             <div>SecureFed</div>
                             <small style="font-size: 0.68rem; letter-spacing: 0.08em; color: var(--text-muted); font-family: var(--font-mono);">HQ · CONTROL PLANE</small>
                         </div>
-                    </div>
+                    </a>
                     <button type="button" class="theme-toggle-btn" onclick="toggleHqTheme()" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
                         <i id="hq-theme-icon" class="iconsax" icon-name="moon"></i>
                     </button>
@@ -62,13 +62,18 @@
             <!-- Main Content -->
             <div class="col-md-9 col-lg-10 main-content">
                 <!-- Header -->
-                <div class="page-header">
-                    <h1><i class="iconsax me-2" icon-name="cloud-notif"></i>Model Updates</h1>
-                    <p class="text-muted mb-0">Monitor federated learning updates queue</p>
+                <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h1><i class="iconsax me-2" icon-name="cloud-notif"></i>Model Updates &amp; Federated Aggregation</h1>
+                        <p class="text-muted mb-0">Aggregate pending client updates into a Global Model, push to Client Edge, and archive merged updates separately</p>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm" onclick="refreshUpdates()">
+                        <i class="iconsax me-1" icon-name="refresh"></i> Refresh Queue
+                    </button>
                 </div>
 
                 <!-- Stats Cards -->
-                <div class="row mb-4">
+                <div class="row g-3 mb-4">
                     <div class="col-md-3">
                         <div class="stat-card">
                             <div class="stat-value" id="totalUpdates">{{ total_updates }}</div>
@@ -77,112 +82,187 @@
                     </div>
                     <div class="col-md-3">
                         <div class="stat-card">
-                            <div class="stat-value" id="processedUpdates">{{ processed_updates }}</div>
-                            <div class="stat-label">Processed</div>
+                            <div class="stat-value text-success" id="processedUpdates">{{ processed_updates }}</div>
+                            <div class="stat-label">Aggregated &amp; Archived</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="stat-card">
-                            <div class="stat-value" id="pendingUpdates">{{ pending_updates }}</div>
-                            <div class="stat-label">Pending</div>
+                            <div class="stat-value text-warning" id="pendingUpdates">{{ pending_updates }}</div>
+                            <div class="stat-label">Pending Queue</div>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="stat-card">
-                            <div class="stat-value" id="failedUpdates">{{ failed_updates }}</div>
+                            <div class="stat-value text-danger" id="failedUpdates">{{ failed_updates }}</div>
                             <div class="stat-label">Failed</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Federated Aggregation Control Card -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <span><i class="iconsax me-2 text-primary" icon-name="flow-chart-1"></i>Federated Aggregator</span>
-                                <span class="badge bg-primary font-mono">Byzantine-Resilient</span>
+                <!-- Federated Aggregation & Push Control Card -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span><i class="iconsax me-2 text-primary" icon-name="flow-chart-1"></i>Federated Aggregator &amp; Global Model Push</span>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="badge bg-info font-mono" id="aggRoundPill">Round #{{ open_round or 1 }} &middot; Base v{{ latest_version or '—' }}</span>
+                            <span class="badge bg-primary font-mono">DP-Verified · 5 FL Methods</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Aggregation Method</label>
+                                <select id="aggMethod" class="form-select">
+                                    <option value="fedavg" selected>FedAvg (Sample-Weighted Average)</option>
+                                    <option value="fedprox">FedProx (Client Proximal Term + Avg)</option>
+                                    <option value="scaffold">SCAFFOLD (Control Variates Drift Fix)</option>
+                                    <option value="fednova">FedNova (Normalized Local Steps)</option>
+                                    <option value="moon">MOON (Contrastive Local Loss + Avg)</option>
+                                    <option value="trimmed_mean">Trimmed Mean (Byzantine Defense)</option>
+                                    <option value="median">Coordinate Median (Adversarial Robust)</option>
+                                    <option value="krum">Krum (Geometric Distance Defense)</option>
+                                </select>
                             </div>
-                            <div class="card-body">
-                                <div class="row g-3 align-items-end">
-                                    <div class="col-md-3">
-                                        <label class="form-label fw-semibold">Aggregation Method</label>
-                                        <select id="aggMethod" class="form-select">
-                                            <option value="fedavg" selected>FedAvg (Weighted Average)</option>
-                                            <option value="trimmed_mean">Trimmed Mean (Byzantine Defense)</option>
-                                            <option value="median">Coordinate Median (Adversarial Robust)</option>
-                                            <option value="krum">Krum (Geometric Distance Defense)</option>
-                                        </select>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Base Version</label>
+                                <select id="aggBaseVersion" class="form-select font-mono" title="Global model version to apply pending Round deltas onto">
+                                    <option value="latest" selected>Latest (v{{ latest_version or '—' }} &middot; Round #{{ open_round or 1 }})</option>
+                                    {% if latest_version %}
+                                    <option value="{{ latest_version }}">v{{ latest_version }} (Current Global)</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-semibold">Round Notes</label>
+                                <input type="text" id="aggNotes" class="form-control" placeholder="e.g. Round notes">
+                            </div>
+                            <div class="col-md-4 d-flex gap-2">
+                                <button id="btnCompare" type="button" class="btn btn-outline-primary flex-fill" onclick="compareMethods()" title="Preview FedAvg, FedProx, SCAFFOLD, FedNova, MOON on pending deltas">
+                                    <i class="iconsax me-1" icon-name="chart-21"></i> Compare 5
+                                </button>
+                                <button id="btnAggregate" class="btn btn-success flex-fill fw-bold" onclick="runFederatedAggregation()">
+                                    <i class="iconsax me-1" icon-name="play"></i> Aggregate Now
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-text mt-2 small">
+                            <i class="iconsax me-1 text-primary" icon-name="info-circle"></i>
+                            <strong>Cumulative FL:</strong> Prior rounds are already embedded in <code id="aggCumulativeVer">v{{ latest_version or '—' }}</code>; aggregating merges only new pending DP deltas for the open round (no double-counting).
+                        </div>
+
+                        <div id="aggAlert" class="alert d-none mt-3 mb-0" role="alert"></div>
+                        <div id="compareResultBox" class="d-none mt-3 p-3 rounded-3 border" style="background: var(--inset-bg); border-color: var(--border-subtle) !important;"></div>
+
+                        <!-- Push Aggregated Global Model to Client Edge Panel -->
+                        <div id="aggPushPanel" class="mt-3 p-3 rounded-3 border {% if not latest_version %}d-none{% endif %}" style="background: var(--inset-bg); border-color: var(--border-strong) !important;">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <span class="badge bg-success font-mono" id="aggGlobalTag">Global Model Ready</span>
+                                        <strong class="font-mono" id="aggGlobalVersionLabel">
+                                            {% if latest_version %}v{{ latest_version }}{% else %}—{% endif %}
+                                        </strong>
                                     </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label fw-semibold">Base Model Version</label>
-                                        <input type="text" id="aggBaseVersion" class="form-control" value="latest" placeholder="e.g. latest or 1.0.4">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label fw-semibold">Round Notes</label>
-                                        <input type="text" id="aggNotes" class="form-control" placeholder="e.g. Federated Round 1 aggregation">
-                                    </div>
-                                    <div class="col-md-2">
-                                        <button id="btnAggregate" class="btn btn-success w-100 fw-bold" onclick="runFederatedAggregation()">
-                                            <i class="iconsax me-1" icon-name="play"></i> Aggregate Now
-                                        </button>
+                                    <div class="small text-muted mt-1" id="aggGlobalMeta">
+                                        Deploy the current Global Model directly to registered Client Edge node(s).
                                     </div>
                                 </div>
-                                <div id="aggAlert" class="alert d-none mt-3 mb-0" role="alert"></div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <input type="text" id="updatesEdgePushUrl" class="form-control form-control-sm font-mono" style="width: 230px;" placeholder="Auto (registered or :5000)">
+                                    <button id="btnPushAggregated" type="button" class="btn btn-primary" onclick="pushAggregatedToEdge(this)">
+                                        <i class="iconsax me-1" icon-name="export-3"></i> Push to Client Edge
+                                    </button>
+                                </div>
                             </div>
+                            <div id="aggPushAlert" class="alert d-none mt-3 mb-0 py-2 small" role="alert"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Updates Table -->
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card h-100">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <span><i class="iconsax me-2" icon-name="document-code-1"></i>Recent Updates</span>
-                                <span class="badge bg-warning">{{ pending_updates }} pending</span>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                                    <table class="table data-table mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Update ID</th>
-                                                <th>Client</th>
-                                                <th>Base Ver</th>
-                                                <th>Status</th>
-                                                <th>Round</th>
-                                                <th>Created</th>
-                                                <th>Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="updatesTable">
-                                            <tr>
-                                                <td colspan="7" class="text-center py-4 text-muted">
-                                                    Loading updates...
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                <!-- Pending Updates Queue Table -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="iconsax text-warning" icon-name="clock"></i>
+                            <span>Pending Client Updates (Ready to Aggregate)</span>
+                            <code class="small px-2 py-0.5 rounded" style="background: var(--inset-bg); border: 1px solid var(--border-subtle);">hq_store/updates/</code>
+                        </div>
+                        <span class="badge bg-warning" id="pendingQueueBadge">{{ pending_updates }} pending</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                            <table class="table data-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Update ID</th>
+                                        <th>Client</th>
+                                        <th>Base Ver</th>
+                                        <th>Samples</th>
+                                        <th>Status</th>
+                                        <th>Round</th>
+                                        <th>Received</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pendingUpdatesTable">
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4 text-muted">
+                                            Loading pending updates...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Separate Aggregated Updates Archive Table (Niche Alada List + Folder) -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <i class="iconsax text-success" icon-name="folder-2"></i>
+                            <span>Aggregated Client Updates (Merged Archive)</span>
+                            <code class="small px-2 py-0.5 rounded" id="archiveFolderLabel" style="background: var(--inset-bg); border: 1px solid var(--border-subtle);">hq_store/aggregated_updates/</code>
+                        </div>
+                        <span class="badge bg-success" id="aggregatedArchiveBadge">{{ processed_updates }} archived</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 360px; overflow-y: auto;">
+                            <table class="table data-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Update ID</th>
+                                        <th>Client</th>
+                                        <th>Base &rarr; Global Ver</th>
+                                        <th>Method</th>
+                                        <th>Samples</th>
+                                        <th>Archived Folder / File</th>
+                                        <th>Aggregated At</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="aggregatedUpdatesTable">
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4 text-muted">
+                                            Loading aggregated archive...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
 
                 <!-- Client Update History -->
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <i class="iconsax me-2" icon-name="document-code-1"></i> Update Activity Log
-                            </div>
-                            <div class="card-body">
-                                <div id="activityLog" class="log-box">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="iconsax me-2" icon-name="document-code-1"></i> Update Activity Log
+                    </div>
+                    <div class="card-body">
+                        <div id="activityLog" class="log-box">
 [Timestamp] System initialized<br>
-[Timestamp] Loading update queue...<br>
-                                </div>
-                            </div>
+[Timestamp] Loading pending queue and aggregated updates archive...<br>
                         </div>
                     </div>
                 </div>
@@ -192,87 +272,262 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        let currentGlobalVersion = {{ (latest_version or '') | tojson }};
+        let cachedUpdates = [];
+
+        function escHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[ch]));
+        }
+
+        function shortArchivePath(fullPath) {
+            if (!fullPath) return '—';
+            const normalized = String(fullPath).replace(/\\/g, '/');
+            const idx = normalized.indexOf('hq_store/');
+            return idx >= 0 ? normalized.slice(idx) : normalized.split('/').slice(-3).join('/');
+        }
+
         function log(message) {
             const logBox = document.getElementById('activityLog');
             const time = new Date().toLocaleTimeString();
-            logBox.innerHTML += `[${time}] ${message}<br>`;
+            const line = document.createElement('div');
+            line.textContent = `[${time}] ${message}`;
+            logBox.appendChild(line);
             logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function showGlobalPushReady(version, metaText, highlightNew = false) {
+            if (!version) return;
+            currentGlobalVersion = String(version).replace(/^v/i, '');
+            const panel = document.getElementById('aggPushPanel');
+            const verLabel = document.getElementById('aggGlobalVersionLabel');
+            const tag = document.getElementById('aggGlobalTag');
+            const meta = document.getElementById('aggGlobalMeta');
+            panel.classList.remove('d-none');
+            verLabel.textContent = `v${currentGlobalVersion}`;
+            tag.textContent = highlightNew ? 'New Global Model Created' : 'Global Model Ready';
+            if (metaText) meta.textContent = metaText;
+        }
+
+        function refreshBaseVersionSelect(latestVer, openRound, versionsList) {
+            const sel = document.getElementById('aggBaseVersion');
+            if (!sel) return;
+            const prevVal = sel.value || 'latest';
+            const verLabel = latestVer ? `v${latestVer}` : 'none';
+            const roundLabel = `Round #${openRound || 1}`;
+            let opts = `<option value="latest">Latest (${escHtml(verLabel)} \u00b7 ${roundLabel})</option>`;
+            if (Array.isArray(versionsList) && versionsList.length > 0) {
+                versionsList.forEach(v => {
+                    const ver = String(v.version || '');
+                    if (!ver) return;
+                    const isLatest = latestVer && ver === latestVer;
+                    if (isLatest) {
+                        opts += `<option value="${escHtml(ver)}">v${escHtml(ver)} (Current Global \u00b7 Active)</option>`;
+                    } else {
+                        opts += `<option value="${escHtml(ver)}" disabled>v${escHtml(ver)} (Prior \u00b7 Strict locked)</option>`;
+                    }
+                });
+            } else if (latestVer) {
+                opts += `<option value="${escHtml(latestVer)}">v${escHtml(latestVer)} (Current Global \u00b7 Active)</option>`;
+            }
+            sel.innerHTML = opts;
+            sel.value = (prevVal === 'latest' || prevVal === latestVer) ? prevVal : 'latest';
+            const cumEl = document.getElementById('aggCumulativeVer');
+            if (cumEl) cumEl.textContent = verLabel;
         }
 
         async function loadUpdates() {
             try {
-                const response = await fetch('/api/v1/updates');
+                const [response, verResp] = await Promise.all([
+                    fetch('/api/v1/updates'),
+                    fetch('/api/dashboard/versions').catch(() => null),
+                ]);
                 const data = await response.json();
+                const verData = verResp && verResp.ok ? await verResp.json().catch(() => null) : null;
 
                 if (data.status === 'success') {
+                    refreshBaseVersionSelect(
+                        data.latest_version,
+                        data.open_round,
+                        verData && verData.status === 'success' ? verData.versions : []
+                    );
                     const updates = data.updates || [];
-                    const tbody = document.getElementById('updatesTable');
+                    cachedUpdates = updates;
+
+                    const pendingList = updates.filter(u => u.status === 'received' || u.status === 'pending');
+                    const aggregatedList = updates.filter(u => u.status === 'aggregated' || u.status === 'processed');
+                    const failedList = updates.filter(u => u.status === 'failed');
 
                     document.getElementById('totalUpdates').textContent = updates.length;
+                    document.getElementById('processedUpdates').textContent = aggregatedList.length;
+                    document.getElementById('pendingUpdates').textContent = pendingList.length;
+                    document.getElementById('failedUpdates').textContent = failedList.length;
+                    document.getElementById('pendingQueueBadge').textContent = `${pendingList.length} pending`;
+                    document.getElementById('aggregatedArchiveBadge').textContent = `${aggregatedList.length} archived`;
 
-                    if (updates.length === 0) {
-                        tbody.innerHTML = `
-                                            <tr>
-                                                <td colspan="7" class="text-center py-4 text-muted">
-                                                    No updates received yet. Client updates appear here after they upload weights.
-                                                </td>
-                                            </tr>
-                                        `;
-                        return;
+                    if (data.aggregated_folder) {
+                        document.getElementById('archiveFolderLabel').textContent = shortArchivePath(data.aggregated_folder);
+                    }
+                    const roundPill = document.getElementById('aggRoundPill');
+                    if (roundPill) {
+                        roundPill.textContent = `Round #${data.open_round || 1} \u00b7 Base v${data.latest_version || '—'}`;
+                    }
+                    if (data.latest_version) {
+                        if (!currentGlobalVersion) {
+                            showGlobalPushReady(data.latest_version, 'Deploy the latest published Global Model to Client Edge.', false);
+                        }
                     }
 
-                    let html = '';
-                    updates.forEach(u => {
-                        const statusClass = u.status === 'processed' ? 'success' :
-                                          u.status === 'received' ? 'warning' :
-                                          u.status === 'pending' ? 'warning' : 'danger';
-                        html += `
-                                            <tr>
-                                                <td>#${u.id}</td>
-                                                <td>${u.client_id}</td>
-                                                <td>${u.base_version}</td>
-                                                <td>
-                                                    <span class="badge bg-${statusClass}">${u.status}</span>
-                                                </td>
-                                                <td>${u.round ?? '-'}</td>
-                                                <td>${u.received_at ? u.received_at.slice(0, 19) : 'N/A'}</td>
-                                                <td>
-                                                    <button class="btn btn-outline-primary btn-action" onclick="viewUpdate(${u.id})">
-                                                        <i class="iconsax" icon-name="eye"></i> Details
-                                                    </button>
-                                                </td>
-                                            </tr>
-                        `;
-                    });
+                    const pendingTbody = document.getElementById('pendingUpdatesTable');
+                    if (pendingList.length === 0) {
+                        pendingTbody.innerHTML = `
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    No pending client updates waiting. When Client Edge finishes DP training, auto-pushed updates appear here.
+                                </td>
+                            </tr>`;
+                    } else {
+                        pendingTbody.innerHTML = pendingList.map(u => `
+                            <tr>
+                                <td class="font-mono">#${u.id}</td>
+                                <td class="fw-semibold">${escHtml(u.client_id)}</td>
+                                <td><span class="version-badge">v${escHtml(u.base_version)}</span></td>
+                                <td class="font-mono">${u.samples ?? 0}</td>
+                                <td><span class="badge bg-warning">${escHtml(u.status)}</span></td>
+                                <td class="font-mono">${u.round ?? '-'}</td>
+                                <td class="font-mono small">${u.received_at ? escHtml(u.received_at.slice(0, 19)) : 'N/A'}</td>
+                                <td>
+                                    <button class="btn btn-outline-primary btn-action" onclick="viewUpdate(${u.id})">
+                                        <i class="iconsax" icon-name="eye"></i> Details
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
 
-                    tbody.innerHTML = html;
+                    const aggTbody = document.getElementById('aggregatedUpdatesTable');
+                    if (aggregatedList.length === 0) {
+                        aggTbody.innerHTML = `
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    No aggregated updates yet. Click "Aggregate Now" above to merge pending updates and move them into the archive folder.
+                                </td>
+                            </tr>`;
+                    } else {
+                        aggTbody.innerHTML = aggregatedList.map(u => {
+                            const targetVer = u.aggregated_version ? `v${escHtml(u.aggregated_version)}` : 'Global';
+                            const methodText = u.aggregation_method ? escHtml(String(u.aggregation_method).toUpperCase()) : 'AGGREGATED';
+                            const folderFile = shortArchivePath(u.archive_path || u.weights_path);
+                            const aggTime = (u.aggregated_at || u.received_at || 'N/A').slice(0, 19);
+                            return `
+                                <tr>
+                                    <td class="font-mono">#${u.id}</td>
+                                    <td class="fw-semibold">${escHtml(u.client_id)}</td>
+                                    <td>
+                                        <span class="version-badge">v${escHtml(u.base_version)}</span>
+                                        <span class="text-muted mx-1">&rarr;</span>
+                                        <span class="badge bg-success font-mono">${targetVer}</span>
+                                    </td>
+                                    <td><span class="badge bg-primary font-mono">${methodText}</span></td>
+                                    <td class="font-mono">${u.samples ?? 0}</td>
+                                    <td><code class="small">${escHtml(folderFile)}</code></td>
+                                    <td class="font-mono small">${escHtml(aggTime)}</td>
+                                    <td>
+                                        <button class="btn btn-outline-primary btn-action" onclick="viewUpdate(${u.id})">
+                                            <i class="iconsax" icon-name="eye"></i> Details
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('');
+                    }
                 }
             } catch (error) {
                 console.error('Error loading updates:', error);
-                document.getElementById('updatesTable').innerHTML = `
-                    <tr>
-                        <td colspan="7" class="text-center py-4 text-danger">
-                            Failed to load updates: ${error.message}
-                        </td>
-                    </tr>
-                `;
+                document.getElementById('pendingUpdatesTable').innerHTML = `
+                    <tr><td colspan="8" class="text-center py-4 text-danger">Failed to load updates: ${escHtml(error.message)}</td></tr>`;
             }
         }
 
         function viewUpdate(updateId) {
-            fetch(`/api/v1/updates`)
-                .then(r => r.json())
-                .then(data => {
-                    const u = (data.updates || []).find(x => x.id === updateId);
-                    if (!u) return;
-                    log(`Update #${u.id} — client ${u.client_id}, base v${u.base_version}, round ${u.round}, samples ${u.samples}, status ${u.status}, received ${u.received_at}`);
-                })
-                .catch(() => log(`Could not fetch details for update #${updateId}`));
+            const u = cachedUpdates.find(x => x.id === updateId);
+            if (!u) {
+                log(`Update #${updateId} details not found in current cache.`);
+                return;
+            }
+            const fileLoc = shortArchivePath(u.archive_path || u.weights_path || 'N/A');
+            const verInfo = u.aggregated_version ? ` -> Global v${u.aggregated_version}` : '';
+            log(`Update #${u.id} — client=${u.client_id}, base=v${u.base_version}${verInfo}, samples=${u.samples}, status=${u.status}, file=${fileLoc}`);
+        }
+
+        async function compareMethods() {
+            const btn = document.getElementById('btnCompare');
+            const box = document.getElementById('compareResultBox');
+            const alertBox = document.getElementById('aggAlert');
+            const baseVersion = document.getElementById('aggBaseVersion').value.trim() || 'latest';
+            const origHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Comparing...';
+            box.classList.add('d-none');
+
+            try {
+                const resp = await fetch('/api/v1/model/aggregate/compare', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ base_version: baseVersion })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.status === 'success') {
+                    const methods = data.methods_compared || {};
+                    const rowsHtml = Object.entries(methods).map(([m, info]) => {
+                        const details = info.details || {};
+                        const summary = details.server_aggregation || details.formula ||
+                            (details.server_control_norm !== undefined ? `Server control norm=${details.server_control_norm}, drift_fix=${details.drift_correction_norm}` : details.weighting || '—');
+                        return `
+                            <tr>
+                                <td class="font-mono fw-bold text-uppercase">${escHtml(m)}</td>
+                                <td class="font-mono">${info.delta_l2_norm}</td>
+                                <td class="font-mono">${info.cosine_vs_fedavg ?? '—'}</td>
+                                <td class="small text-muted">${escHtml(summary)}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                    box.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong class="small font-mono">5-Method Dry-Run Comparison &middot; Round #${data.round} &middot; Base v${escHtml(data.base_version)} &middot; ${data.total_samples} samples</strong>
+                            <span class="badge bg-info font-mono">${(data.clients || []).length} clients</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0 data-table-detail">
+                                <thead>
+                                    <tr><th>Method</th><th>Aggregated Δ L2 Norm</th><th>Cosine vs FedAvg</th><th>Notes / State</th></tr>
+                                </thead>
+                                <tbody>${rowsHtml}</tbody>
+                            </table>
+                        </div>`;
+                    box.classList.remove('d-none');
+                    log(`Compared all 5 FL methods on Round #${data.round} pending deltas (${data.total_samples} samples).`);
+                } else {
+                    alertBox.className = 'alert alert-danger mt-3 mb-0';
+                    alertBox.textContent = data.detail || data.message || 'Could not compare methods.';
+                    alertBox.classList.remove('d-none');
+                }
+            } catch (err) {
+                alertBox.className = 'alert alert-danger mt-3 mb-0';
+                alertBox.textContent = `Compare error: ${err.message}`;
+                alertBox.classList.remove('d-none');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
         }
 
         async function runFederatedAggregation() {
             const btn = document.getElementById('btnAggregate');
             const alertBox = document.getElementById('aggAlert');
+            const pushAlert = document.getElementById('aggPushAlert');
+            const compareBox = document.getElementById('compareResultBox');
             const method = document.getElementById('aggMethod').value;
             const baseVersion = document.getElementById('aggBaseVersion').value.trim() || 'latest';
             const notes = document.getElementById('aggNotes').value.trim();
@@ -280,9 +535,11 @@
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Aggregating...';
             alertBox.className = 'alert alert-info mt-3 mb-0';
-            alertBox.textContent = `Merging client updates via ${method.toUpperCase()}...`;
+            alertBox.textContent = `Merging validated DP client updates via ${method.toUpperCase()}...`;
             alertBox.classList.remove('d-none');
-            log(`Starting federated aggregation using ${method.toUpperCase()} for base version ${baseVersion}...`);
+            if (pushAlert) pushAlert.classList.add('d-none');
+            if (compareBox) compareBox.classList.add('d-none');
+            log(`Starting Round federated aggregation using ${method.toUpperCase()} (base=${baseVersion})...`);
 
             try {
                 const response = await fetch('/api/v1/model/aggregate', {
@@ -297,22 +554,97 @@
 
                 const data = await response.json();
                 if (response.ok && data.status === 'success') {
+                    const archivedLoc = shortArchivePath(data.aggregated_folder);
+                    const md = data.method_details || {};
+                    const extraInfo = md.tau_effective !== undefined ? ` (tau_eff=${md.tau_effective})` :
+                                      md.server_control_norm !== undefined ? ` (SCAFFOLD ||c||=${md.server_control_norm})` :
+                                      md.proximal_mu !== undefined ? ` (FedProx mu=${md.proximal_mu})` :
+                                      md.moon_mu !== undefined ? ` (MOON mu=${md.moon_mu})` : '';
+                    const ev = data.evaluation || {};
+                    let evalHtml = '';
+                    let evalLogText = '';
+                    if (ev.evaluated) {
+                        const accPct = (Number(data.accuracy ?? ev.accuracy ?? 0) * 100).toFixed(2);
+                        const f1Val = Number(data.f1 ?? ev.f1 ?? 0).toFixed(4);
+                        const aucVal = Number(data.auc ?? ev.auc ?? 0).toFixed(4);
+                        const deltaVal = data.accuracy_delta ?? ev.accuracy_delta;
+                        let deltaBadge = '';
+                        if (deltaVal !== null && deltaVal !== undefined && Number.isFinite(Number(deltaVal))) {
+                            const dPct = (Number(deltaVal) * 100).toFixed(2);
+                            const sign = Number(deltaVal) >= 0 ? '+' : '';
+                            const cls = Number(deltaVal) >= 0 ? 'bg-success' : 'bg-danger';
+                            deltaBadge = `<span class="badge ${cls} font-mono ms-1">${sign}${dPct}% vs v${escHtml(data.base_version)}</span>`;
+                        }
+                        evalHtml = `<div class="mt-2 pt-2 border-top d-flex flex-wrap align-items-center gap-2 small">
+                            <span class="badge bg-primary font-mono">Accuracy: ${accPct}%</span>${deltaBadge}
+                            <span class="badge bg-info text-dark font-mono">F1: ${f1Val}</span>
+                            <span class="badge bg-secondary font-mono">AUC: ${aucVal}</span>
+                            <span class="text-muted font-mono">Tested on ${Number(ev.eval_samples || 0).toLocaleString()} holdout samples (${Number(ev.eval_time_seconds || 0).toFixed(2)}s · ${escHtml(ev.dataset || 'HQ Holdout')})</span>
+                        </div>`;
+                        evalLogText = ` | Real Eval Accuracy=${accPct}%, F1=${f1Val}, AUC=${aucVal} (${ev.eval_samples || 0} samples)`;
+                    }
                     alertBox.className = 'alert alert-success mt-3 mb-0';
-                    alertBox.innerHTML = `<strong>Success!</strong> Successfully published new global model version <strong>v${data.new_version}</strong> by aggregating ${data.num_updates_merged} client update(s) via ${data.method.toUpperCase()}.`;
-                    log(`Aggregation successful! Created version v${data.new_version} from ${data.num_updates_merged} updates.`);
-                    loadUpdates();
+                    alertBox.innerHTML = `<strong>Success!</strong> Round #${data.round} &rarr; Global Model <strong>v${escHtml(data.new_version)}</strong> created via <strong>${escHtml(data.method.toUpperCase())}</strong>${escHtml(extraInfo)} (${data.num_updates_merged} client(s), ${data.total_samples} samples). Next open round: <strong>#${data.next_open_round}</strong>. Archived in <code>${escHtml(archivedLoc)}</code>.${evalHtml}`;
+                    showGlobalPushReady(
+                        data.new_version,
+                        `Round #${data.round} (${data.method.toUpperCase()}): merged ${(data.clients || []).join(', ')} (${data.total_samples} samples) into v${data.new_version}.${ev.evaluated ? ` Verified Accuracy ${(Number(data.accuracy ?? 0) * 100).toFixed(2)}% | F1 ${Number(data.f1 ?? 0).toFixed(4)} | AUC ${Number(data.auc ?? 0).toFixed(4)}.` : ''}`,
+                        true
+                    );
+                    log(`Aggregation successful! Round #${data.round} -> v${data.new_version} (${data.method.toUpperCase()}${extraInfo}); archived in ${archivedLoc}${evalLogText}.`);
+                    await loadUpdates();
                 } else {
                     alertBox.className = 'alert alert-danger mt-3 mb-0';
-                    alertBox.innerHTML = `<strong>Aggregation Failed:</strong> ${data.detail || data.message || 'Unknown error'}`;
+                    alertBox.innerHTML = `<strong>Aggregation Failed:</strong> ${escHtml(data.detail || data.message || 'Unknown error')}`;
                     log(`Aggregation failed: ${data.detail || data.message || 'Error'}`);
                 }
             } catch (err) {
                 alertBox.className = 'alert alert-danger mt-3 mb-0';
-                alertBox.innerHTML = `<strong>Error:</strong> ${err.message}`;
+                alertBox.innerHTML = `<strong>Error:</strong> ${escHtml(err.message)}`;
                 log(`Network error during aggregation: ${err.message}`);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="iconsax me-1" icon-name="play"></i> Aggregate Now';
+            }
+        }
+
+        async function pushAggregatedToEdge(btn) {
+            const alertBox = document.getElementById('aggPushAlert');
+            const edgeInput = document.getElementById('updatesEdgePushUrl');
+            const edgeUrl = edgeInput ? edgeInput.value.trim() : '';
+            const version = currentGlobalVersion || 'latest';
+            const origHtml = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Pushing...';
+            alertBox.className = 'alert alert-info mt-3 mb-0 py-2 small';
+            alertBox.textContent = `Pushing Global Model v${version} to Client Edge...`;
+            alertBox.classList.remove('d-none');
+
+            try {
+                const resp = await fetch(`/api/dashboard/models/${encodeURIComponent(version)}/push`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ edge_url: edgeUrl })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.status === 'success') {
+                    const targets = (data.results || []).filter(r => r.status === 'success').map(r => r.edge_url).join(', ');
+                    alertBox.className = 'alert alert-success mt-3 mb-0 py-2 small';
+                    alertBox.innerHTML = `<strong>Pushed v${escHtml(data.version || version)}:</strong> Global Model deployed to <span class="font-mono">${escHtml(targets)}</span>.`;
+                    log(`Pushed Global Model v${data.version || version} to Client Edge (${targets}).`);
+                } else {
+                    const details = (data.results || []).map(r => `${r.edge_url} (${r.status})`).join('; ');
+                    alertBox.className = 'alert alert-danger mt-3 mb-0 py-2 small';
+                    alertBox.innerHTML = `<strong>Push failed:</strong> ${escHtml(details || data.detail || 'Client Edge unreachable. Ensure ./run_client.sh is running.')}`;
+                    log(`Push to Client Edge failed: ${details || data.detail || 'Unreachable'}`);
+                }
+            } catch (err) {
+                alertBox.className = 'alert alert-danger mt-3 mb-0 py-2 small';
+                alertBox.textContent = `Push error: ${err.message}`;
+                log(`Push error: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
             }
         }
 
@@ -321,7 +653,6 @@
             log('Updates refreshed');
         }
 
-        // Initial load
         loadUpdates();
     </script>
 </body>

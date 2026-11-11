@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SecureFed-NIDS Client{% endblock %}</title>
-    <!-- Fonts: IBM Plex Sans & JetBrains Mono -->
+    <!-- Fonts: Plus Jakarta Sans, IBM Plex Sans & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <!-- Iconsax Icons Package -->
     <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
@@ -19,7 +19,7 @@
                 extend: {
                     fontFamily: {
                         sans: ['"IBM Plex Sans"', 'system-ui', '-apple-system', 'sans-serif'],
-                        heading: ['"IBM Plex Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+                        heading: ['"Plus Jakarta Sans"', '"IBM Plex Sans"', 'system-ui', 'sans-serif'],
                         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
                     }
                 }
@@ -35,97 +35,362 @@
             line-height: 1;
             font-style: normal;
         }
+
+        :root {
+            --edge-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+            --edge-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px -2px rgba(15, 23, 42, 0.035);
+            --edge-shadow-md: 0 8px 24px -6px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+            --edge-shadow-hover: 0 14px 32px -8px rgba(37, 99, 235, 0.14), 0 6px 14px -4px rgba(15, 23, 42, 0.06);
+        }
+
+        @keyframes edgeFadeDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes edgeRiseIn {
+            from { opacity: 0; transform: translateY(14px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes edgeRowFade {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes edgeLivePulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+            70% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        @keyframes edgeSpinPop {
+            0% { transform: rotate(0deg) scale(1); }
+            45% { transform: rotate(160deg) scale(0.9); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
         body {
             font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+            background-color: #f4f7fb;
+            background-image:
+                radial-gradient(920px circle at 18% -6%, rgba(37, 99, 235, 0.075), transparent 56%),
+                radial-gradient(760px circle at 92% 10%, rgba(14, 165, 233, 0.065), transparent 52%),
+                radial-gradient(640px circle at 50% 100%, rgba(16, 185, 129, 0.035), transparent 58%);
+            background-attachment: fixed;
             -webkit-font-smoothing: antialiased;
+            transition: background-color 0.25s ease, color 0.25s ease;
         }
+
+        html.dark body {
+            background-color: #0b0e13;
+            background-image:
+                radial-gradient(900px circle at 20% -5%, rgba(59, 130, 246, 0.08), transparent 55%),
+                radial-gradient(700px circle at 90% 10%, rgba(14, 165, 233, 0.06), transparent 50%);
+        }
+
         h1, h2, h3, h4, .font-heading {
-            font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-            letter-spacing: -0.015em;
+            font-family: 'Plus Jakarta Sans', 'IBM Plex Sans', system-ui, sans-serif;
+            letter-spacing: -0.02em;
+        }
+
+        /* Sidebar Brand & Nav Motion */
+        .edge-brand-link:hover .edge-brand-icon {
+            transform: rotate(-5deg) scale(1.06);
+            box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.48);
+        }
+
+        .edge-brand-icon {
+            transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+        }
+
+        .edge-nav-link {
+            transition: background 0.2s ease, color 0.2s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .edge-nav-link:hover {
+            transform: translateX(4px);
+        }
+
+        .edge-nav-link:hover i {
+            transform: scale(1.08);
+        }
+
+        .edge-nav-link i {
+            transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), color 0.2s ease;
+        }
+
+        .edge-live-dot {
+            animation: edgeLivePulse 2.2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
+
+        .theme-toggle-btn {
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+        }
+
+        .theme-toggle-btn:hover {
+            transform: translateY(-1px) scale(1.04);
+        }
+
+        .theme-toggle-btn:active {
+            transform: scale(0.95);
+        }
+
+        .theme-toggle-btn.is-spinning i {
+            animation: edgeSpinPop 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Top Bar & Staggered Page Animations */
+        .edge-topbar {
+            position: sticky;
+            top: 0;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: var(--edge-shadow-xs);
+            animation: edgeFadeDown 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .edge-topbar::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2.5px;
+            background: linear-gradient(90deg, #2563eb 0%, #0ea5e9 55%, #10b981 100%);
+        }
+
+        .edge-stagger-stack > * {
+            animation: edgeRiseIn 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .edge-stagger-stack > *:nth-child(1) { animation-delay: 0.04s; }
+        .edge-stagger-stack > *:nth-child(2) { animation-delay: 0.10s; }
+        .edge-stagger-stack > *:nth-child(3) { animation-delay: 0.16s; }
+        .edge-stagger-stack > *:nth-child(4) { animation-delay: 0.22s; }
+        .edge-stagger-stack > *:nth-child(5) { animation-delay: 0.28s; }
+
+        .edge-stagger-grid > * {
+            animation: edgeRiseIn 0.46s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .edge-stagger-grid > *:nth-child(1) { animation-delay: 0.06s; }
+        .edge-stagger-grid > *:nth-child(2) { animation-delay: 0.12s; }
+        .edge-stagger-grid > *:nth-child(3) { animation-delay: 0.18s; }
+        .edge-stagger-grid > *:nth-child(4) { animation-delay: 0.24s; }
+
+        /* Elevated Cards & Metric Cards */
+        .edge-card {
+            box-shadow: var(--edge-shadow-sm);
+            transition: box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+
+        .edge-card:hover {
+            box-shadow: var(--edge-shadow-md);
+        }
+
+        .edge-metric-card {
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--edge-shadow-sm);
+            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.22s ease;
+        }
+
+        .edge-metric-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #2563eb, #0ea5e9);
+            transform: scaleX(0);
+            transform-origin: left center;
+            transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .edge-metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--edge-shadow-hover);
+            border-color: rgba(37, 99, 235, 0.32);
+        }
+
+        .edge-metric-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .edge-metric-icon {
+            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .edge-metric-card:hover .edge-metric-icon {
+            transform: scale(1.08) rotate(-4deg);
+        }
+
+        /* Workflow Cards */
+        .edge-workflow-card {
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--edge-shadow-sm);
+            transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.22s ease, background-color 0.22s ease, box-shadow 0.26s ease;
+        }
+
+        .edge-workflow-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, #2563eb 0%, #0ea5e9 100%);
+            transform: scaleY(0);
+            transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .edge-workflow-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--edge-shadow-md);
+            border-color: rgba(37, 99, 235, 0.42);
+        }
+
+        .edge-workflow-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        /* Tactile Buttons with Sheen */
+        .edge-btn {
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--edge-shadow-xs);
+            transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .edge-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .edge-btn:active {
+            transform: translateY(0) scale(0.97);
+        }
+
+        .edge-btn-sheen::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -120%;
+            width: 65%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.24), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.55s ease;
+            pointer-events: none;
+        }
+
+        .edge-btn-sheen:hover::after {
+            left: 140%;
+        }
+
+        .edge-table-row {
+            animation: edgeRowFade 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        /* Scrollbar polish */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.25); border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(37, 99, 235, 0.45); }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }
     </style>
     <script>
-        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+        /* Edge Control Panel Light-First Theme Controller */
+        (function () {
+            const saved = localStorage.getItem('edge_theme');
+            if (saved === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
     </script>
 </head>
-<body class="bg-[#f3f4f6] dark:bg-[#0b0e12] text-neutral-900 dark:text-neutral-100 min-h-screen md:h-screen md:overflow-hidden">
+<body class="text-slate-900 dark:text-slate-100 min-h-screen md:h-screen md:overflow-hidden">
 <div class="min-h-screen md:h-screen flex flex-col md:flex-row md:overflow-hidden">
     <!-- Independent Fixed Left Navigation Rail -->
-    <aside class="w-full md:w-60 md:h-screen overflow-y-auto bg-white dark:bg-[#11151b] border-b md:border-b-0 md:border-r border-neutral-200 dark:border-[#222730] flex flex-col md:fixed md:inset-y-0 md:left-0 z-30">
+    <aside class="w-full md:w-60 md:h-screen overflow-y-auto bg-white/95 dark:bg-[#11151c]/95 backdrop-blur-md border-b md:border-b-0 md:border-r border-slate-200 dark:border-[#1f2633] shadow-[4px_0_24px_-12px_rgba(15,23,42,0.08)] flex flex-col md:fixed md:inset-y-0 md:left-0 z-30">
         <!-- Brand Header -->
-        <div class="px-4 py-4 border-b border-neutral-200 dark:border-[#222730] flex justify-between items-center">
-            <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-md bg-neutral-100 dark:bg-[#181d25] border border-neutral-300 dark:border-[#2e3540] flex items-center justify-center text-blue-700 dark:text-blue-400">
+        <div class="px-4 py-4 border-b border-slate-200 dark:border-[#1f2633] flex justify-between items-center gap-2">
+            <a href="/" class="edge-brand-link flex items-center gap-2.5 group no-underline cursor-pointer" title="Go to Edge Node Overview">
+                <div class="edge-brand-icon w-9 h-9 rounded-[10px] bg-gradient-to-br from-blue-600 to-sky-500 border border-white/35 shadow-[0_6px_16px_-4px_rgba(37,99,235,0.38)] flex items-center justify-center text-white shrink-0">
                     <i class="iconsax text-base" icon-name="shield-tick"></i>
                 </div>
                 <div>
-                    <div class="font-heading text-sm font-bold text-neutral-900 dark:text-neutral-100 leading-tight">SecureFed</div>
-                    <div class="font-mono text-[10px] uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Edge · Port 5000</div>
+                    <div class="font-heading text-[15px] font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">SecureFed</div>
+                    <div class="font-mono text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Edge · Port 5000</div>
                 </div>
-            </div>
-            <button onclick="toggleDarkMode()" class="w-8 h-8 rounded-md bg-neutral-50 dark:bg-[#181d25] hover:bg-neutral-100 dark:hover:bg-[#212732] text-neutral-600 dark:text-neutral-300 flex items-center justify-center border border-neutral-200 dark:border-[#2a313c] transition-colors" title="Toggle Dark/Light Theme">
-                <i id="theme-icon" class="iconsax text-base" icon-name="sun"></i>
+            </a>
+            <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn w-8 h-8 rounded-[10px] bg-slate-50 dark:bg-[#181d25] hover:bg-white dark:hover:bg-[#212732] text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center border border-slate-200 dark:border-[#2a313c] shadow-sm" title="Switch to Dark Mode" aria-label="Toggle theme">
+                <i id="theme-icon" class="iconsax text-base" icon-name="moon"></i>
             </button>
         </div>
 
         <!-- Navigation Menu -->
-        <nav class="flex-1 px-2.5 py-3 space-y-0.5 text-[13.5px] font-medium">
-            <div class="px-2.5 pb-1.5 pt-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Node Console</div>
+        <nav class="flex-1 px-3 py-3.5 space-y-1 text-[13.5px] font-medium">
+            <div class="px-2.5 pb-1.5 pt-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Node Console</div>
             
-            <a href="/" class="flex items-center gap-2.5 py-2 px-3 rounded-md border-l-2 transition-colors {% if active_page == 'overview' %}bg-blue-50 text-blue-700 border-blue-600 dark:bg-blue-950/35 dark:text-blue-400 dark:border-blue-500 font-semibold{% else %}border-transparent text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#1a2029] hover:text-neutral-900 dark:hover:text-neutral-100{% endif %}">
+            <a href="/" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'overview' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#181e29] hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                 <i class="iconsax text-base" icon-name="grid-apps"></i>
                 <span>Node Overview</span>
             </a>
 
-            <a href="/sync" class="flex items-center gap-2.5 py-2 px-3 rounded-md border-l-2 transition-colors {% if active_page == 'sync' %}bg-blue-50 text-blue-700 border-blue-600 dark:bg-blue-950/35 dark:text-blue-400 dark:border-blue-500 font-semibold{% else %}border-transparent text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#1a2029] hover:text-neutral-900 dark:hover:text-neutral-100{% endif %}">
+            <a href="/sync" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'sync' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#181e29] hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                 <i class="iconsax text-base" icon-name="cloud-add"></i>
                 <span>HQ Synchronization</span>
             </a>
 
-            <a href="/training" class="flex items-center gap-2.5 py-2 px-3 rounded-md border-l-2 transition-colors {% if active_page == 'training' %}bg-blue-50 text-blue-700 border-blue-600 dark:bg-blue-950/35 dark:text-blue-400 dark:border-blue-500 font-semibold{% else %}border-transparent text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#1a2029] hover:text-neutral-900 dark:hover:text-neutral-100{% endif %}">
+            <a href="/training" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'training' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#181e29] hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                 <i class="iconsax text-base" icon-name="cpu-charge"></i>
                 <span>DP Local Training</span>
             </a>
 
-            <a href="/inference" class="flex items-center gap-2.5 py-2 px-3 rounded-md border-l-2 transition-colors {% if active_page == 'inference' %}bg-blue-50 text-blue-700 border-blue-600 dark:bg-blue-950/35 dark:text-blue-400 dark:border-blue-500 font-semibold{% else %}border-transparent text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#1a2029] hover:text-neutral-900 dark:hover:text-neutral-100{% endif %}">
+            <a href="/inference" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'inference' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#181e29] hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                 <i class="iconsax text-base" icon-name="shield-search"></i>
                 <span>Traffic Inference &amp; XAI</span>
             </a>
         </nav>
 
         <!-- Node Status Footer -->
-        <div class="px-4 py-3 border-t border-neutral-200 dark:border-[#222730] bg-neutral-50 dark:bg-[#0e1116]">
+        <div class="px-4 py-3.5 border-t border-slate-200 dark:border-[#1f2633] bg-slate-50/90 dark:bg-[#0e1218]">
             <div class="flex items-center justify-between text-xs">
-                <span class="font-mono text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
+                <span class="font-mono text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                     <i class="iconsax text-sm" icon-name="driver-2"></i> Edge Engine
                 </span>
-                <span class="inline-flex items-center gap-1.5 font-mono text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
-                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-500"></span>
+                <span class="inline-flex items-center gap-2 font-mono text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                    <span class="edge-live-dot h-2 w-2 rounded-full bg-emerald-500"></span>
                     Online
                 </span>
             </div>
-            <div class="text-[11px] text-neutral-500 dark:text-neutral-500 font-mono mt-1 truncate">Privacy: DP-SGD Local</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-500 font-mono mt-1 truncate">Privacy: DP-SGD Local</div>
         </div>
     </aside>
 
     <!-- Main Independent Scrollable Workspace -->
     <div class="md:ml-60 flex-1 md:h-screen md:overflow-y-auto flex flex-col">
         <!-- Top Header Bar -->
-        <header class="sticky top-0 z-20 bg-white dark:bg-[#13171d] border-b border-neutral-200 dark:border-[#232933] px-7 py-3.5 flex flex-wrap justify-between items-center gap-4">
+        <header class="edge-topbar z-20 bg-white/90 dark:bg-[#131820]/90 border-b border-slate-200 dark:border-[#222a36] px-7 py-4 flex flex-wrap justify-between items-center gap-4">
             <div>
-                <h1 class="font-heading text-base font-semibold text-neutral-900 dark:text-neutral-100">{% block page_heading %}Client Node Management{% endblock %}</h1>
-                <p class="text-xs text-neutral-500 dark:text-neutral-400">Local DP-SGD &amp; Intrusion Detection Node</p>
+                <h1 class="font-heading text-[17px] font-bold text-slate-900 dark:text-slate-100">{% block page_heading %}Client Node Management{% endblock %}</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Local DP-SGD &amp; Intrusion Detection Node</p>
             </div>
             <div class="flex items-center gap-2.5 text-xs font-mono">
-                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-neutral-100 dark:bg-[#181d25] border border-neutral-200 dark:border-[#2a313c] text-neutral-700 dark:text-neutral-200">
+                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#181d25] border border-slate-200 dark:border-[#2a313c] text-slate-700 dark:text-slate-200 shadow-xs">
                     <i class="iconsax text-sm text-blue-600 dark:text-blue-400" icon-name="user-1"></i>
                     <span id="header-client-id" class="font-semibold">client_node_01</span>
                 </div>
-                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-neutral-100 dark:bg-[#181d25] border border-neutral-200 dark:border-[#2a313c] text-neutral-600 dark:text-neutral-300">
+                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#181d25] border border-slate-200 dark:border-[#2a313c] text-slate-600 dark:text-slate-300 shadow-xs">
                     <i class="iconsax text-sm text-emerald-600 dark:text-emerald-400" icon-name="link-2"></i>
                     <span id="header-hq-url">http://localhost:8000</span>
                 </div>
@@ -143,17 +408,31 @@
 function updateThemeIcon() {
     const isDark = document.documentElement.classList.contains('dark');
     const icon = document.getElementById('theme-icon');
-    if (!icon) return;
-    icon.setAttribute('icon-name', isDark ? 'sun' : 'moon');
+    const btn = icon ? icon.closest('.theme-toggle-btn') : null;
+    if (icon) {
+        icon.setAttribute('icon-name', isDark ? 'sun' : 'moon');
+    }
+    if (btn) {
+        btn.setAttribute('title', isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode');
+        btn.setAttribute('aria-label', isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode');
+    }
 }
 
 function toggleDarkMode() {
+    const icon = document.getElementById('theme-icon');
+    const btn = icon ? icon.closest('.theme-toggle-btn') : null;
+    if (btn) {
+        btn.classList.remove('is-spinning');
+        void btn.offsetWidth;
+        btn.classList.add('is-spinning');
+    }
+
     if (document.documentElement.classList.contains('dark')) {
         document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
+        localStorage.setItem('edge_theme', 'light');
     } else {
         document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
+        localStorage.setItem('edge_theme', 'dark');
     }
     updateThemeIcon();
 }
@@ -176,6 +455,28 @@ async function refreshHeader() {
         const syncBadge = document.getElementById('sync-status-badge');
         if (syncBadge) {
             syncBadge.textContent = state.current_model_version ? `Active: v${state.current_model_version}` : 'Awaiting HQ Push';
+        }
+        const autoEnabled = state.auto_push !== false;
+        const autoBadge = document.getElementById('auto-push-badge');
+        if (autoBadge) {
+            autoBadge.className = autoEnabled
+                ? 'font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-600/20'
+                : 'font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/70';
+            autoBadge.textContent = autoEnabled ? 'Auto-Push Active' : 'Manual Push Only';
+        }
+        const lastPushPill = document.getElementById('last-push-pill');
+        if (lastPushPill) {
+            const lp = state.last_push_info;
+            lastPushPill.textContent = (lp && lp.update_id !== undefined)
+                ? `Last Auto-Push: #${lp.update_id}`
+                : (autoEnabled ? 'Auto · After Training' : 'Auto-Push Disabled');
+        }
+        const trainAutoBadge = document.getElementById('training-auto-push-badge');
+        if (trainAutoBadge) {
+            trainAutoBadge.className = autoEnabled
+                ? 'inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-600/20'
+                : 'inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 dark:bg-[#1a212c] dark:text-slate-300 border border-slate-200 dark:border-[#2d3748]';
+            trainAutoBadge.textContent = autoEnabled ? 'Auto-Push to HQ: ON' : 'Auto-Push to HQ: OFF';
         }
         return state;
     } catch (error) { console.error(error); return null; }
@@ -253,22 +554,18 @@ async function uploadManualModel(event) {
     refreshHeader();
 }
 
-async function pushUpdate() {
-    showResult('sync-result', {status: 'transmitting', message: 'Authorizing with Admin Key and transmitting DP delta to HQ...'});
-    const {data} = await postJSON('/api/client/push-update', {
-        admin_key: getAdminKey()
-    });
-    showResult('sync-result', data);
-    refreshHeader();
-}
-
 async function startTraining(event) {
     event.preventDefault();
+    const banner = document.getElementById('training-push-banner');
+    if (banner) {
+        banner.classList.add('hidden');
+        banner.textContent = '';
+    }
     const file = document.getElementById('train-file').files[0];
     if (!file) { showResult('training-output', {status: 'error', message: 'Choose a CSV file first.'}); return; }
-    showResult('training-output', {status: 'working', message: 'DP local training is running...'});
+    showResult('training-output', {status: 'working', message: 'DP local training is running (auto-push to HQ enabled)...'});
     const file_b64 = await readFileAsBase64(file);
-    const {data} = await postJSON('/api/client/train-local', {
+    const {response, data} = await postJSON('/api/client/train-local', {
         file_b64: file_b64,
         epochs: Number(document.getElementById('train-epochs').value),
         batch_size: Number(document.getElementById('train-batch').value),
@@ -277,6 +574,21 @@ async function startTraining(event) {
         noise_multiplier: Number(document.getElementById('train-noise').value)
     });
     showResult('training-output', data);
+    if (banner && response.ok && data && data.auto_push) {
+        banner.classList.remove('hidden');
+        if (data.auto_push.pushed) {
+            const hqInfo = data.auto_push.hq_response || {};
+            const updText = hqInfo.update_id !== undefined ? ` (Update #${hqInfo.update_id})` : '';
+            banner.className = 'rounded-2xl border border-emerald-200 dark:border-emerald-800/70 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 px-5 py-3.5 text-xs font-medium';
+            banner.textContent = `DP delta automatically pushed to HQ${updText} on base v${hqInfo.base_version || 'latest'} (${data.samples} samples). Ready for HQ aggregation.`;
+        } else if (data.auto_push.enabled) {
+            banner.className = 'rounded-2xl border border-amber-200 dark:border-amber-800/70 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 px-5 py-3.5 text-xs font-medium';
+            banner.textContent = `Local training succeeded and delta saved, but automatic HQ push failed: ${data.auto_push.detail || 'HQ unreachable'}. Check HQ connection and re-run training when ready.`;
+        } else {
+            banner.className = 'rounded-2xl border border-slate-200 dark:border-[#222a36] bg-white dark:bg-[#131820] text-slate-700 dark:text-slate-300 px-5 py-3.5 text-xs font-medium';
+            banner.textContent = 'Local training finished. Auto-push is disabled; push manually from HQ Synchronization when ready.';
+        }
+    }
     refreshHeader();
 }
 
@@ -294,22 +606,22 @@ async function runInference(event) {
     bodyEl.innerHTML = data.predictions.map(p => {
         const indicatorsHtml = (p.top_indicators || []).map(ind => {
             const isAttack = p.prediction.includes('Attack');
-            const badgeBg = isAttack ? 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/70' : 'bg-neutral-100 dark:bg-[#1b2029] text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-[#2c3340]';
-            return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono ${badgeBg}"><span>${ind.feature}</span><span class="opacity-75 font-semibold">(${ind.impact > 0 ? '+' : ''}${ind.impact})</span></span>`;
-        }).join(' ') || '<span class="text-xs text-neutral-400">N/A</span>';
+            const badgeBg = isAttack ? 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/70' : 'bg-slate-100 dark:bg-[#1b2029] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#2c3340]';
+            return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono ${badgeBg}"><span>${ind.feature}</span><span class="opacity-75 font-semibold">(${ind.impact > 0 ? '+' : ''}${ind.impact})</span></span>`;
+        }).join(' ') || '<span class="text-xs text-slate-400">N/A</span>';
 
-        return `<tr class="border-t border-neutral-200 dark:border-[#232933] hover:bg-neutral-50 dark:hover:bg-[#181d25] transition-colors">
-            <td class="px-4 py-3 text-neutral-900 dark:text-neutral-100 font-mono text-xs">${p.row_index}</td>
+        return `<tr class="edge-table-row border-t border-slate-200 dark:border-[#222a36] hover:bg-blue-600/[0.035] dark:hover:bg-blue-500/[0.06] transition-colors">
+            <td class="px-4 py-3 text-slate-900 dark:text-slate-100 font-mono text-xs">${p.row_index}</td>
             <td class="px-4 py-3 font-semibold text-xs">
-                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border ${p.prediction.includes('Attack') ? 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/70' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/70'}">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border ${p.prediction.includes('Attack') ? 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/70' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/70'}">
                     <i class="iconsax text-sm" icon-name="${p.prediction.includes('Attack') ? 'shield-slash' : 'shield-tick'}"></i>
                     ${p.prediction}
                 </span>
             </td>
-            <td class="px-4 py-3 font-mono font-semibold text-neutral-800 dark:text-neutral-200">${p.confidence}%</td>
+            <td class="px-4 py-3 font-mono font-semibold text-slate-800 dark:text-slate-200">${p.confidence}%</td>
             <td class="px-4 py-3"><div class="flex flex-wrap gap-1.5">${indicatorsHtml}</div></td>
-            <td class="px-4 py-3 text-neutral-600 dark:text-neutral-400 font-mono text-xs">${p.probabilities.benign}</td>
-            <td class="px-4 py-3 text-neutral-600 dark:text-neutral-400 font-mono text-xs">${p.probabilities.attack}</td>
+            <td class="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono text-xs">${p.probabilities.benign}</td>
+            <td class="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono text-xs">${p.probabilities.attack}</td>
         </tr>`;
     }).join('');
 }

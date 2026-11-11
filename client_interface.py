@@ -126,10 +126,16 @@ class ClientInterface:
         async def download_model():
             """Download latest model from HQ."""
             try:
-                response = requests.get(f"{self.hq_url}/api/v1/model/download/latest", timeout=10)
+                response = requests.get(
+                    f"{self.hq_url}/api/v1/model/download/latest",
+                    headers={"X-Client-ID": self.client_id},
+                    timeout=10,
+                )
 
                 if response.status_code == 200:
                     data = response.json()
+                    self.state["latest_version"] = data["version"]
+                    self.state["open_round"] = data.get("open_round", 1)
                     self.state["total_downloads"] += 1
                     self.state["last_download"] = datetime.now().isoformat()
                     self.state["status"] = "downloaded"
@@ -158,16 +164,38 @@ class ClientInterface:
 
         @self.app.post("/api/model/upload")
         async def upload_update(update: dict):
-            """Upload model update to HQ."""
+            """Forward a clipped/noised .pt DP delta update to HQ as multipart/form-data."""
+            import base64
             try:
-                # Simulate upload
+                pt_bytes = None
+                file_path = update.get("file_path")
+                if file_path and Path(file_path).exists():
+                    pt_bytes = Path(file_path).read_bytes()
+                elif update.get("weights_b64"):
+                    pt_bytes = base64.b64decode(update["weights_b64"])
+
+                if not pt_bytes:
+                    return JSONResponse({
+                        "status": "error",
+                        "message": "Provide a valid clipped/noised .pt delta file ('file_path' or 'weights_b64'). Placeholder JSON strings cannot be aggregated by HQ."
+                    }, status_code=400)
+
+                form_data = {
+                    "client_id": str(update.get("client_id") or self.client_id),
+                    "samples": int(update.get("samples", 0)),
+                    "base_version": str(update.get("base_version") or self.state.get("latest_version") or "latest"),
+                    "round": int(update.get("round") or self.state.get("open_round") or 1),
+                }
+                files = {"file": ("dp_delta.pt", pt_bytes, "application/octet-stream")}
                 response = requests.post(
                     f"{self.hq_url}/api/v1/model/upload",
-                    json=update,
-                    timeout=10
+                    data=form_data,
+                    files=files,
+                    timeout=15,
                 )
 
                 if response.status_code == 200:
+                    resp_json = response.json()
                     self.state["total_uploads"] += 1
                     self.state["last_upload"] = datetime.now().isoformat()
                     self.state["status"] = "uploaded"
@@ -175,14 +203,14 @@ class ClientInterface:
                     return JSONResponse({
                         "status": "success",
                         "message": "Update uploaded successfully",
-                        "update_id": response.json().get("update_id", "N/A"),
+                        "update_id": resp_json.get("update_id", "N/A"),
                         "dp_epsilon": update.get("dp_epsilon", 0),
                         "timestamp": datetime.now().isoformat()
                     })
                 else:
                     return JSONResponse({
                         "status": "error",
-                        "message": f"Upload failed: {response.status_code}"
+                        "message": f"Upload failed ({response.status_code}): {response.text}"
                     }, status_code=response.status_code)
 
             except requests.exceptions.RequestException as e:

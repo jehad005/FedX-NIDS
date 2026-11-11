@@ -230,10 +230,12 @@ class Trainer:
                   f"Train Loss: {train_loss:.4f} Acc: {train_acc:.4f} | "
                   f"Val Loss: {val_loss:.4f} Acc: {val_acc:.4f} F1: {val_f1:.4f}")
 
-            # Save best model
+            # Save best model (deep tensor clone so subsequent epochs do not mutate saved state)
             if val_f1 > best_val_f1:
                 best_val_f1 = val_f1
-                best_model_state = self.model.state_dict().copy()
+                best_model_state = {
+                    k: v.detach().clone() for k, v in self.model.state_dict().items()
+                }
         
         # Save total time
         total_time = time.perf_counter() - start_total

@@ -18,15 +18,25 @@ if str(ROOT) not in sys.path:
 
 import base64
 import os
-import pickle
 import zlib
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from config import API_CONFIG
+from server_hq.central_aggregator import (
+    MAX_CLIPPING_NORM,
+    MIN_CLIPPING_NORM,
+    MIN_NOISE_MULTIPLIER,
+    SUPPORTED_FL_METHODS,
+    UpdateValidationError,
+    compare_aggregation_methods,
+    extract_state_dict_from_artifact,
+    run_federated_round,
+    validate_client_update_payload,
+)
 from server_hq.registry import ModelRegistry
 
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "securefed-admin-token-2026")
@@ -45,6 +55,15 @@ app.add_middleware(
 )
 
 registry = ModelRegistry()
+
+
+def _extract_client_ip(request: Optional[Request]) -> Optional[str]:
+    if request is None:
+        return None
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else None
 
 
 def _public_version(row: dict) -> dict:
@@ -70,13 +89,34 @@ def read_root():
     return {
         "message": "SecureFed-NIDS Central Server is Running",
         "latest_version": latest,
+        "open_round": registry.get_open_round(),
         "endpoints": {
             "list_versions": "/api/v1/model/versions",
             "download_latest": "/api/v1/model/download/latest",
             "download_version": "/api/v1/model/download/{version}",
+            "round_info": "/api/v1/round",
             "upload_update": "/api/v1/model/upload",
             "list_updates": "/api/v1/updates",
             "list_clients": "/api/v1/clients",
+            "aggregate": "/api/v1/model/aggregate",
+            "compare_methods": "/api/v1/model/aggregate/compare",
+        },
+    }
+
+
+@app.get("/api/v1/round")
+def get_open_round_info():
+    """Return active base model version, open FL round, and DP upload policy."""
+    return {
+        "status": "success",
+        "base_version": registry.latest_version(),
+        "open_round": registry.get_open_round(),
+        "supported_methods": list(SUPPORTED_FL_METHODS),
+        "dp_policy": {
+            "require_clipped_and_noised": True,
+            "min_clipping_norm": MIN_CLIPPING_NORM,
+            "max_clipping_norm": MAX_CLIPPING_NORM,
+            "min_noise_multiplier": MIN_NOISE_MULTIPLIER,
         },
     }
 
@@ -87,14 +127,39 @@ def list_model_versions():
     return {
         "status": "success",
         "latest": registry.latest_version(),
+        "open_round": registry.get_open_round(),
         "count": len(versions),
         "versions": [_public_version(v) for v in versions],
     }
 
 
+@app.delete("/api/v1/models/{version}")
+def delete_model_version_api(version: str, x_admin_key: Optional[str] = Header(None)):
+    """Delete a published model version from HQ registry and disk."""
+    if x_admin_key is not None and x_admin_key.strip() != ADMIN_API_KEY.strip():
+        raise HTTPException(status_code=403, detail="Forbidden: Invalid Admin Secret Key for HQ Model API.")
+    try:
+        res = registry.delete_version(version)
+    except ValueError as val_err:
+        raise HTTPException(status_code=400, detail=str(val_err)) from val_err
+    if res is None:
+        raise HTTPException(status_code=404, detail=f"Model version '{version}' not found.")
+    return {
+        "status": "success",
+        "message": f"Deleted model version v{res['deleted_version']}.",
+        **res,
+    }
+
+
 @app.get("/api/v1/model/download")
 @app.get("/api/v1/model/download/{version}")
-def download_global_model(version: str = "latest", x_admin_key: Optional[str] = Header(None)):
+def download_global_model(
+    request: Request,
+    version: str = "latest",
+    client_id: Optional[str] = None,
+    x_client_id: Optional[str] = Header(None),
+    x_admin_key: Optional[str] = Header(None),
+):
     """Return compressed base64 weights for the requested (or latest) version. Requires Admin Auth if provided."""
     if x_admin_key is not None and x_admin_key.strip() != ADMIN_API_KEY.strip():
         raise HTTPException(status_code=403, detail="Forbidden: Invalid Admin Secret Key for HQ Model API.")
@@ -106,6 +171,10 @@ def download_global_model(version: str = "latest", x_admin_key: Optional[str] = 
     weights_path = Path(record["weights_path"])
     if not weights_path.exists():
         raise HTTPException(status_code=404, detail="Weights file missing on disk.")
+
+    eff_client_id = (client_id or x_client_id or "").strip()
+    if eff_client_id:
+        registry.record_client_download(eff_client_id, record["version"], _extract_client_ip(request))
 
     raw = weights_path.read_bytes()
     compressed = zlib.compress(raw)
@@ -123,6 +192,7 @@ def download_global_model(version: str = "latest", x_admin_key: Optional[str] = 
     return {
         "status": "success",
         "version": record["version"],
+        "open_round": registry.get_open_round(),
         "model_name": record["model_name"],
         "architecture": record["architecture"],
         "fl_method": record["fl_method"],
@@ -164,7 +234,12 @@ def get_model_metadata(version: str):
 
 
 @app.get("/api/v1/model/package/{version}")
-def download_package_file(version: str):
+def download_package_file(
+    version: str,
+    request: Request,
+    client_id: Optional[str] = None,
+    x_client_id: Optional[str] = Header(None),
+):
     """Stream the edge package .pt for a version (falls back to weights.pt if no separate package exists)."""
     record = registry.get_version(version)
     if record is None:
@@ -173,6 +248,9 @@ def download_package_file(version: str):
     target = pkg if (pkg and Path(pkg).exists()) else record.get("weights_path")
     if not target or not Path(target).exists():
         raise HTTPException(status_code=404, detail="Package or weights file missing.")
+    eff_client_id = (client_id or x_client_id or "").strip()
+    if eff_client_id:
+        registry.record_client_download(eff_client_id, record["version"], _extract_client_ip(request))
     return FileResponse(
         path=str(target),
         filename=f"securefed_package_v{record['version']}.pt",
@@ -181,7 +259,12 @@ def download_package_file(version: str):
 
 
 @app.get("/api/v1/model/file/{version}")
-def download_weights_file(version: str):
+def download_weights_file(
+    version: str,
+    request: Request,
+    client_id: Optional[str] = None,
+    x_client_id: Optional[str] = Header(None),
+):
     """Stream the raw weights.pt for a version."""
     record = registry.get_version(version)
     if record is None:
@@ -189,6 +272,9 @@ def download_weights_file(version: str):
     weights_path = Path(record["weights_path"])
     if not weights_path.exists():
         raise HTTPException(status_code=404, detail="Weights file missing on disk.")
+    eff_client_id = (client_id or x_client_id or "").strip()
+    if eff_client_id:
+        registry.record_client_download(eff_client_id, record["version"], _extract_client_ip(request))
     return FileResponse(
         path=str(weights_path),
         filename=f"securefed_weights_v{record['version']}.pt",
@@ -198,44 +284,74 @@ def download_weights_file(version: str):
 
 @app.post("/api/v1/model/upload")
 async def upload_client_update(
+    request: Request,
     client_id: str = Form(...),
     samples: int = Form(0),
     base_version: str = Form("latest"),
     round: int = Form(0),
     file: UploadFile = File(...),
 ):
-    """Accept a compressed (or raw) client weight update. Never stores raw traffic."""
+    """Validate and accept ONLY clipped/noised DP weight deltas (.pt) for the open FL round."""
     try:
         content = await file.read()
         if not content:
             raise HTTPException(status_code=400, detail="Empty update file.")
 
-        # Accept zlib-compressed pickle (legacy client) or raw .pt bytes.
         stored_bytes = content
-        try:
-            decompressed = zlib.decompress(content)
-            pickle.loads(decompressed)  # validate it really is a pickle payload
-            stored_bytes = decompressed
-        except Exception:
-            stored_bytes = content
+        # Support optional zlib compression of a .pt delta archive (never raw Python pickle objects)
+        if not content[:2] == b"PK":
+            try:
+                decompressed = zlib.decompress(content)
+                if decompressed[:2] == b"PK":
+                    stored_bytes = decompressed
+            except Exception:
+                pass
 
-        record = registry.save_update(
+        current_latest = registry.latest_version()
+        if not current_latest:
+            raise HTTPException(status_code=400, detail="No global model version exists on HQ yet.")
+        latest_record = registry.get_version(current_latest)
+        _, base_state = extract_state_dict_from_artifact(Path(latest_record["weights_path"]))
+        open_round = registry.get_open_round()
+
+        validated = validate_client_update_payload(
+            raw_bytes=stored_bytes,
+            filename=file.filename or "",
             client_id=client_id,
-            weights_bytes=stored_bytes,
             samples=samples,
             base_version=base_version,
             round_idx=round,
+            expected_base_version=current_latest,
+            expected_round=open_round,
+            base_state_dict=base_state,
+        )
+
+        record = registry.save_update(
+            client_id=validated["client_id"],
+            weights_bytes=stored_bytes,
+            samples=validated["samples"],
+            base_version=validated["base_version"],
+            round_idx=validated["round"],
+            clipping_norm=validated["clipping_norm"],
+            noise_multiplier=validated["noise_multiplier"],
+            local_steps=validated["local_steps"],
+            ip_address=_extract_client_ip(request),
         )
         return {
             "status": "success",
-            "message": f"Update received from {client_id}.",
+            "message": f"Validated DP update received from {validated['client_id']} (round {validated['round']}).",
             "update_id": record["id"],
             "client_id": record["client_id"],
             "base_version": record["base_version"],
             "round": record["round"],
             "samples": record["samples"],
+            "clipping_norm": validated["clipping_norm"],
+            "noise_multiplier": validated["noise_multiplier"],
+            "local_steps": validated["local_steps"],
             "received_at": record["received_at"],
         }
+    except UpdateValidationError as val_err:
+        raise HTTPException(status_code=400, detail=str(val_err)) from val_err
     except HTTPException:
         raise
     except Exception as exc:
@@ -248,6 +364,9 @@ def list_updates(client_id: Optional[str] = None, version: Optional[str] = None)
     return {
         "status": "success",
         "count": len(updates),
+        "latest_version": registry.latest_version(),
+        "open_round": registry.get_open_round(),
+        "aggregated_folder": str(registry.aggregated_updates_dir),
         "updates": [
             {
                 "id": u["id"],
@@ -257,6 +376,14 @@ def list_updates(client_id: Optional[str] = None, version: Optional[str] = None)
                 "samples": u["samples"],
                 "received_at": u["received_at"],
                 "status": u["status"],
+                "weights_path": u.get("weights_path"),
+                "aggregated_version": u.get("aggregated_version"),
+                "aggregation_method": u.get("aggregation_method"),
+                "aggregated_at": u.get("aggregated_at"),
+                "archive_path": u.get("archive_path"),
+                "dp_clipping_norm": u.get("dp_clipping_norm"),
+                "dp_noise_multiplier": u.get("dp_noise_multiplier"),
+                "local_steps": u.get("local_steps"),
             }
             for u in updates
         ],
@@ -270,33 +397,72 @@ def list_clients():
 
 
 @app.post("/api/v1/clients/register")
-def register_client(client_id: str = Form(...), display_name: Optional[str] = Form(None)):
-    record = registry.register_client(client_id, display_name)
+def register_client(
+    request: Request,
+    client_id: str = Form(...),
+    display_name: Optional[str] = Form(None),
+    model_version: Optional[str] = Form(None),
+):
+    record = registry.register_client(
+        client_id=client_id,
+        display_name=display_name,
+        ip_address=_extract_client_ip(request),
+        model_version=model_version,
+    )
     return {"status": "success", "client": record}
 
 
+async def _parse_agg_request(request: Request) -> dict:
+    try:
+        data = await request.json()
+        if isinstance(data, dict):
+            return data
+    except Exception:
+        pass
+    try:
+        form = await request.form()
+        return dict(form)
+    except Exception:
+        return {}
+
+
 @app.post("/api/v1/model/aggregate")
-def trigger_aggregation(
-    base_version: str = Form("latest"),
-    method: str = Form("fedavg"),
-    notes: str = Form(""),
-    min_updates: int = Form(1),
-):
-    """Aggregate pending client updates into a new global model version using FedAvg, Trimmed Mean, Median, or Krum."""
-    from server_hq.central_aggregator import run_federated_round
+async def trigger_aggregation(request: Request):
+    """Aggregate validated pending DP deltas using FedAvg, FedProx, SCAFFOLD, FedNova, or MOON."""
+    body = await _parse_agg_request(request)
     try:
         result = run_federated_round(
             registry=registry,
-            base_version=base_version,
-            method=method,
-            notes=notes,
-            min_updates=min_updates,
+            base_version=str(body.get("base_version", "latest")),
+            method=str(body.get("method", "fedavg")),
+            notes=str(body.get("notes", "")),
+            min_updates=int(body.get("min_updates", 1)),
         )
         return result
     except ValueError as val_err:
         raise HTTPException(status_code=400, detail=str(val_err)) from val_err
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Aggregation error: {exc}") from exc
+
+
+@app.post("/api/v1/model/aggregate/compare")
+async def compare_aggregation_methods_endpoint(request: Request):
+    """Evaluate all 5 FL methods (FedAvg, FedProx, SCAFFOLD, FedNova, MOON) on the same pending deltas."""
+    body = await _parse_agg_request(request)
+    try:
+        methods = body.get("methods")
+        if isinstance(methods, str):
+            methods = [m.strip() for m in methods.split(",") if m.strip()]
+        return compare_aggregation_methods(
+            registry=registry,
+            methods=methods,
+            base_version=str(body.get("base_version", "latest")),
+            min_updates=int(body.get("min_updates", 1)),
+        )
+    except ValueError as val_err:
+        raise HTTPException(status_code=400, detail=str(val_err)) from val_err
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Comparison error: {exc}") from exc
 
 
 
