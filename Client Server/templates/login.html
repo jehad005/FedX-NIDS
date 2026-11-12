@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operator Sign In · SecureFed Client Edge</title>
+    <!-- Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Iconsax Icons Package -->
+    <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', 'system-ui', '-apple-system', 'sans-serif'],
+                        heading: ['"Inter"', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .iconsax {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            line-height: 1;
+            font-style: normal;
+        }
+
+        :root {
+            --crystal-blur: blur(28px) saturate(210%);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #0b0e14;
+            color: #f1f5f9;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        html:not(.dark) body {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+
+        /* Ambient Refraction Mesh */
+        .crystal-canvas {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .crystal-orb {
+            position: absolute;
+            border-radius: 9999px;
+            filter: blur(80px);
+            opacity: 0.65;
+            animation: orbFloat 18s ease-in-out infinite alternate;
+        }
+
+        .crystal-orb-1 {
+            width: 520px;
+            height: 520px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.55) 0%, rgba(30, 64, 175, 0.15) 70%, transparent 100%);
+            top: -120px;
+            left: -80px;
+            animation-duration: 22s;
+        }
+
+        .crystal-orb-2 {
+            width: 480px;
+            height: 480px;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.45) 0%, rgba(6, 182, 212, 0.12) 70%, transparent 100%);
+            bottom: -100px;
+            right: -60px;
+            animation-duration: 19s;
+            animation-delay: -5s;
+        }
+
+        .crystal-orb-3 {
+            width: 380px;
+            height: 380px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, rgba(5, 150, 105, 0.08) 70%, transparent 100%);
+            top: 45%;
+            left: 55%;
+            animation-duration: 24s;
+            animation-delay: -10s;
+        }
+
+        .crystal-orb-4 {
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(147, 51, 234, 0.30) 0%, rgba(99, 102, 241, 0.06) 70%, transparent 100%);
+            top: 15%;
+            right: 25%;
+            animation-duration: 17s;
+            animation-delay: -3s;
+        }
+
+        @keyframes orbFloat {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            50% { transform: translate(40px, 30px) scale(1.08) rotate(10deg); }
+            100% { transform: translate(-30px, 50px) scale(0.95) rotate(-8deg); }
+        }
+
+        /* Subtle Crystalline Grid Overlay */
+        .crystal-grid {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(circle at 50% 50%, black 40%, transparent 80%);
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, black 40%, transparent 80%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        html:not(.dark) .crystal-grid {
+            background-image: 
+                linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+        }
+
+        /* The Crystal Glass Card */
+        .crystal-card {
+            background: rgba(17, 24, 39, 0.52);
+            backdrop-filter: var(--crystal-blur);
+            -webkit-backdrop-filter: var(--crystal-blur);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-top: 1.5px solid rgba(255, 255, 255, 0.38);
+            border-left: 1.5px solid rgba(255, 255, 255, 0.28);
+            box-shadow: 
+                0 30px 60px -15px rgba(0, 0, 0, 0.65),
+                0 0 50px -10px rgba(37, 99, 235, 0.22),
+                inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
+                inset 0 -1px 1px 0 rgba(255, 255, 255, 0.05);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+        }
+
+        html:not(.dark) .crystal-card {
+            background: rgba(255, 255, 255, 0.68);
+            border: 1px solid rgba(255, 255, 255, 0.75);
+            border-top: 2px solid rgba(255, 255, 255, 0.95);
+            border-left: 2px solid rgba(255, 255, 255, 0.85);
+            box-shadow: 
+                0 30px 60px -15px rgba(15, 23, 42, 0.14),
+                0 0 50px -10px rgba(37, 99, 235, 0.15),
+                inset 0 1px 2px 0 rgba(255, 255, 255, 0.9),
+                inset 0 -1px 2px 0 rgba(15, 23, 42, 0.04);
+        }
+
+        /* Glass Input Fields */
+        .crystal-input {
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-top: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .crystal-input:focus {
+            background: rgba(15, 23, 42, 0.75);
+            border-color: rgba(59, 130, 246, 0.75);
+            box-shadow: 
+                0 0 0 3px rgba(37, 99, 235, 0.28),
+                inset 0 1px 2px 0 rgba(255, 255, 255, 0.15);
+            outline: none;
+        }
+
+        html:not(.dark) .crystal-input {
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid rgba(203, 213, 225, 0.75);
+            border-top: 1px solid rgba(255, 255, 255, 0.95);
+            box-shadow: inset 0 1px 3px 0 rgba(15, 23, 42, 0.06);
+            color: #0f172a;
+        }
+
+        html:not(.dark) .crystal-input:focus {
+            background: #ffffff;
+            border-color: #2563eb;
+            box-shadow: 
+                0 0 0 3px rgba(37, 99, 235, 0.18),
+                inset 0 1px 2px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        /* Prismatic Shield Badge */
+        .crystal-badge-3d {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.28) 0%, rgba(14, 165, 233, 0.18) 50%, rgba(16, 185, 129, 0.15) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            box-shadow: 
+                0 10px 25px -5px rgba(37, 99, 235, 0.35),
+                inset 0 1px 2px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        /* Glass Pill Tag */
+        .crystal-pill {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(12px);
+        }
+
+        html:not(.dark) .crystal-pill {
+            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(226, 232, 240, 0.85);
+            color: #1e293b;
+        }
+
+        /* Refined Sheen Button */
+        .crystal-btn-primary {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 55%, #0ea5e9 100%);
+            box-shadow: 
+                0 8px 24px -4px rgba(37, 99, 235, 0.45),
+                inset 0 1px 1px 0 rgba(255, 255, 255, 0.4);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .crystal-btn-primary::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -120%;
+            width: 70%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.6s ease;
+            pointer-events: none;
+        }
+
+        .crystal-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 12px 30px -4px rgba(37, 99, 235, 0.58),
+                inset 0 1px 2px 0 rgba(255, 255, 255, 0.6);
+        }
+
+        .crystal-btn-primary:hover::after {
+            left: 140%;
+        }
+
+        .crystal-btn-primary:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        /* Pulsing Live Dot */
+        .live-dot {
+            animation: livePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.45; transform: scale(0.85); }
+        }
+
+        /* Entrance Animation */
+        .crystal-enter {
+            animation: cardRise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes cardRise {
+            from {
+                opacity: 0;
+                transform: translateY(22px) scale(0.975);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+    </style>
+    <script>
+        (function () {
+            const saved = localStorage.getItem('edge_theme');
+            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
+</head>
+<body class="flex flex-col justify-between items-center p-4 sm:p-6 md:p-8">
+
+    <!-- Ambient Refraction Elements -->
+    <div class="crystal-canvas" aria-hidden="true">
+        <div class="crystal-orb crystal-orb-1"></div>
+        <div class="crystal-orb crystal-orb-2"></div>
+        <div class="crystal-orb crystal-orb-3"></div>
+        <div class="crystal-orb crystal-orb-4"></div>
+    </div>
+    <div class="crystal-grid" aria-hidden="true"></div>
+
+    <!-- Navigation Bar: Back & Theme Switch -->
+    <header class="w-full max-w-5xl flex items-center justify-between z-10 py-2">
+        <a href="/" class="crystal-pill inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold hover:border-blue-500/50 transition-all text-slate-300 dark:text-slate-300 hover:text-white" title="Return to Client Edge Dashboard">
+            <i class="iconsax text-sm" icon-name="arrow-left-2"></i>
+            <span>Node Overview</span>
+        </a>
+
+        <div class="flex items-center gap-2.5">
+            <a href="http://localhost:8001" target="_blank" class="crystal-pill hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-medium text-slate-300 dark:text-slate-400 hover:text-blue-400 transition-colors" title="Open SecureFed HQ Control Tower">
+                <i class="iconsax text-sm text-blue-400" icon-name="driver-2"></i>
+                <span>HQ Control Tower (:8001)</span>
+            </a>
+
+            <button type="button" onclick="toggleTheme()" class="crystal-pill w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 dark:text-slate-300 hover:text-white transition-all" title="Toggle Theme" aria-label="Toggle dark/light theme">
+                <i id="login-theme-icon" class="iconsax text-base" icon-name="moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Crystal Glass Login Card Container -->
+    <main class="w-full max-w-md my-auto py-6 z-10 crystal-enter">
+        <div class="crystal-card rounded-3xl p-7 sm:p-9 relative overflow-hidden">
+            
+            <!-- Top Prismatic Specular Accent Bar -->
+            <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-sky-400 to-emerald-400 opacity-90"></div>
+
+            <!-- Header Badge & Title -->
+            <div class="text-center mb-7">
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl crystal-badge-3d mb-3.5">
+                    <i class="iconsax text-2xl text-white drop-shadow-[0_2px_8px_rgba(37,99,235,0.6)]" icon-name="shield-tick"></i>
+                </div>
+
+                <h1 class="font-heading text-2xl font-bold tracking-tight text-white dark:text-white mb-1.5">
+                    SecureFed Edge Node
+                </h1>
+                <p class="text-xs text-slate-400 dark:text-slate-400">
+                    Client-Side Intrusion Detection &amp; DP Training Console
+                </p>
+
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full crystal-pill text-[11px] font-mono mt-3.5">
+                    <span class="live-dot w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="text-slate-300 dark:text-slate-300 font-semibold" id="node-id-pill">{{ state.client_id or 'client_node_01' }}</span>
+                    <span class="text-slate-500 dark:text-slate-500">·</span>
+                    <span class="text-emerald-400 dark:text-emerald-400 font-medium">Port 5000</span>
+                </div>
+            </div>
+
+            <!-- Dynamic Alert Message Box -->
+            <div id="login-alert" class="hidden mb-5 p-3.5 rounded-xl text-xs font-medium border flex items-start gap-2.5 transition-all">
+                <i id="login-alert-icon" class="iconsax text-base shrink-0 mt-0.5" icon-name="info-circle"></i>
+                <div id="login-alert-text" class="flex-1 leading-relaxed"></div>
+            </div>
+
+            <!-- Login Form -->
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                
+                <!-- Operator / Node ID Field -->
+                <div>
+                    <label for="login-username" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 dark:text-slate-300 mb-1.5 font-mono">
+                        Operator / Client ID
+                    </label>
+                    <div class="relative">
+                        <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-3" icon-name="user-1"></i>
+                        <input 
+                            type="text" 
+                            id="login-username" 
+                            required 
+                            value="{{ state.client_id or 'client_node_01' }}" 
+                            placeholder="e.g. client_node_01"
+                            class="crystal-input w-full pl-9 pr-3.5 py-2.5 rounded-xl text-xs text-white placeholder-slate-500 font-mono"
+                        >
+                    </div>
+                </div>
+
+                <!-- Admin Secret Key Field -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="login-admin-key" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 dark:text-slate-300 font-mono">
+                            Admin Secret Key
+                        </label>
+                        <span class="text-[10px] text-slate-400 font-mono">Required for DP &amp; Sync</span>
+                    </div>
+                    <div class="relative">
+                        <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-3" icon-name="key"></i>
+                        <input 
+                            type="password" 
+                            id="login-admin-key" 
+                            required 
+                            value="securefed-admin-token-2026"
+                            placeholder="Enter Admin Secret Token"
+                            class="crystal-input w-full pl-9 pr-10 py-2.5 rounded-xl text-xs text-white placeholder-slate-500 font-mono"
+                        >
+                        <button 
+                            type="button" 
+                            onclick="togglePasswordVisibility()" 
+                            class="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
+                            title="Show/Hide Token"
+                            aria-label="Toggle password visibility"
+                        >
+                            <i id="pwd-eye-icon" class="iconsax text-base" icon-name="eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Session Options & Demo Pre-fill -->
+                <div class="flex items-center justify-between text-xs pt-1">
+                    <label class="flex items-center gap-2 cursor-pointer select-none text-slate-300 dark:text-slate-400">
+                        <input type="checkbox" id="login-remember" checked class="w-3.5 h-3.5 rounded bg-slate-900/60 border-slate-700 text-blue-600 focus:ring-0 cursor-pointer">
+                        <span>Remember Credentials</span>
+                    </label>
+
+                    <button 
+                        type="button" 
+                        onclick="fillDemoCredentials()" 
+                        class="text-blue-400 hover:text-blue-300 text-xs font-semibold inline-flex items-center gap-1 transition-colors"
+                        title="Auto-fill default admin credentials"
+                    >
+                        <i class="iconsax text-sm" icon-name="magic-star"></i>
+                        <span>Demo Key</span>
+                    </button>
+                </div>
+
+                <!-- Submit Button -->
+                <button 
+                    type="submit" 
+                    id="login-submit-btn" 
+                    class="crystal-btn-primary w-full py-3 rounded-xl font-heading font-semibold text-xs text-white uppercase tracking-wider flex items-center justify-center gap-2 mt-2"
+                >
+                    <i class="iconsax text-base" icon-name="unlock"></i>
+                    <span id="login-btn-text">Authenticate &amp; Unlock</span>
+                </button>
+            </form>
+
+            <!-- Card Footer Metadata -->
+            <div class="mt-6 pt-5 border-t border-white/10 dark:border-white/10 text-center text-[11px] text-slate-400 font-mono">
+                <div class="flex items-center justify-center gap-2">
+                    <i class="iconsax text-xs text-emerald-400" icon-name="lock-1"></i>
+                    <span>Zero Raw Traffic Leakage · DP-SGD Guaranteed</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Terminal Watermark -->
+    <footer class="w-full max-w-5xl text-center py-2 z-10 text-[11px] font-mono text-slate-500">
+        SecureFed-NIDS v2.0 · Federated Defense Control Architecture
+    </footer>
+
+    <script>
+        function updateThemeIcon() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const icon = document.getElementById('login-theme-icon');
+            if (icon) {
+                icon.setAttribute('icon-name', isDark ? 'sun-1' : 'moon');
+            }
+        }
+
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('edge_theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('edge_theme', 'dark');
+            }
+            updateThemeIcon();
+        }
+
+        function togglePasswordVisibility() {
+            const input = document.getElementById('login-admin-key');
+            const icon = document.getElementById('pwd-eye-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('icon-name', 'eye-slash');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('icon-name', 'eye');
+            }
+        }
+
+        function fillDemoCredentials() {
+            document.getElementById('login-username').value = 'client_node_01';
+            document.getElementById('login-admin-key').value = 'securefed-admin-token-2026';
+            showAlert('info', 'Pre-filled demo credentials: client_node_01 & default admin token.');
+        }
+
+        function showAlert(type, message) {
+            const box = document.getElementById('login-alert');
+            const text = document.getElementById('login-alert-text');
+            const icon = document.getElementById('login-alert-icon');
+            box.classList.remove('hidden', 'bg-red-500/15', 'border-red-500/30', 'text-red-300', 'bg-emerald-500/15', 'border-emerald-500/30', 'text-emerald-300', 'bg-blue-500/15', 'border-blue-500/30', 'text-blue-300');
+            
+            if (type === 'error') {
+                box.classList.add('bg-red-500/15', 'border-red-500/30', 'text-red-300');
+                icon.setAttribute('icon-name', 'danger');
+            } else if (type === 'success') {
+                box.classList.add('bg-emerald-500/15', 'border-emerald-500/30', 'text-emerald-300');
+                icon.setAttribute('icon-name', 'tick-circle');
+            } else {
+                box.classList.add('bg-blue-500/15', 'border-blue-500/30', 'text-blue-300');
+                icon.setAttribute('icon-name', 'info-circle');
+            }
+            text.textContent = message;
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value.trim();
+            const adminKey = document.getElementById('login-admin-key').value.trim();
+            const remember = document.getElementById('login-remember').checked;
+            const btn = document.getElementById('login-submit-btn');
+            const btnText = document.getElementById('login-btn-text');
+
+            if (!adminKey) {
+                showAlert('error', 'Please enter your Admin Secret Key to authorize this Edge Node.');
+                return;
+            }
+
+            btn.disabled = true;
+            btnText.textContent = 'Verifying Crystal Credentials...';
+
+            try {
+                const response = await fetch('/api/client/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: username,
+                        admin_key: adminKey,
+                        remember: remember
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success') {
+                    // Store admin key for the entire Edge session
+                    sessionStorage.setItem('securefed_admin_key', adminKey);
+                    sessionStorage.setItem('securefed_operator_user', username);
+                    if (remember) {
+                        localStorage.setItem('securefed_saved_operator', username);
+                        localStorage.setItem('securefed_saved_admin_key', adminKey);
+                    }
+                    showAlert('success', `${data.message} Redirecting to Node Overview...`);
+                    btnText.textContent = '✓ Unlocked! Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 850);
+                } else {
+                    showAlert('error', data.detail || 'Authentication failed. Please verify your Admin Secret Key.');
+                    btn.disabled = false;
+                    btnText.textContent = 'Authenticate & Unlock';
+                }
+            } catch (err) {
+                showAlert('error', `Connection error: ${err.message}. Ensure Client Edge server is running.`);
+                btn.disabled = false;
+                btnText.textContent = 'Authenticate & Unlock';
+            }
+        }
+
+        // Initialize saved key if exists
+        document.addEventListener('DOMContentLoaded', () => {
+            updateThemeIcon();
+            const savedUser = localStorage.getItem('securefed_saved_operator') || sessionStorage.getItem('securefed_operator_user');
+            const savedKey = localStorage.getItem('securefed_saved_admin_key') || sessionStorage.getItem('securefed_admin_key');
+            if (savedUser) document.getElementById('login-username').value = savedUser;
+            if (savedKey) document.getElementById('login-admin-key').value = savedKey;
+        });
+    </script>
+</body>
+</html>

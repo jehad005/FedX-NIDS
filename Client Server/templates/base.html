@@ -360,6 +360,11 @@
                 <i class="iconsax text-base" icon-name="shield-search"></i>
                 <span>Traffic Inference &amp; XAI</span>
             </a>
+
+            <a href="/login" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'login' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#181e29] hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+                <i class="iconsax text-base" icon-name="key"></i>
+                <span id="nav-login-label">Operator Login</span>
+            </a>
         </nav>
 
         <!-- Node Status Footer -->
@@ -390,6 +395,10 @@
                     <i class="iconsax text-sm text-blue-600 dark:text-blue-400" icon-name="user-1"></i>
                     <span id="header-client-id" class="font-semibold">client_node_01</span>
                 </div>
+                <a href="/login" id="header-operator-pill" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#181d25] border border-slate-200 dark:border-[#2a313c] text-slate-700 dark:text-slate-200 shadow-xs hover:border-blue-500/60 transition-all cursor-pointer" title="Operator Authentication &amp; Credentials">
+                    <i id="header-operator-icon" class="iconsax text-sm text-amber-500" icon-name="lock-1"></i>
+                    <span id="header-operator-label" class="font-semibold">Sign In</span>
+                </a>
                 <div id="header-pushed-pill" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600/10 dark:bg-blue-500/15 border border-blue-600/20 dark:border-blue-500/30 text-blue-700 dark:text-blue-300 shadow-xs" title="Last model deployed from HQ">
                     <i class="iconsax text-sm" icon-name="cpu-charge"></i>
                     <span id="header-last-pushed">Last Pushed: None</span>
@@ -487,6 +496,29 @@ async function refreshHeader() {
                 syncPushPill.textContent = `Active: v${state.current_model_version} (${src})`;
             } else {
                 syncPushPill.textContent = 'Explicit Push Only';
+            }
+        }
+        const opLabel = document.getElementById('header-operator-label');
+        const opIcon = document.getElementById('header-operator-icon');
+        const opPill = document.getElementById('header-operator-pill');
+        const navLoginLabel = document.getElementById('nav-login-label');
+        const savedKey = sessionStorage.getItem('securefed_admin_key') || localStorage.getItem('securefed_saved_admin_key');
+        const savedUser = sessionStorage.getItem('securefed_operator_user') || localStorage.getItem('securefed_saved_operator') || state.operator_user;
+        const isAuth = Boolean(state.operator_authenticated || (savedKey && savedKey.length > 5));
+        if (opLabel && opIcon && opPill) {
+            if (isAuth) {
+                opLabel.textContent = `Admin: ${savedUser || state.client_id || 'Auth'}`;
+                opIcon.setAttribute('icon-name', 'shield-tick');
+                opIcon.className = 'iconsax text-sm text-emerald-500';
+                opPill.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/10 dark:bg-emerald-500/15 border border-emerald-600/25 dark:border-emerald-500/35 text-emerald-700 dark:text-emerald-300 shadow-xs hover:border-emerald-500 transition-all cursor-pointer';
+                opPill.title = 'Operator Authenticated (Admin Privileges Active)';
+                if (navLoginLabel) navLoginLabel.textContent = 'Operator Session';
+            } else {
+                opLabel.textContent = 'Sign In';
+                opIcon.setAttribute('icon-name', 'lock-1');
+                opIcon.className = 'iconsax text-sm text-amber-500';
+                opPill.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#181d25] border border-slate-200 dark:border-[#2a313c] text-slate-700 dark:text-slate-200 shadow-xs hover:border-blue-500/60 transition-all cursor-pointer';
+                if (navLoginLabel) navLoginLabel.textContent = 'Operator Login';
             }
         }
         const autoEnabled = state.auto_push !== false;

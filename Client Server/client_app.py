@@ -66,6 +66,9 @@ CLIENT_STATE = {
     "last_hq_push_version": None,
     "last_hq_push_at": None,
     "last_deployed_source": None,
+    "operator_user": None,
+    "operator_authenticated": False,
+    "operator_authenticated_at": None,
     "auto_push": True,
     "status": "Idle",
     "training_logs": [],
@@ -138,6 +141,9 @@ def _save_persisted_state() -> None:
             "last_hq_push_version": CLIENT_STATE.get("last_hq_push_version"),
             "last_hq_push_at": CLIENT_STATE.get("last_hq_push_at"),
             "last_deployed_source": CLIENT_STATE.get("last_deployed_source"),
+            "operator_user": CLIENT_STATE.get("operator_user"),
+            "operator_authenticated": bool(CLIENT_STATE.get("operator_authenticated", False)),
+            "operator_authenticated_at": CLIENT_STATE.get("operator_authenticated_at"),
             "auto_push": bool(CLIENT_STATE.get("auto_push", True)),
             "status": CLIENT_STATE.get("status"),
             "privacy": CLIENT_STATE.get("privacy"),
@@ -168,7 +174,7 @@ def _restore_persisted_state() -> None:
         CLIENT_STATE["hq_url"] = saved["hq_url"]
     if "auto_push" in saved:
         CLIENT_STATE["auto_push"] = bool(saved["auto_push"])
-    for key in ("last_sync", "last_push", "last_push_info", "last_hq_push_version", "last_hq_push_at", "last_deployed_source", "privacy", "training_logs"):
+    for key in ("last_sync", "last_push", "last_push_info", "last_hq_push_version", "last_hq_push_at", "last_deployed_source", "operator_user", "operator_authenticated", "operator_authenticated_at", "privacy", "training_logs"):
         if saved.get(key) is not None:
             CLIENT_STATE[key] = saved[key]
 
@@ -489,9 +495,20 @@ class InferenceRequest(BaseModel):
     file_b64: str
 
 
+class LoginRequest(BaseModel):
+    username: str = "client_node_01"
+    admin_key: str = ""
+    remember: bool = True
+
+
 @app.get("/", response_class=HTMLResponse)
 def client_dashboard(request: Request):
     return render_page(request, "client_index.html", "overview")
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
+    return render_page(request, "login.html", "login")
 
 
 @app.get("/sync", response_class=HTMLResponse)
@@ -512,6 +529,41 @@ def inference_page(request: Request):
 @app.get("/api/client/status")
 def get_client_status():
     return {"status": "success", "client_state": CLIENT_STATE}
+
+
+@app.post("/api/client/login")
+def client_login(payload: LoginRequest):
+    """Authenticate an operator or administrator to unlock Edge node controls."""
+    expected = os.getenv("ADMIN_KEY", DEFAULT_ADMIN_KEY).strip()
+    key = (payload.admin_key or "").strip()
+    username = (payload.username or "").strip() or CLIENT_STATE.get("client_id", "client_node_01")
+    if not key or key != expected:
+        raise HTTPException(
+            status_code=401,
+            detail="Access Denied: Invalid Admin Secret Key. (Default token: securefed-admin-token-2026)"
+        )
+
+    CLIENT_STATE["operator_user"] = username
+    CLIENT_STATE["operator_authenticated"] = True
+    CLIENT_STATE["operator_authenticated_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    _save_persisted_state()
+    return {
+        "status": "success",
+        "message": f"Welcome back, {username}! Edge Node unlocked with full Administrative privileges.",
+        "username": username,
+        "client_id": CLIENT_STATE.get("client_id"),
+        "authenticated_at": CLIENT_STATE["operator_authenticated_at"],
+    }
+
+
+@app.post("/api/client/logout")
+def client_logout():
+    """Clear active operator session from Edge node."""
+    CLIENT_STATE["operator_authenticated"] = False
+    CLIENT_STATE["operator_user"] = None
+    CLIENT_STATE["operator_authenticated_at"] = None
+    _save_persisted_state()
+    return {"status": "success", "message": "Successfully logged out of Edge Node."}
 
 
 @app.post("/api/client/configure")
