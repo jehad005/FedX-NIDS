@@ -1,722 +1,443 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cute Lamp Login · SecureFed Edge Node</title>
-    <!-- Fonts: Inter & JetBrains Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Inter"', 'system-ui', 'sans-serif'],
-                        mono: ['"JetBrains Mono"', 'monospace'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        :root {
-            --lamp-shade: #729679;
-            --lamp-shade-dark: #58785e;
-            --lamp-glow: rgba(34, 197, 94, 0.45);
-            --card-glow: 0 0 45px -5px rgba(34, 197, 94, 0.42), 0 20px 40px -15px rgba(0, 0, 0, 0.8);
-            --cord: #cbd5e1;
-            --tongue: #f43f5e;
-        }
+{% extends "base.html" %}
+{% block title %}Operator Authentication · SecureFed Edge{% endblock %}
+{% block page_heading %}Operator Authentication &amp; Access Control{% endblock %}
+{% block content %}
+<div class="edge-stagger-stack space-y-6">
 
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background: #090d13;
-            color: #f8fafc;
-            min-height: 100vh;
-            overflow-x: hidden;
-            transition: background 0.45s ease;
-        }
-
-        /* Ambient Room Lighting linked to Lamp state */
-        .room-ambient {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), background 0.55s ease;
-            background: radial-gradient(circle at 35% 45%, rgba(34, 197, 94, 0.16) 0%, rgba(14, 165, 233, 0.08) 45%, transparent 75%);
-            z-index: 0;
-        }
-
-        body.lamp-off .room-ambient {
-            opacity: 0.08;
-            background: radial-gradient(circle at 35% 45%, rgba(15, 23, 42, 0.2) 0%, transparent 60%);
-        }
-
-        /* Light Beam Projected from Lamp Bottom */
-        .light-beam {
-            position: absolute;
-            top: 178px;
-            left: 20px;
-            width: 200px;
-            height: 250px;
-            clip-path: polygon(32% 0%, 68% 0%, 100% 100%, 0% 100%);
-            background: linear-gradient(to bottom, rgba(255, 255, 240, 0.65) 0%, rgba(255, 255, 230, 0.18) 45%, rgba(34, 197, 94, 0.05) 80%, transparent 100%);
-            filter: blur(2.5px);
-            pointer-events: none;
-            transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), transform 0.38s ease;
-            transform-origin: top center;
-            z-index: 5;
-        }
-
-        body.lamp-off .light-beam {
-            opacity: 0;
-            transform: scaleY(0.7);
-        }
-
-        /* Surface Spotlight Reflection */
-        .spotlight-floor {
-            position: absolute;
-            bottom: -15px;
-            left: 10px;
-            width: 220px;
-            height: 48px;
-            border-radius: 50%;
-            background: radial-gradient(ellipse, rgba(255, 255, 230, 0.45) 0%, rgba(34, 197, 94, 0.25) 45%, transparent 75%);
-            filter: blur(6px);
-            pointer-events: none;
-            transition: opacity 0.35s ease;
-            z-index: 4;
-        }
-
-        body.lamp-off .spotlight-floor {
-            opacity: 0;
-        }
-
-        /* The Pull Cord Animation */
-        .pull-cord {
-            cursor: pointer;
-            transform-origin: top center;
-            transition: transform 0.14s ease-out;
-        }
-
-        .pull-cord:active, .pull-cord.is-pulling {
-            transform: translateY(20px) scaleY(1.18);
-        }
-
-        .cord-line {
-            stroke: #cbd5e1;
-            stroke-width: 2.2;
-            stroke-linecap: round;
-        }
-
-        .cord-bead {
-            fill: #f1f5f9;
-            stroke: #94a3b8;
-            stroke-width: 1.5;
-            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
-            transition: transform 0.15s ease, fill 0.15s ease;
-        }
-
-        .pull-cord:hover .cord-bead {
-            fill: #38bdf8;
-            transform: scale(1.22);
-        }
-
-        /* Lamp Face Expression States */
-        .face-eyes-open {
-            transition: opacity 0.25s ease, transform 0.25s ease;
-        }
-        .face-eyes-closed {
-            opacity: 0;
-            transition: opacity 0.25s ease;
-        }
-
-        body.lamp-off .face-eyes-open {
-            opacity: 0;
-            transform: scaleY(0.2);
-        }
-        body.lamp-off .face-eyes-closed {
-            opacity: 1;
-        }
-
-        /* Shy Eyes when typing Password */
-        body.is-shy .lamp-pupil {
-            transform: translate(6px, -4px) !important;
-        }
-        body.is-shy .lamp-blush {
-            transform: scale(1.35) !important;
-            opacity: 0.9 !important;
-        }
-
-        /* ======================================================== */
-        /* LOGIN INTERFACE APPEAR / DISAPPEAR REACTION (Key Feature)*/
-        /* ======================================================== */
-        .login-stage-container {
-            position: relative;
-            min-height: 440px;
-            width: 100%;
-            max-width: 380px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* When Lamp is ON: Login Interface Appears with Green Neon Glow */
-        .cute-login-card {
-            background: rgba(20, 26, 36, 0.72) !important;
-            backdrop-filter: blur(24px) saturate(190%) !important;
-            -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
-            border: 1.5px solid rgba(34, 197, 94, 0.65) !important;
-            border-radius: 28px;
-            box-shadow: 
-                0 0 40px -4px rgba(34, 197, 94, 0.50),
-                0 0 16px -2px rgba(34, 197, 94, 0.35),
-                0 25px 60px -15px rgba(0, 0, 0, 0.85),
-                inset 0 1px 1px 0 rgba(255, 255, 255, 0.18) !important;
-            transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.45s;
-            position: relative;
-            width: 100%;
-            opacity: 1;
-            transform: scale(1) translateY(0);
-            pointer-events: auto;
-            visibility: visible;
-        }
-
-        /* When Lamp is OFF: Login Interface Completely Vanishes! */
-        body.lamp-off .cute-login-card {
-            opacity: 0 !important;
-            transform: scale(0.9) translateY(24px) !important;
-            pointer-events: none !important;
-            visibility: hidden !important;
-            box-shadow: none !important;
-        }
-
-        /* Placeholder shown in the dark when light is off */
-        .dark-sleep-placeholder {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            opacity: 0;
-            transform: scale(0.92);
-            pointer-events: none;
-            visibility: hidden;
-            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s ease, visibility 0.4s;
-            border: 1.5px dashed rgba(255, 255, 255, 0.12);
-            border-radius: 28px;
-            padding: 2.2rem 1.8rem;
-            background: rgba(15, 23, 42, 0.35);
-            backdrop-filter: blur(12px);
-        }
-
-        body.lamp-off .dark-sleep-placeholder {
-            opacity: 1;
-            transform: scale(1);
-            pointer-events: auto;
-            visibility: visible;
-        }
-
-        /* Input Controls */
-        .cute-input {
-            background: rgba(28, 35, 45, 0.65) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.12) !important;
-            color: #f1f5f9;
-            transition: all 0.25s ease;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .cute-input:focus {
-            background: #202936;
-            border-color: #22c55e;
-            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.22), inset 0 1px 2px rgba(255, 255, 255, 0.05);
-            outline: none;
-        }
-
-        /* Green Submit Button */
-        .cute-btn-green {
-            background: #22c55e;
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-            box-shadow: 0 4px 18px -2px rgba(34, 197, 94, 0.45);
-            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .cute-btn-green:hover {
-            transform: translateY(-1.5px);
-            box-shadow: 0 8px 25px -4px rgba(34, 197, 94, 0.65);
-            filter: brightness(1.06);
-        }
-
-        .cute-btn-green:active {
-            transform: translateY(0) scale(0.98);
-        }
-
-        /* Floating Click Hint on Cord */
-        .cord-hint {
-            animation: pulseHint 2.2s infinite ease-in-out;
-        }
-
-        @keyframes pulseHint {
-            0%, 100% { transform: translateY(0); opacity: 0.85; }
-            50% { transform: translateY(4px); opacity: 1; }
-        }
-    </style>
-</head>
-<body class="lamp-off flex flex-col justify-between items-center min-h-screen p-4 sm:p-6 md:p-8">
-
-    <!-- Ambient Glow Mesh -->
-    <div class="room-ambient" aria-hidden="true"></div>
-
-    <!-- Header Navigation -->
-    <header class="w-full max-w-5xl flex items-center justify-between z-10 py-2">
-        <a href="/" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition-all">
-            <i class="iconsax text-sm" icon-name="arrow-left-2"></i>
-            <span>Node Overview</span>
-        </a>
-
-        <div class="flex items-center gap-2.5">
-            <button type="button" onclick="toggleLamp()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-emerald-400 transition-colors" title="Toggle Desk Lamp">
-                <i class="iconsax text-sm text-emerald-400" icon-name="lamp-charge"></i>
-                <span id="lamp-status-text">Lamp: OFF (Click Cord)</span>
-            </button>
-            <a href="http://localhost:8001" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-blue-400 transition-colors">
-                <i class="iconsax text-sm text-blue-400" icon-name="driver-2"></i>
-                <span>HQ Server (:8001)</span>
-            </a>
-        </div>
-    </header>
-
-    <!-- Main Container: Lamp on Left, Login Card on Right -->
-    <main class="w-full max-w-4xl my-auto py-6 z-10 flex flex-col md:flex-row items-center justify-center gap-10 lg:gap-16">
-
-        <!-- ======================================================== -->
-        <!-- THE CUTE LAMP COMPONENT (Interactive SVG + Light Beam)   -->
-        <!-- ======================================================== -->
-        <div class="relative flex flex-col items-center select-none" style="width: 240px;">
-            
-            <!-- Projected Light Beam and Floor Glow -->
-            <div class="light-beam" aria-hidden="true"></div>
-            <div class="spotlight-floor" aria-hidden="true"></div>
-
-            <!-- Cute Lamp SVG Illustration -->
-            <svg class="lamp-svg w-full overflow-visible" viewBox="0 0 240 360" width="240" height="360" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <!-- Shade Gradients -->
-                    <linearGradient id="shadeGrad" x1="45" y1="50" x2="195" y2="180" gradientUnits="userSpaceOnUse">
-                        <stop offset="0%" stop-color="#84a98c"/>
-                        <stop offset="60%" stop-color="#729679"/>
-                        <stop offset="100%" stop-color="#55735b"/>
-                    </linearGradient>
-
-                    <!-- Metallic Stand Gradient -->
-                    <linearGradient id="metalGrad" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stop-color="#94a3b8"/>
-                        <stop offset="35%" stop-color="#f1f5f9"/>
-                        <stop offset="70%" stop-color="#e2e8f0"/>
-                        <stop offset="100%" stop-color="#64748b"/>
-                    </linearGradient>
-
-                    <!-- Bulb Glow Gradient -->
-                    <radialGradient id="bulbGlow" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stop-color="#fffbeb" stop-opacity="1"/>
-                        <stop offset="40%" stop-color="#fef08a" stop-opacity="0.9"/>
-                        <stop offset="100%" stop-color="#ca8a04" stop-opacity="0"/>
-                    </radialGradient>
-                </defs>
-
-                <!-- Lamp Stem (Stand) -->
-                <rect x="113" y="175" width="14" height="135" rx="7" fill="url(#metalGrad)" stroke="#475569" stroke-width="1.2"/>
-
-                <!-- Lamp Base -->
-                <g id="lamp-base" class="transition-transform duration-300">
-                    <ellipse cx="120" cy="315" rx="48" ry="14" fill="#64748b"/>
-                    <ellipse cx="120" cy="312" rx="46" ry="12" fill="url(#metalGrad)" stroke="#475569" stroke-width="1.2"/>
-                    <ellipse cx="120" cy="310" rx="44" ry="10" fill="#f8fafc" opacity="0.6"/>
-                    <ellipse cx="120" cy="310" rx="14" ry="4" fill="#94a3b8"/>
-                </g>
-
-                <!-- Glowing Under-Shade Bulb & Rim -->
-                <ellipse id="lamp-bulb" cx="120" cy="180" rx="42" ry="11" fill="url(#bulbGlow)"/>
-
-                <!-- Lamp Shade (Cute Green Trapezoid) -->
-                <g id="lamp-head" class="cursor-pointer" onclick="pullCordAction(event)" title="Click lamp or pull cord to turn on/off">
-                    <path d="M 68 62 L 172 62 L 195 180 C 195 188, 45 188, 45 180 Z" fill="url(#shadeGrad)" stroke="#435e49" stroke-width="2"/>
-                    <!-- Top Cap of Shade -->
-                    <ellipse cx="120" cy="62" rx="52" ry="12" fill="#8cb394" stroke="#435e49" stroke-width="1.5"/>
-                    <ellipse cx="120" cy="62" rx="16" ry="4" fill="#64748b"/>
-                    <rect x="116" y="52" width="8" height="10" rx="3" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>
-
-                    <!-- ============================================== -->
-                    <!-- CUTE FACE ON LAMPSHADE (Smiling, Eyes & Tongue) -->
-                    <!-- ============================================== -->
-                    <g id="lamp-face" transform="translate(0, 15)">
-                        <!-- Eyes OPEN state -->
-                        <g class="face-eyes-open">
-                            <!-- Left Eye -->
-                            <ellipse cx="88" cy="112" rx="7.5" ry="9" fill="#1e293b"/>
-                            <circle class="lamp-pupil" cx="86" cy="109" r="2.8" fill="#ffffff"/>
-                            <circle class="lamp-pupil" cx="90.5" cy="115" r="1.2" fill="#ffffff"/>
-
-                            <!-- Right Eye -->
-                            <ellipse cx="152" cy="112" rx="7.5" ry="9" fill="#1e293b"/>
-                            <circle class="lamp-pupil" cx="150" cy="109" r="2.8" fill="#ffffff"/>
-                            <circle class="lamp-pupil" cx="154.5" cy="115" r="1.2" fill="#ffffff"/>
-                        </g>
-
-                        <!-- Eyes CLOSED state (Sleeping when OFF) -->
-                        <g class="face-eyes-closed">
-                            <path d="M 81 114 Q 88 108 95 114" stroke="#1e293b" stroke-width="3" stroke-linecap="round" fill="none"/>
-                            <path d="M 145 114 Q 152 108 159 114" stroke="#1e293b" stroke-width="3" stroke-linecap="round" fill="none"/>
-                        </g>
-
-                        <!-- Pink Cheeks (Blush) -->
-                        <ellipse class="lamp-blush transition-all duration-300" cx="76" cy="124" rx="6" ry="3.5" fill="#f43f5e" opacity="0.45"/>
-                        <ellipse class="lamp-blush transition-all duration-300" cx="164" cy="124" rx="6" ry="3.5" fill="#f43f5e" opacity="0.45"/>
-
-                        <!-- Cute Mouth with Pink Tongue -->
-                        <g id="lamp-mouth">
-                            <path d="M 106 122 C 106 136, 134 136, 134 122 Z" fill="#1e293b"/>
-                            <!-- Tongue -->
-                            <path class="lamp__tongue" d="M 112 129 C 114 136, 126 136, 128 129 C 124 126, 116 126, 112 129 Z" fill="var(--tongue)"/>
-                        </g>
-                    </g>
-                </g>
-
-                <!-- ============================================== -->
-                <!-- PULL CORD (Interactive Click / Drag Pull Cord)  -->
-                <!-- ============================================== -->
-                <g id="pull-cord" class="pull-cord" onclick="pullCordAction(event)" title="Click to pull cord and toggle light!">
-                    <!-- The Hanging String -->
-                    <path id="cord-path" class="cord-line" d="M 80 182 Q 78 215 76 250"/>
-                    <!-- The Pull Bead / Knob -->
-                    <circle class="cord-bead" cx="76" cy="254" r="7.5"/>
-                    <circle cx="74" cy="252" r="2.2" fill="#ffffff" opacity="0.8"/>
-                </g>
-            </svg>
-
-            <!-- Interactive Cord Pull Hint Button -->
-            <button 
-                type="button" 
-                id="cord-hint-btn" 
-                class="cord-hint mt-2 inline-flex items-center gap-1.5 text-xs font-mono font-medium text-emerald-400 bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-500/40 px-3.5 py-1.5 rounded-full cursor-pointer transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)]" 
-                onclick="pullCordAction(event)"
-            >
-                <i class="iconsax text-sm" icon-name="lamp-charge"></i>
-                <span id="cord-hint-text">Pull Cord to Turn On</span>
-            </button>
-        </div>
-
-        <!-- ======================================================== -->
-        <!-- THE LOGIN INTERFACE STAGE CONTAINER                      -->
-        <!-- (Fades in when Lamp turns ON, disappears when OFF)        -->
-        <!-- ======================================================== -->
-        <div class="login-stage-container">
-            
-            <!-- 1. SLEEP PLACEHOLDER (Visible when Light is OFF) -->
-            <div class="dark-sleep-placeholder">
-                <div class="w-14 h-14 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-3.5 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
-                    <i class="iconsax text-2xl text-emerald-400" icon-name="lamp-on"></i>
-                </div>
-                <h3 class="font-heading text-lg font-bold text-white mb-1">
-                    Light is Turned Off
-                </h3>
-                <p class="text-xs text-slate-400 leading-relaxed font-mono mb-4">
-                    Pull the hanging cord on the cute lamp to illuminate the room and unlock the login interface.
+    <!-- Top Security Banner -->
+    <div class="edge-card p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-xl bg-blue-600/[0.09] dark:bg-blue-500/15 border border-blue-600/20 dark:border-blue-500/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <i class="iconsax text-xl" icon-name="shield-security"></i>
+            </div>
+            <div>
+                <h2 class="font-heading text-[15px] font-bold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
+                    <span>Edge Node Cryptographic Access Gateway</span>
+                    <span class="font-mono text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                        <span class="edge-live-dot h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Zero Trust Edge
+                    </span>
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Authenticate operator identity with an HMAC Admin Secret Key to authorize model pushes, training deltas, and telemetry changes.
                 </p>
-                <button 
-                    type="button" 
-                    onclick="pullCordAction(event)"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-all cursor-pointer"
-                >
-                    <i class="iconsax text-sm" icon-name="flash"></i>
-                    <span>Pull Cord to Light Up</span>
-                </button>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 self-start sm:self-auto font-mono text-xs">
+            <span class="px-3 py-1.5 rounded-xl edge-pill-glass text-slate-600 dark:text-slate-300">
+                Port: 5000
+            </span>
+            <span class="px-3 py-1.5 rounded-xl edge-pill-glass text-slate-600 dark:text-slate-300">
+                DP Engine: Active
+            </span>
+        </div>
+    </div>
+
+    <!-- Main Grid: Left Node Profile, Right Sign In / Active Session -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Left Column: Edge Node Security Profile (5 cols) -->
+        <div class="lg:col-span-5 space-y-5">
+            
+            <!-- Security Profile Card -->
+            <div class="edge-card p-6 rounded-2xl space-y-4">
+                <div class="flex items-center justify-between border-b pb-3.5 border-slate-200/80 dark:border-white/10">
+                    <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Node Trust Status</span>
+                    <span id="profile-trust-pill" class="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <span class="edge-live-dot h-2 w-2 rounded-full bg-emerald-500"></span> Verified Edge
+                    </span>
+                </div>
+
+                <div class="space-y-3 font-mono text-xs">
+                    <div class="flex items-center justify-between py-1.5 border-b border-slate-200/50 dark:border-white/5">
+                        <span class="text-slate-500 dark:text-slate-400">Node ID</span>
+                        <span id="profile-client-id" class="font-semibold text-slate-800 dark:text-slate-200">client_node_01</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 border-b border-slate-200/50 dark:border-white/5">
+                        <span class="text-slate-500 dark:text-slate-400">Central HQ Link</span>
+                        <span id="profile-hq-url" class="font-semibold text-blue-600 dark:text-blue-400 truncate max-w-[200px]">http://localhost:8000</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 border-b border-slate-200/50 dark:border-white/5">
+                        <span class="text-slate-500 dark:text-slate-400">Deployed Model</span>
+                        <span id="profile-deployed-model" class="font-semibold text-emerald-600 dark:text-emerald-400">Checking...</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 border-b border-slate-200/50 dark:border-white/5">
+                        <span class="text-slate-500 dark:text-slate-400">Privacy Mechanism</span>
+                        <span class="font-semibold text-slate-800 dark:text-slate-200">DP-SGD (Gaussian Noise)</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5">
+                        <span class="text-slate-500 dark:text-slate-400">Session Guard</span>
+                        <span class="font-semibold text-slate-800 dark:text-slate-200">HMAC-SHA256 Token</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- 2. LOGIN CARD (Emerges when Light is ON) -->
-            <div class="cute-login-card p-7 sm:p-8">
-                
-                <div class="mb-6">
-                    <h2 class="font-heading text-2xl font-bold tracking-tight text-white mb-1">
-                        Welcome Back
-                    </h2>
-                    <p class="text-xs text-slate-400 font-mono">
-                        SecureFed Edge Intrusion Detection Node
+            <!-- Privileges Breakdown Card -->
+            <div class="edge-card p-6 rounded-2xl space-y-3.5">
+                <h3 class="font-heading text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <i class="iconsax text-base text-blue-600 dark:text-blue-400" icon-name="key"></i>
+                    Administrative Privileges
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Signing in as an authenticated operator unlocks sensitive pipeline controls on this edge instance:
+                </p>
+                <ul class="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
+                    <li class="flex items-start gap-2">
+                        <i class="iconsax text-sm text-emerald-500 mt-0.5 shrink-0" icon-name="tick-circle"></i>
+                        <span><strong>Model Synchronization:</strong> Pull &amp; deploy newly pushed global ensemble weights from HQ.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="iconsax text-sm text-emerald-500 mt-0.5 shrink-0" icon-name="tick-circle"></i>
+                        <span><strong>On-Device DP Training:</strong> Run differential-privacy local training on network flow CSVs.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="iconsax text-sm text-emerald-500 mt-0.5 shrink-0" icon-name="tick-circle"></i>
+                        <span><strong>Parameter Delta Push:</strong> Push clipped parameter gradients back to HQ aggregator.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="iconsax text-sm text-emerald-500 mt-0.5 shrink-0" icon-name="tick-circle"></i>
+                        <span><strong>Air-Gapped Fallback:</strong> Manually upload verified <code>.pt</code> model state dictionaries.</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right Column: Operator Authentication Console (7 cols) -->
+        <div class="lg:col-span-7 space-y-5">
+            
+            <!-- Already Authenticated Panel (shown if active session exists) -->
+            <div id="active-session-card" class="hidden edge-card p-7 sm:p-8 rounded-2xl space-y-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.2)] shrink-0">
+                        <i class="iconsax text-3xl" icon-name="shield-tick"></i>
+                    </div>
+                    <div>
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-mono text-[10px] font-semibold mb-1">
+                            <span class="edge-live-dot h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Session Authenticated
+                        </div>
+                        <h3 class="font-heading text-lg font-bold text-slate-900 dark:text-slate-100">
+                            Operator Privileges Active
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            Authenticated as <span id="active-session-user" class="font-mono font-semibold text-slate-800 dark:text-slate-200">client_node_01</span>.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl edge-pill-glass space-y-2 font-mono text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500 dark:text-slate-400">Authenticated At:</span>
+                        <span id="active-session-time" class="text-slate-800 dark:text-slate-200 font-semibold">—</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500 dark:text-slate-400">Access Scope:</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-semibold">Edge Admin (Full)</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-3 pt-2">
+                    <a href="/" class="edge-btn edge-btn-sheen px-5 py-2.5 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold text-xs inline-flex items-center gap-2 shadow-[0_4px_14px_-2px_rgba(37,99,235,0.3)]">
+                        <i class="iconsax text-sm" icon-name="grid-apps"></i>
+                        <span>Go to Node Overview</span>
+                    </a>
+                    <a href="/sync" class="edge-btn px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 font-semibold text-xs inline-flex items-center gap-2">
+                        <i class="iconsax text-sm" icon-name="cloud-add"></i>
+                        <span>Sync Global Model</span>
+                    </a>
+                    <button type="button" onclick="handleLogout()" class="edge-btn ml-auto px-4 py-2.5 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-600 dark:text-red-400 border border-red-500/25 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer">
+                        <i class="iconsax text-sm" icon-name="logout"></i>
+                        <span>Terminate Session</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sign In Form Card -->
+            <div id="signin-card" class="edge-card p-7 sm:p-8 rounded-2xl space-y-6">
+                <div>
+                    <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 font-mono text-[10px] font-semibold mb-2 border border-blue-600/20">
+                        <i class="iconsax text-xs" icon-name="lock"></i> Administrative Access
+                    </div>
+                    <h3 class="font-heading text-xl font-bold text-slate-900 dark:text-slate-100">
+                        Sign In as Operator
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Enter your operator credentials or Admin Secret Key to unlock this node.
                     </p>
                 </div>
 
-                <!-- Alert message box -->
-                <div id="login-alert" class="hidden mb-4 p-3 rounded-xl text-xs font-medium border flex items-start gap-2">
-                    <i id="login-alert-icon" class="iconsax text-base shrink-0 mt-0.5" icon-name="info-circle"></i>
-                    <div id="login-alert-text" class="flex-1"></div>
+                <!-- Alert Message Container -->
+                <div id="login-alert" class="hidden p-3.5 rounded-xl text-xs font-mono border flex items-start gap-2.5">
+                    <i id="login-alert-icon" class="iconsax text-base mt-0.5 shrink-0" icon-name="info-circle"></i>
+                    <span id="login-alert-text" class="leading-relaxed"></span>
                 </div>
 
-                <form onsubmit="handleCuteLogin(event)" class="space-y-4">
-                    
-                    <!-- Username Input -->
+                <form id="operator-login-form" onsubmit="handleOperatorLogin(event)" class="space-y-4">
+                    <!-- Operator Username -->
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">
-                            Username
-                        </label>
-                        <input 
-                            type="text" 
-                            id="username" 
-                            required 
-                            value="{{ state.client_id or 'client_node_01' }}" 
-                            placeholder="Enter your username"
-                            onfocus="handleUsernameFocus()"
-                            onblur="handleUsernameBlur()"
-                            class="cute-input w-full px-4 py-2.5 rounded-xl text-xs font-sans placeholder-slate-500"
-                        >
-                    </div>
-
-                    <!-- Password / Admin Key Input -->
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">
-                            Password
+                        <label for="login-username" class="block font-mono text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                            Operator Identifier
                         </label>
                         <div class="relative">
+                            <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-3" icon-name="user-1"></i>
                             <input 
+                                id="login-username" 
+                                type="text" 
+                                required
+                                value="client_node_01"
+                                placeholder="e.g. client_node_01 or admin_secops"
+                                class="w-full pl-9 pr-3.5 py-2.5 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-0"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Admin Secret Key -->
+                    <div>
+                        <label for="login-admin-key" class="block font-mono text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                            Admin Secret Key / Token
+                        </label>
+                        <div class="relative">
+                            <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-3" icon-name="key"></i>
+                            <input 
+                                id="login-admin-key" 
                                 type="password" 
-                                id="password" 
-                                required 
-                                value="securefed-admin-token-2026"
-                                placeholder="Enter your password"
-                                onfocus="handlePasswordFocus()"
-                                onblur="handlePasswordBlur()"
-                                class="cute-input w-full px-4 pr-10 py-2.5 rounded-xl text-xs font-mono placeholder-slate-500"
+                                required
+                                placeholder="Enter Admin Secret Key"
+                                class="w-full pl-9 pr-10 py-2.5 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-0"
                             >
                             <button 
                                 type="button" 
-                                onclick="togglePasswordView()" 
-                                class="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
-                                aria-label="Toggle password view"
+                                onclick="togglePasswordVisibility()" 
+                                class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                                title="Toggle visibility"
                             >
-                                <i id="eye-icon" class="iconsax text-base" icon-name="eye"></i>
+                                <i id="login-eye-icon" class="iconsax text-base" icon-name="eye"></i>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Remember & Quick Demo Link -->
+                    <!-- Remember & Demo Credentials Row -->
                     <div class="flex items-center justify-between text-xs pt-1">
-                        <label class="flex items-center gap-2 cursor-pointer text-slate-400 text-xs">
-                            <input type="checkbox" id="remember-me" checked class="rounded bg-slate-800 border-slate-700 text-green-500 focus:ring-0">
-                            <span>Remember me</span>
+                        <label class="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-slate-400 text-xs">
+                            <input type="checkbox" id="login-remember" checked class="rounded border-slate-300 dark:border-white/10 text-blue-600 focus:ring-0">
+                            <span>Remember credentials</span>
                         </label>
-                        <button type="button" onclick="fillDemoCredentials()" class="text-emerald-400 hover:text-emerald-300 text-xs font-medium transition-colors">
-                            Demo Credentials
+                        <button type="button" onclick="fillDemoCredentials()" class="text-blue-600 dark:text-blue-400 hover:underline font-mono text-[11px] font-semibold cursor-pointer">
+                            Auto-fill Demo Token
                         </button>
                     </div>
 
-                    <!-- Green Submit Button -->
+                    <!-- Submit Button -->
                     <button 
                         type="submit" 
-                        id="login-btn" 
-                        class="cute-btn-green w-full py-2.5 rounded-xl font-heading font-semibold text-xs text-white uppercase tracking-wider flex items-center justify-center gap-2 mt-2"
+                        id="login-submit-btn" 
+                        class="edge-btn edge-btn-sheen w-full py-3 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-heading font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_16px_-2px_rgba(37,99,235,0.35)] mt-3 cursor-pointer"
                     >
-                        <span id="login-btn-label">Login</span>
+                        <i class="iconsax text-sm" icon-name="shield-tick"></i>
+                        <span id="login-btn-text">Verify &amp; Unlock Edge Node</span>
                     </button>
-
-                    <!-- Forgot Password / Admin Token Hint -->
-                    <div class="text-center pt-2">
-                        <button type="button" onclick="showTokenHint()" class="text-xs text-slate-500 hover:text-slate-400 transition-colors">
-                            Forgot Password?
-                        </button>
-                    </div>
                 </form>
+
+                <!-- Help & Guidance Footer -->
+                <div class="pt-4 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                    <span class="flex items-center gap-1.5">
+                        <i class="iconsax text-sm text-emerald-500" icon-name="shield-tick"></i> SHA-256 HMAC Protected
+                    </span>
+                    <button type="button" onclick="showTokenHint()" class="hover:underline text-slate-500 dark:text-slate-400 cursor-pointer">
+                        Default Token Info
+                    </button>
+                </div>
             </div>
         </div>
-    </main>
+    </div>
+</div>
 
-    <!-- Footer Terminal Tag -->
-    <footer class="w-full max-w-5xl text-center py-2 z-10 text-[11px] font-mono text-slate-500">
-        Cute Lamp Interface · SecureFed-NIDS Client Edge Node (:5000)
-    </footer>
+<script>
+    function togglePasswordVisibility() {
+        const input = document.getElementById('login-admin-key');
+        const icon = document.getElementById('login-eye-icon');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.setAttribute('icon-name', 'eye-slash');
+        } else {
+            input.type = 'password';
+            icon.setAttribute('icon-name', 'eye');
+        }
+    }
 
-    <!-- Audio Element for Tactile Cord Snap Sound (Synthesized with Web Audio API) -->
-    <script>
-        // Web Audio Synthesizer for realistic tactile cord switch "click" sound
-        function playCordClickSound(isTurningOn) {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = isTurningOn ? 'triangle' : 'sine';
-                osc.frequency.setValueAtTime(isTurningOn ? 880 : 440, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(isTurningOn ? 220 : 180, ctx.currentTime + 0.08);
-                gain.gain.setValueAtTime(0.28, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.08);
-            } catch (e) {
-                // AudioContext fallback
-            }
+    function fillDemoCredentials() {
+        document.getElementById('login-username').value = 'client_node_01';
+        document.getElementById('login-admin-key').value = 'securefed-admin-token-2026';
+        showAlert('info', 'Demo credentials populated: client_node_01 / securefed-admin-token-2026');
+    }
+
+    function showTokenHint() {
+        showAlert('info', 'Default administrative token is pre-configured as "securefed-admin-token-2026". You can click "Auto-fill Demo Token" to populate it.');
+    }
+
+    function showAlert(type, msg) {
+        const alertBox = document.getElementById('login-alert');
+        const icon = document.getElementById('login-alert-icon');
+        const text = document.getElementById('login-alert-text');
+        
+        alertBox.className = 'p-3.5 rounded-xl text-xs font-mono border flex items-start gap-2.5';
+        
+        if (type === 'error') {
+            alertBox.classList.add('bg-red-500/10', 'border-red-500/30', 'text-red-700', 'dark:text-red-300');
+            icon.setAttribute('icon-name', 'danger');
+        } else if (type === 'success') {
+            alertBox.classList.add('bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-700', 'dark:text-emerald-300');
+            icon.setAttribute('icon-name', 'tick-circle');
+        } else {
+            alertBox.classList.add('bg-blue-500/10', 'border-blue-500/30', 'text-blue-700', 'dark:text-blue-300');
+            icon.setAttribute('icon-name', 'info-circle');
+        }
+        
+        text.textContent = msg;
+        alertBox.classList.remove('hidden');
+    }
+
+    async function handleOperatorLogin(e) {
+        e.preventDefault();
+        const username = document.getElementById('login-username').value.trim();
+        const adminKey = document.getElementById('login-admin-key').value.trim();
+        const remember = document.getElementById('login-remember').checked;
+        const btn = document.getElementById('login-submit-btn');
+        const btnText = document.getElementById('login-btn-text');
+
+        if (!adminKey) {
+            showAlert('error', 'Please enter your Admin Secret Key.');
+            return;
         }
 
-        // Start with Lamp OFF so the user gets the magical experience of pulling the cord to reveal the login interface
-        let isLampOn = false;
+        btn.disabled = true;
+        btnText.textContent = 'Verifying Credentials...';
 
-        function toggleLamp() {
-            isLampOn = !isLampOn;
-            playCordClickSound(isLampOn);
+        try {
+            const response = await fetch('/api/client/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: username || 'client_node_01',
+                    admin_key: adminKey,
+                    remember: remember
+                })
+            });
 
-            const cordHintText = document.getElementById('cord-hint-text');
-            const lampStatusText = document.getElementById('lamp-status-text');
+            const data = await response.json();
 
-            if (isLampOn) {
-                // LIGHT TURNS ON -> LOGIN INTERFACE EMERGES!
-                document.body.classList.remove('lamp-off');
-                if (lampStatusText) lampStatusText.textContent = 'Lamp: ON';
-                if (cordHintText) cordHintText.textContent = 'Pull Cord to Turn Off';
-            } else {
-                // LIGHT TURNS OFF -> LOGIN INTERFACE VANISHES!
-                document.body.classList.add('lamp-off');
-                if (lampStatusText) lampStatusText.textContent = 'Lamp: OFF (Click Cord)';
-                if (cordHintText) cordHintText.textContent = 'Pull Cord to Turn On';
-            }
-        }
-
-        function pullCordAction(e) {
-            if (e) e.stopPropagation();
-            const cord = document.getElementById('pull-cord');
-            cord.classList.add('is-pulling');
-            setTimeout(() => {
-                cord.classList.remove('is-pulling');
-                toggleLamp();
-            }, 120);
-        }
-
-        // Cute Lamp Interactive Reactions
-        function handlePasswordFocus() {
-            document.body.classList.add('is-shy');
-        }
-
-        function handlePasswordBlur() {
-            document.body.classList.remove('is-shy');
-        }
-
-        function handleUsernameFocus() {
-            const pupils = document.querySelectorAll('.lamp-pupil');
-            pupils.forEach(p => p.setAttribute('transform', 'translate(0, 1)'));
-        }
-
-        function handleUsernameBlur() {
-            const pupils = document.querySelectorAll('.lamp-pupil');
-            pupils.forEach(p => p.removeAttribute('transform'));
-        }
-
-        function togglePasswordView() {
-            const pwd = document.getElementById('password');
-            const icon = document.getElementById('eye-icon');
-            if (pwd.type === 'password') {
-                pwd.type = 'text';
-                icon.setAttribute('icon-name', 'eye-slash');
-            } else {
-                pwd.type = 'password';
-                icon.setAttribute('icon-name', 'eye');
-            }
-        }
-
-        function fillDemoCredentials() {
-            document.getElementById('username').value = 'client_node_01';
-            document.getElementById('password').value = 'securefed-admin-token-2026';
-            showAlert('info', 'Demo credentials loaded: client_node_01 & default admin token.');
-        }
-
-        function showTokenHint() {
-            showAlert('info', 'Default Admin Secret Token is: securefed-admin-token-2026');
-        }
-
-        function showAlert(type, msg) {
-            const box = document.getElementById('login-alert');
-            const text = document.getElementById('login-alert-text');
-            const icon = document.getElementById('login-alert-icon');
-            box.classList.remove('hidden', 'bg-red-500/15', 'border-red-500/30', 'text-red-300', 'bg-emerald-500/15', 'border-emerald-500/30', 'text-emerald-300', 'bg-blue-500/15', 'border-blue-500/30', 'text-blue-300');
-
-            if (type === 'error') {
-                box.classList.add('bg-red-500/15', 'border-red-500/30', 'text-red-300');
-                icon.setAttribute('icon-name', 'danger');
-            } else if (type === 'success') {
-                box.classList.add('bg-emerald-500/15', 'border-emerald-500/30', 'text-emerald-300');
-                icon.setAttribute('icon-name', 'tick-circle');
-            } else {
-                box.classList.add('bg-blue-500/15', 'border-blue-500/30', 'text-blue-300');
-                icon.setAttribute('icon-name', 'info-circle');
-            }
-            text.textContent = msg;
-        }
-
-        async function handleCuteLogin(e) {
-            e.preventDefault();
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const remember = document.getElementById('remember-me').checked;
-            const btn = document.getElementById('login-btn');
-            const label = document.getElementById('login-btn-label');
-
-            if (!password) {
-                showAlert('error', 'Please enter your password / Admin Secret Key.');
-                return;
-            }
-
-            btn.disabled = true;
-            label.textContent = 'Verifying...';
-
-            try {
-                const response = await fetch('/api/client/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: username,
-                        admin_key: password,
-                        remember: remember
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.status === 'success') {
-                    sessionStorage.setItem('securefed_admin_key', password);
-                    sessionStorage.setItem('securefed_operator_user', username);
-                    if (remember) {
-                        localStorage.setItem('securefed_saved_operator', username);
-                        localStorage.setItem('securefed_saved_admin_key', password);
-                    }
-                    showAlert('success', `${data.message} Redirecting...`);
-                    label.textContent = '✓ Welcome!';
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 800);
-                } else {
-                    showAlert('error', data.detail || 'Authentication failed. Please verify your password / Admin Secret Key.');
-                    btn.disabled = false;
-                    label.textContent = 'Login';
+            if (response.ok && data.status === 'success') {
+                sessionStorage.setItem('securefed_admin_key', adminKey);
+                sessionStorage.setItem('securefed_operator_user', username);
+                if (remember) {
+                    localStorage.setItem('securefed_saved_operator', username);
+                    localStorage.setItem('securefed_saved_admin_key', adminKey);
                 }
-            } catch (err) {
-                showAlert('error', `Connection error: ${err.message}`);
-                btn.disabled = false;
-                label.textContent = 'Login';
-            }
-        }
 
-        // Restore saved credentials if available
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedUser = localStorage.getItem('securefed_saved_operator') || sessionStorage.getItem('securefed_operator_user');
-            const savedKey = localStorage.getItem('securefed_saved_admin_key') || sessionStorage.getItem('securefed_admin_key');
-            if (savedUser) document.getElementById('username').value = savedUser;
-            if (savedKey) document.getElementById('password').value = savedKey;
-        });
-    </script>
-</body>
-</html>
+                showAlert('success', `${data.message} Authenticated!`);
+                btnText.textContent = '✓ Access Granted';
+
+                // Refresh state and transition view
+                setTimeout(() => {
+                    refreshAuthState();
+                    if (typeof fetchClientStatus === 'function') {
+                        fetchClientStatus();
+                    }
+                }, 600);
+            } else {
+                showAlert('error', data.detail || 'Authentication failed. Please verify your Admin Secret Key.');
+                btn.disabled = false;
+                btnText.textContent = 'Verify & Unlock Edge Node';
+            }
+        } catch (err) {
+            showAlert('error', `Connection error: ${err.message}`);
+            btn.disabled = false;
+            btnText.textContent = 'Verify & Unlock Edge Node';
+        }
+    }
+
+    async function handleLogout() {
+        if (!confirm('Are you sure you want to terminate the active operator session?')) return;
+        try {
+            await fetch('/api/client/logout', { method: 'POST' });
+        } catch (e) {
+            console.error('Logout error:', e);
+        }
+        sessionStorage.removeItem('securefed_admin_key');
+        sessionStorage.removeItem('securefed_operator_user');
+        localStorage.removeItem('securefed_saved_operator');
+        localStorage.removeItem('securefed_saved_admin_key');
+
+        showAlert('info', 'Operator session terminated.');
+        refreshAuthState();
+        if (typeof fetchClientStatus === 'function') {
+            fetchClientStatus();
+        }
+    }
+
+    async function refreshAuthState() {
+        try {
+            const res = await fetch('/api/client/status');
+            const data = await res.json();
+            const state = data.client_state || {};
+            
+            const savedKey = sessionStorage.getItem('securefed_admin_key') || localStorage.getItem('securefed_saved_admin_key');
+            const savedUser = sessionStorage.getItem('securefed_operator_user') || localStorage.getItem('securefed_saved_operator') || state.operator_user;
+            const isAuth = Boolean(state.operator_authenticated || (savedKey && savedKey.length > 5));
+
+            // Update Left Column profile info
+            const profileClientId = document.getElementById('profile-client-id');
+            const profileHqUrl = document.getElementById('profile-hq-url');
+            const profileModel = document.getElementById('profile-deployed-model');
+            if (profileClientId) profileClientId.textContent = state.client_id || 'client_node_01';
+            if (profileHqUrl) profileHqUrl.textContent = state.hq_url || 'http://localhost:8000';
+            if (profileModel) {
+                if (state.current_model_version) {
+                    profileModel.textContent = `v${state.current_model_version}`;
+                } else if (state.last_hq_push_version) {
+                    profileModel.textContent = `HQ Push: v${state.last_hq_push_version}`;
+                } else {
+                    profileModel.textContent = 'None (Standby)';
+                }
+            }
+
+            // Toggle panels
+            const activeSessionCard = document.getElementById('active-session-card');
+            const signinCard = document.getElementById('signin-card');
+            const activeUser = document.getElementById('active-session-user');
+            const activeTime = document.getElementById('active-session-time');
+
+            if (isAuth) {
+                if (activeSessionCard) activeSessionCard.classList.remove('hidden');
+                if (signinCard) signinCard.classList.add('hidden');
+                if (activeUser) activeUser.textContent = savedUser || state.client_id || 'client_node_01';
+                if (activeTime) {
+                    const at = state.operator_authenticated_at;
+                    activeTime.textContent = at ? new Date(at).toLocaleString() : 'Active in this browser';
+                }
+            } else {
+                if (activeSessionCard) activeSessionCard.classList.add('hidden');
+                if (signinCard) signinCard.classList.remove('hidden');
+                const usernameInput = document.getElementById('login-username');
+                if (usernameInput && !usernameInput.value) {
+                    usernameInput.value = state.client_id || 'client_node_01';
+                }
+            }
+        } catch (err) {
+            console.error('Error refreshing auth state:', err);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedUser = localStorage.getItem('securefed_saved_operator') || sessionStorage.getItem('securefed_operator_user');
+        const savedKey = localStorage.getItem('securefed_saved_admin_key') || sessionStorage.getItem('securefed_admin_key');
+        if (savedUser) {
+            const uInput = document.getElementById('login-username');
+            if (uInput) uInput.value = savedUser;
+        }
+        if (savedKey) {
+            const kInput = document.getElementById('login-admin-key');
+            if (kInput) kInput.value = savedKey;
+        }
+        refreshAuthState();
+    });
+</script>
+{% endblock %}
