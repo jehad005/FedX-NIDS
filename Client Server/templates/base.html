@@ -72,26 +72,46 @@
 
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: #f4f7fb;
+            background-color: #eef3f9;
             background-image:
-                radial-gradient(920px circle at 18% -6%, rgba(37, 99, 235, 0.075), transparent 56%),
-                radial-gradient(760px circle at 92% 10%, rgba(14, 165, 233, 0.065), transparent 52%),
-                radial-gradient(640px circle at 50% 100%, rgba(16, 185, 129, 0.035), transparent 58%);
+                radial-gradient(1000px circle at 12% 8%, rgba(59, 130, 246, 0.14), transparent 52%),
+                radial-gradient(850px circle at 88% 12%, rgba(14, 165, 233, 0.12), transparent 48%),
+                radial-gradient(750px circle at 50% 92%, rgba(16, 185, 129, 0.08), transparent 52%),
+                radial-gradient(650px circle at 85% 75%, rgba(139, 92, 246, 0.09), transparent 50%),
+                radial-gradient(550px circle at 15% 85%, rgba(245, 158, 11, 0.06), transparent 45%);
             background-attachment: fixed;
             -webkit-font-smoothing: antialiased;
             transition: background-color 0.25s ease, color 0.25s ease;
         }
 
         html.dark body {
-            background-color: #0b0e13;
+            background-color: #080c14;
             background-image:
-                radial-gradient(900px circle at 20% -5%, rgba(59, 130, 246, 0.08), transparent 55%),
-                radial-gradient(700px circle at 90% 10%, rgba(14, 165, 233, 0.06), transparent 50%);
+                radial-gradient(1100px circle at 15% 5%, rgba(37, 99, 235, 0.18), transparent 55%),
+                radial-gradient(950px circle at 85% 15%, rgba(14, 165, 233, 0.14), transparent 50%),
+                radial-gradient(850px circle at 50% 90%, rgba(16, 185, 129, 0.11), transparent 55%),
+                radial-gradient(750px circle at 85% 75%, rgba(139, 92, 246, 0.13), transparent 50%),
+                radial-gradient(600px circle at 20% 80%, rgba(56, 189, 248, 0.08), transparent 45%);
         }
 
         h1, h2, h3, h4, .font-heading {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             letter-spacing: -0.02em;
+        }
+
+        /* Glassmorphism Sidebar */
+        aside.edge-sidebar {
+            background: rgba(255, 255, 255, 0.75) !important;
+            backdrop-filter: blur(20px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.85) !important;
+            box-shadow: 4px 0 24px -10px rgba(15, 23, 42, 0.08) !important;
+        }
+
+        html.dark aside.edge-sidebar {
+            background: rgba(13, 18, 28, 0.72) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 4px 0 24px -10px rgba(0, 0, 0, 0.5) !important;
         }
 
         /* Sidebar Brand & Nav Motion */
@@ -140,14 +160,22 @@
             animation: edgeSpinPop 0.45s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        /* Top Bar & Staggered Page Animations */
+        /* Glass Top Bar & Staggered Page Animations */
         .edge-topbar {
             position: sticky;
             top: 0;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            box-shadow: var(--edge-shadow-xs);
+            background: rgba(255, 255, 255, 0.72) !important;
+            backdrop-filter: blur(20px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.85) !important;
+            box-shadow: 0 4px 20px -2px rgba(31, 38, 135, 0.06), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
             animation: edgeFadeDown 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        html.dark .edge-topbar {
+            background: rgba(13, 18, 28, 0.72) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
         }
 
         .edge-topbar::before {
@@ -177,21 +205,38 @@
         .edge-stagger-grid > *:nth-child(3) { animation-delay: 0.18s; }
         .edge-stagger-grid > *:nth-child(4) { animation-delay: 0.24s; }
 
-        /* Elevated Cards & Metric Cards */
-        .edge-card {
-            box-shadow: var(--edge-shadow-sm);
-            transition: box-shadow 0.25s ease, border-color 0.25s ease;
+        /* Crystal Glass Cards & Metric Tiles */
+        .edge-card,
+        .edge-metric-card,
+        .edge-workflow-card {
+            background: rgba(255, 255, 255, 0.72) !important;
+            backdrop-filter: blur(18px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.85) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95) !important;
+            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.22s ease;
+        }
+
+        html.dark .edge-card,
+        html.dark .edge-metric-card,
+        html.dark .edge-workflow-card {
+            background: rgba(17, 24, 37, 0.65) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 14px 36px 0 rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.12) !important;
         }
 
         .edge-card:hover {
-            box-shadow: var(--edge-shadow-md);
+            box-shadow: 0 14px 36px 0 rgba(37, 99, 235, 0.14), inset 0 1px 2px 0 rgba(255, 255, 255, 1) !important;
+        }
+
+        html.dark .edge-card:hover {
+            box-shadow: 0 18px 42px 0 rgba(0, 0, 0, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.18) !important;
         }
 
         .edge-metric-card {
             position: relative;
             overflow: hidden;
-            box-shadow: var(--edge-shadow-sm);
-            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.22s ease;
         }
 
         .edge-metric-card::before {
@@ -209,8 +254,13 @@
 
         .edge-metric-card:hover {
             transform: translateY(-4px);
-            box-shadow: var(--edge-shadow-hover);
-            border-color: rgba(37, 99, 235, 0.32);
+            border-color: rgba(37, 99, 235, 0.38) !important;
+            box-shadow: 0 20px 42px -6px rgba(37, 99, 235, 0.16), 0 0 20px -2px rgba(14, 165, 233, 0.15), inset 0 1px 2px 0 rgba(255, 255, 255, 1) !important;
+        }
+
+        html.dark .edge-metric-card:hover {
+            border-color: rgba(59, 130, 246, 0.38) !important;
+            box-shadow: 0 22px 48px -6px rgba(0, 0, 0, 0.65), 0 0 24px -4px rgba(59, 130, 246, 0.28), inset 0 1px 0 0 rgba(255, 255, 255, 0.22) !important;
         }
 
         .edge-metric-card:hover::before {
@@ -225,11 +275,10 @@
             transform: scale(1.08) rotate(-4deg);
         }
 
-        /* Workflow Cards */
+        /* Glass Workflow Cards */
         .edge-workflow-card {
             position: relative;
             overflow: hidden;
-            box-shadow: var(--edge-shadow-sm);
             transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.22s ease, background-color 0.22s ease, box-shadow 0.26s ease;
         }
 
@@ -247,12 +296,63 @@
 
         .edge-workflow-card:hover {
             transform: translateY(-3px);
-            box-shadow: var(--edge-shadow-md);
-            border-color: rgba(37, 99, 235, 0.42);
+            border-color: rgba(37, 99, 235, 0.42) !important;
+            box-shadow: 0 16px 36px 0 rgba(37, 99, 235, 0.15), inset 0 1px 2px 0 rgba(255, 255, 255, 1) !important;
+        }
+
+        html.dark .edge-workflow-card:hover {
+            border-color: rgba(59, 130, 246, 0.42) !important;
+            box-shadow: 0 20px 42px 0 rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.2) !important;
         }
 
         .edge-workflow-card:hover::before {
             transform: scaleY(1);
+        }
+
+        /* Glass Form Inputs & Controls */
+        input[type="text"], input[type="password"], input[type="number"], select, .edge-glass-input {
+            background: rgba(255, 255, 255, 0.75) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(203, 213, 225, 0.85) !important;
+            transition: all 0.2s ease !important;
+        }
+
+        html.dark input[type="text"], html.dark input[type="password"], html.dark input[type="number"], html.dark select, html.dark .edge-glass-input {
+            background: rgba(10, 15, 24, 0.65) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus, select:focus {
+            border-color: #2563eb !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+        }
+
+        html.dark input[type="text"]:focus, html.dark input[type="password"]:focus, html.dark input[type="number"]:focus, html.dark select:focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.28) !important;
+        }
+
+        /* Glass Header Pills */
+        .edge-pill-glass {
+            background: rgba(255, 255, 255, 0.68) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.82) !important;
+            box-shadow: 0 2px 8px rgba(31, 38, 135, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+        }
+
+        html.dark .edge-pill-glass {
+            background: rgba(17, 24, 37, 0.65) !important;
+            border: 1px solid rgba(255, 255, 255, 0.09) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+        }
+
+        /* Glass Terminal Pre */
+        pre {
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
 
         /* Tactile Buttons with Sheen */
@@ -320,9 +420,9 @@
 <body class="text-slate-900 dark:text-slate-100 min-h-screen md:h-screen md:overflow-hidden">
 <div class="min-h-screen md:h-screen flex flex-col md:flex-row md:overflow-hidden">
     <!-- Independent Fixed Left Navigation Rail -->
-    <aside class="w-full md:w-60 md:h-screen overflow-y-auto bg-white/95 dark:bg-[#11151c]/95 backdrop-blur-md border-b md:border-b-0 md:border-r border-slate-200 dark:border-[#1f2633] shadow-[4px_0_24px_-12px_rgba(15,23,42,0.08)] flex flex-col md:fixed md:inset-y-0 md:left-0 z-30">
+    <aside class="edge-sidebar w-full md:w-60 md:h-screen overflow-y-auto flex flex-col md:fixed md:inset-y-0 md:left-0 z-30">
         <!-- Brand Header -->
-        <div class="px-4 py-4 border-b border-slate-200 dark:border-[#1f2633] flex justify-between items-center gap-2">
+        <div class="px-4 py-4 border-b border-slate-200/80 dark:border-white/10 flex justify-between items-center gap-2">
             <a href="/" class="edge-brand-link flex items-center gap-2.5 group no-underline cursor-pointer" title="Go to Edge Node Overview">
                 <div class="edge-brand-icon w-9 h-9 rounded-[10px] bg-gradient-to-br from-blue-600 to-sky-500 border border-white/35 shadow-[0_6px_16px_-4px_rgba(37,99,235,0.38)] flex items-center justify-center text-white shrink-0">
                     <i class="iconsax text-base" icon-name="shield-tick"></i>
@@ -332,7 +432,7 @@
                     <div class="font-mono text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Edge · Port 5000</div>
                 </div>
             </a>
-            <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn w-8 h-8 rounded-[10px] bg-slate-50 dark:bg-[#181d25] hover:bg-white dark:hover:bg-[#212732] text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center border border-slate-200 dark:border-[#2a313c] shadow-sm" title="Switch to Dark Mode" aria-label="Toggle theme">
+            <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn w-8 h-8 rounded-[10px] bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center border border-slate-200/80 dark:border-white/10 shadow-xs" title="Switch to Dark Mode" aria-label="Toggle theme">
                 <i id="theme-icon" class="iconsax text-base" icon-name="moon"></i>
             </button>
         </div>
@@ -341,34 +441,34 @@
         <nav class="flex-1 px-3 py-3.5 space-y-1 text-[13.5px] font-medium">
             <div class="px-2.5 pb-1.5 pt-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Node Console</div>
             
-            <a href="/" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'overview' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#181e29] hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+            <a href="/" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'overview' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                 <i class="iconsax text-base" icon-name="grid-apps"></i>
                 <span>Node Overview</span>
             </a>
 
-            <a href="/sync" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'sync' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#181e29] hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+            <a href="/sync" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'sync' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                 <i class="iconsax text-base" icon-name="cloud-add"></i>
                 <span>HQ Synchronization</span>
             </a>
 
-            <a href="/training" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'training' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#181e29] hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+            <a href="/training" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'training' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                 <i class="iconsax text-base" icon-name="cpu-charge"></i>
                 <span>DP Local Training</span>
             </a>
 
-            <a href="/inference" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'inference' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#181e29] hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+            <a href="/inference" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'inference' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                 <i class="iconsax text-base" icon-name="shield-search"></i>
                 <span>Traffic Inference &amp; XAI</span>
             </a>
 
-            <a href="/login" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'login' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#181e29] hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+            <a href="/login" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'login' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                 <i class="iconsax text-base" icon-name="key"></i>
                 <span id="nav-login-label">Operator Login</span>
             </a>
         </nav>
 
         <!-- Node Status Footer -->
-        <div class="px-4 py-3.5 border-t border-slate-200 dark:border-[#1f2633] bg-slate-50/90 dark:bg-[#0e1218]">
+        <div class="px-4 py-3.5 border-t border-slate-200/80 dark:border-white/10 bg-slate-50/60 dark:bg-black/30 backdrop-blur-md">
             <div class="flex items-center justify-between text-xs">
                 <span class="font-mono text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                     <i class="iconsax text-sm" icon-name="driver-2"></i> Edge Engine
@@ -385,25 +485,25 @@
     <!-- Main Independent Scrollable Workspace -->
     <div class="md:ml-60 flex-1 md:h-screen md:overflow-y-auto flex flex-col">
         <!-- Top Header Bar -->
-        <header class="edge-topbar z-20 bg-white/90 dark:bg-[#131820]/90 border-b border-slate-200 dark:border-[#222a36] px-7 py-4 flex flex-wrap justify-between items-center gap-4">
+        <header class="edge-topbar z-20 px-7 py-4 flex flex-wrap justify-between items-center gap-4">
             <div>
                 <h1 class="font-heading text-[17px] font-bold text-slate-900 dark:text-slate-100">{% block page_heading %}Client Node Management{% endblock %}</h1>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Local DP-SGD &amp; Intrusion Detection Node</p>
             </div>
             <div class="flex flex-wrap items-center gap-2.5 text-xs font-mono">
-                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#181d25] border border-slate-200 dark:border-[#2a313c] text-slate-700 dark:text-slate-200 shadow-xs">
+                <div class="edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-700 dark:text-slate-200">
                     <i class="iconsax text-sm text-blue-600 dark:text-blue-400" icon-name="user-1"></i>
                     <span id="header-client-id" class="font-semibold">client_node_01</span>
                 </div>
-                <a href="/login" id="header-operator-pill" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#181d25] border border-slate-200 dark:border-[#2a313c] text-slate-700 dark:text-slate-200 shadow-xs hover:border-blue-500/60 transition-all cursor-pointer" title="Operator Authentication &amp; Credentials">
+                <a href="/login" id="header-operator-pill" class="edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-700 dark:text-slate-200 hover:border-blue-500/60 transition-all cursor-pointer" title="Operator Authentication &amp; Credentials">
                     <i id="header-operator-icon" class="iconsax text-sm text-amber-500" icon-name="lock-1"></i>
                     <span id="header-operator-label" class="font-semibold">Sign In</span>
                 </a>
-                <div id="header-pushed-pill" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600/10 dark:bg-blue-500/15 border border-blue-600/20 dark:border-blue-500/30 text-blue-700 dark:text-blue-300 shadow-xs" title="Last model deployed from HQ">
+                <div id="header-pushed-pill" class="edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-blue-700 dark:text-blue-300" title="Last model deployed from HQ">
                     <i class="iconsax text-sm" icon-name="cpu-charge"></i>
                     <span id="header-last-pushed">Last Pushed: None</span>
                 </div>
-                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#181d25] border border-slate-200 dark:border-[#2a313c] text-slate-600 dark:text-slate-300 shadow-xs">
+                <div class="edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-300">
                     <i class="iconsax text-sm text-emerald-600 dark:text-emerald-400" icon-name="link-2"></i>
                     <span id="header-hq-url">http://localhost:8000</span>
                 </div>
