@@ -35,11 +35,11 @@
 
         body {
             font-family: 'Inter', system-ui, sans-serif;
-            background: #0d1117;
+            background: #090d13;
             color: #f8fafc;
             min-height: 100vh;
             overflow-x: hidden;
-            transition: background 0.4s ease;
+            transition: background 0.45s ease;
         }
 
         /* Ambient Room Lighting linked to Lamp state */
@@ -47,13 +47,14 @@
             position: fixed;
             inset: 0;
             pointer-events: none;
-            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            background: radial-gradient(circle at 35% 45%, rgba(34, 197, 94, 0.12) 0%, rgba(14, 165, 233, 0.06) 45%, transparent 75%);
+            transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), background 0.55s ease;
+            background: radial-gradient(circle at 35% 45%, rgba(34, 197, 94, 0.16) 0%, rgba(14, 165, 233, 0.08) 45%, transparent 75%);
             z-index: 0;
         }
 
         body.lamp-off .room-ambient {
-            opacity: 0.15;
+            opacity: 0.08;
+            background: radial-gradient(circle at 35% 45%, rgba(15, 23, 42, 0.2) 0%, transparent 60%);
         }
 
         /* Light Beam Projected from Lamp Bottom */
@@ -67,7 +68,7 @@
             background: linear-gradient(to bottom, rgba(255, 255, 240, 0.65) 0%, rgba(255, 255, 230, 0.18) 45%, rgba(34, 197, 94, 0.05) 80%, transparent 100%);
             filter: blur(2.5px);
             pointer-events: none;
-            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s ease;
+            transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), transform 0.38s ease;
             transform-origin: top center;
             z-index: 5;
         }
@@ -100,11 +101,11 @@
         .pull-cord {
             cursor: pointer;
             transform-origin: top center;
-            transition: transform 0.12s ease-out;
+            transition: transform 0.14s ease-out;
         }
 
         .pull-cord:active, .pull-cord.is-pulling {
-            transform: translateY(18px) scaleY(1.15);
+            transform: translateY(20px) scaleY(1.18);
         }
 
         .cord-line {
@@ -117,22 +118,22 @@
             fill: #f1f5f9;
             stroke: #94a3b8;
             stroke-width: 1.5;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
-            transition: transform 0.15s ease;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
+            transition: transform 0.15s ease, fill 0.15s ease;
         }
 
         .pull-cord:hover .cord-bead {
             fill: #38bdf8;
-            transform: scale(1.18);
+            transform: scale(1.22);
         }
 
         /* Lamp Face Expression States */
         .face-eyes-open {
-            transition: opacity 0.2s ease, transform 0.2s ease;
+            transition: opacity 0.25s ease, transform 0.25s ease;
         }
         .face-eyes-closed {
             opacity: 0;
-            transition: opacity 0.2s ease;
+            transition: opacity 0.25s ease;
         }
 
         body.lamp-off .face-eyes-open {
@@ -152,28 +153,72 @@
             opacity: 0.9 !important;
         }
 
-        /* The Glowing Login Card (Exact Match with Green Neon Glow) */
-        .cute-login-card {
-            background: #151b23;
-            border: 1.5px solid rgba(255, 255, 255, 0.08);
-            border-radius: 28px;
-            box-shadow: var(--card-glow);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        /* ======================================================== */
+        /* LOGIN INTERFACE APPEAR / DISAPPEAR REACTION (Key Feature)*/
+        /* ======================================================== */
+        .login-stage-container {
             position: relative;
+            min-height: 440px;
+            width: 100%;
+            max-width: 380px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        body:not(.lamp-off) .cute-login-card {
-            border-color: rgba(34, 197, 94, 0.55);
+        /* When Lamp is ON: Login Interface Appears with Green Neon Glow */
+        .cute-login-card {
+            background: #141922;
+            border: 1.5px solid rgba(34, 197, 94, 0.55);
+            border-radius: 28px;
             box-shadow: 
                 0 0 35px -5px rgba(34, 197, 94, 0.45),
                 0 0 15px -3px rgba(34, 197, 94, 0.3),
                 0 25px 60px -15px rgba(0, 0, 0, 0.85);
+            transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.45s;
+            position: relative;
+            width: 100%;
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
+            visibility: visible;
         }
 
+        /* When Lamp is OFF: Login Interface Completely Vanishes! */
         body.lamp-off .cute-login-card {
-            border-color: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85);
-            opacity: 0.72;
+            opacity: 0 !important;
+            transform: scale(0.9) translateY(24px) !important;
+            pointer-events: none !important;
+            visibility: hidden !important;
+            box-shadow: none !important;
+        }
+
+        /* Placeholder shown in the dark when light is off */
+        .dark-sleep-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            opacity: 0;
+            transform: scale(0.92);
+            pointer-events: none;
+            visibility: hidden;
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s ease, visibility 0.4s;
+            border: 1.5px dashed rgba(255, 255, 255, 0.12);
+            border-radius: 28px;
+            padding: 2.2rem 1.8rem;
+            background: rgba(15, 23, 42, 0.35);
+            backdrop-filter: blur(12px);
+        }
+
+        body.lamp-off .dark-sleep-placeholder {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+            visibility: visible;
         }
 
         /* Input Controls */
@@ -212,7 +257,7 @@
 
         /* Floating Click Hint on Cord */
         .cord-hint {
-            animation: pulseHint 2s infinite ease-in-out;
+            animation: pulseHint 2.2s infinite ease-in-out;
         }
 
         @keyframes pulseHint {
@@ -221,7 +266,7 @@
         }
     </style>
 </head>
-<body class="flex flex-col justify-between items-center min-h-screen p-4 sm:p-6 md:p-8">
+<body class="lamp-off flex flex-col justify-between items-center min-h-screen p-4 sm:p-6 md:p-8">
 
     <!-- Ambient Glow Mesh -->
     <div class="room-ambient" aria-hidden="true"></div>
@@ -236,7 +281,7 @@
         <div class="flex items-center gap-2.5">
             <button type="button" onclick="toggleLamp()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-emerald-400 transition-colors" title="Toggle Desk Lamp">
                 <i class="iconsax text-sm text-emerald-400" icon-name="lamp-charge"></i>
-                <span id="lamp-status-text">Lamp: ON</span>
+                <span id="lamp-status-text">Lamp: OFF (Click Cord)</span>
             </button>
             <a href="http://localhost:8001" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-blue-400 transition-colors">
                 <i class="iconsax text-sm text-blue-400" icon-name="driver-2"></i>
@@ -245,7 +290,7 @@
         </div>
     </header>
 
-    <!-- Main Container: Lamp on Left, Login Card on Right (Just like the Reel!) -->
+    <!-- Main Container: Lamp on Left, Login Card on Right -->
     <main class="w-full max-w-4xl my-auto py-6 z-10 flex flex-col md:flex-row items-center justify-center gap-10 lg:gap-16">
 
         <!-- ======================================================== -->
@@ -298,7 +343,7 @@
                 <ellipse id="lamp-bulb" cx="120" cy="180" rx="42" ry="11" fill="url(#bulbGlow)"/>
 
                 <!-- Lamp Shade (Cute Green Trapezoid) -->
-                <g id="lamp-head" class="cursor-pointer" onclick="toggleLamp()" title="Click lamp or pull cord to turn on/off">
+                <g id="lamp-head" class="cursor-pointer" onclick="pullCordAction(event)" title="Click lamp or pull cord to turn on/off">
                     <path d="M 68 62 L 172 62 L 195 180 C 195 188, 45 188, 45 180 Z" fill="url(#shadeGrad)" stroke="#435e49" stroke-width="2"/>
                     <!-- Top Cap of Shade -->
                     <ellipse cx="120" cy="62" rx="52" ry="12" fill="#8cb394" stroke="#435e49" stroke-width="1.5"/>
@@ -353,106 +398,137 @@
                 </g>
             </svg>
 
-            <!-- Interactive Cord Pull Hint -->
-            <div class="cord-hint mt-2 flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full cursor-pointer" onclick="pullCordAction(event)">
-                <i class="iconsax text-xs" icon-name="mouse-circle"></i>
-                <span>Pull Cord to Toggle</span>
-            </div>
+            <!-- Interactive Cord Pull Hint Button -->
+            <button 
+                type="button" 
+                id="cord-hint-btn" 
+                class="cord-hint mt-2 inline-flex items-center gap-1.5 text-xs font-mono font-medium text-emerald-400 bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-500/40 px-3.5 py-1.5 rounded-full cursor-pointer transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)]" 
+                onclick="pullCordAction(event)"
+            >
+                <i class="iconsax text-sm" icon-name="lamp-charge"></i>
+                <span id="cord-hint-text">Pull Cord to Turn On</span>
+            </button>
         </div>
 
         <!-- ======================================================== -->
-        <!-- THE SLEEK LOGIN CARD (Matching the Reel Exactly)         -->
+        <!-- THE LOGIN INTERFACE STAGE CONTAINER                      -->
+        <!-- (Fades in when Lamp turns ON, disappears when OFF)        -->
         <!-- ======================================================== -->
-        <div class="cute-login-card w-full max-w-sm p-7 sm:p-8">
+        <div class="login-stage-container">
             
-            <div class="mb-6">
-                <h2 class="font-heading text-2xl font-bold tracking-tight text-white mb-1">
-                    Welcome Back
-                </h2>
-                <p class="text-xs text-slate-400 font-mono">
-                    SecureFed Edge Intrusion Detection Node
+            <!-- 1. SLEEP PLACEHOLDER (Visible when Light is OFF) -->
+            <div class="dark-sleep-placeholder">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-3.5 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
+                    <i class="iconsax text-2xl text-emerald-400" icon-name="lamp-on"></i>
+                </div>
+                <h3 class="font-heading text-lg font-bold text-white mb-1">
+                    Light is Turned Off
+                </h3>
+                <p class="text-xs text-slate-400 leading-relaxed font-mono mb-4">
+                    Pull the hanging cord on the cute lamp to illuminate the room and unlock the login interface.
                 </p>
+                <button 
+                    type="button" 
+                    onclick="pullCordAction(event)"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-all cursor-pointer"
+                >
+                    <i class="iconsax text-sm" icon-name="flash"></i>
+                    <span>Pull Cord to Light Up</span>
+                </button>
             </div>
 
-            <!-- Alert message box -->
-            <div id="login-alert" class="hidden mb-4 p-3 rounded-xl text-xs font-medium border flex items-start gap-2">
-                <i id="login-alert-icon" class="iconsax text-base shrink-0 mt-0.5" icon-name="info-circle"></i>
-                <div id="login-alert-text" class="flex-1"></div>
-            </div>
-
-            <form onsubmit="handleCuteLogin(event)" class="space-y-4">
+            <!-- 2. LOGIN CARD (Emerges when Light is ON) -->
+            <div class="cute-login-card p-7 sm:p-8">
                 
-                <!-- Username Input -->
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">
-                        Username
-                    </label>
-                    <input 
-                        type="text" 
-                        id="username" 
-                        required 
-                        value="{{ state.client_id or 'client_node_01' }}" 
-                        placeholder="Enter your username"
-                        onfocus="handleUsernameFocus()"
-                        onblur="handleUsernameBlur()"
-                        class="cute-input w-full px-4 py-2.5 rounded-xl text-xs font-sans placeholder-slate-500"
-                    >
+                <div class="mb-6">
+                    <h2 class="font-heading text-2xl font-bold tracking-tight text-white mb-1">
+                        Welcome Back
+                    </h2>
+                    <p class="text-xs text-slate-400 font-mono">
+                        SecureFed Edge Intrusion Detection Node
+                    </p>
                 </div>
 
-                <!-- Password / Admin Key Input -->
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">
-                        Password
-                    </label>
-                    <div class="relative">
+                <!-- Alert message box -->
+                <div id="login-alert" class="hidden mb-4 p-3 rounded-xl text-xs font-medium border flex items-start gap-2">
+                    <i id="login-alert-icon" class="iconsax text-base shrink-0 mt-0.5" icon-name="info-circle"></i>
+                    <div id="login-alert-text" class="flex-1"></div>
+                </div>
+
+                <form onsubmit="handleCuteLogin(event)" class="space-y-4">
+                    
+                    <!-- Username Input -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">
+                            Username
+                        </label>
                         <input 
-                            type="password" 
-                            id="password" 
+                            type="text" 
+                            id="username" 
                             required 
-                            value="securefed-admin-token-2026"
-                            placeholder="Enter your password"
-                            onfocus="handlePasswordFocus()"
-                            onblur="handlePasswordBlur()"
-                            class="cute-input w-full px-4 pr-10 py-2.5 rounded-xl text-xs font-mono placeholder-slate-500"
+                            value="{{ state.client_id or 'client_node_01' }}" 
+                            placeholder="Enter your username"
+                            onfocus="handleUsernameFocus()"
+                            onblur="handleUsernameBlur()"
+                            class="cute-input w-full px-4 py-2.5 rounded-xl text-xs font-sans placeholder-slate-500"
                         >
-                        <button 
-                            type="button" 
-                            onclick="togglePasswordView()" 
-                            class="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
-                            aria-label="Toggle password view"
-                        >
-                            <i id="eye-icon" class="iconsax text-base" icon-name="eye"></i>
+                    </div>
+
+                    <!-- Password / Admin Key Input -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">
+                            Password
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="password" 
+                                id="password" 
+                                required 
+                                value="securefed-admin-token-2026"
+                                placeholder="Enter your password"
+                                onfocus="handlePasswordFocus()"
+                                onblur="handlePasswordBlur()"
+                                class="cute-input w-full px-4 pr-10 py-2.5 rounded-xl text-xs font-mono placeholder-slate-500"
+                            >
+                            <button 
+                                type="button" 
+                                onclick="togglePasswordView()" 
+                                class="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
+                                aria-label="Toggle password view"
+                            >
+                                <i id="eye-icon" class="iconsax text-base" icon-name="eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember & Quick Demo Link -->
+                    <div class="flex items-center justify-between text-xs pt-1">
+                        <label class="flex items-center gap-2 cursor-pointer text-slate-400 text-xs">
+                            <input type="checkbox" id="remember-me" checked class="rounded bg-slate-800 border-slate-700 text-green-500 focus:ring-0">
+                            <span>Remember me</span>
+                        </label>
+                        <button type="button" onclick="fillDemoCredentials()" class="text-emerald-400 hover:text-emerald-300 text-xs font-medium transition-colors">
+                            Demo Credentials
                         </button>
                     </div>
-                </div>
 
-                <!-- Remember & Quick Demo Link -->
-                <div class="flex items-center justify-between text-xs pt-1">
-                    <label class="flex items-center gap-2 cursor-pointer text-slate-400 text-xs">
-                        <input type="checkbox" id="remember-me" checked class="rounded bg-slate-800 border-slate-700 text-green-500 focus:ring-0">
-                        <span>Remember me</span>
-                    </label>
-                    <button type="button" onclick="fillDemoCredentials()" class="text-emerald-400 hover:text-emerald-300 text-xs font-medium transition-colors">
-                        Demo Credentials
+                    <!-- Green Submit Button -->
+                    <button 
+                        type="submit" 
+                        id="login-btn" 
+                        class="cute-btn-green w-full py-2.5 rounded-xl font-heading font-semibold text-xs text-white uppercase tracking-wider flex items-center justify-center gap-2 mt-2"
+                    >
+                        <span id="login-btn-label">Login</span>
                     </button>
-                </div>
 
-                <!-- Green Submit Button (Exact Match) -->
-                <button 
-                    type="submit" 
-                    id="login-btn" 
-                    class="cute-btn-green w-full py-2.5 rounded-xl font-heading font-semibold text-xs text-white uppercase tracking-wider flex items-center justify-center gap-2 mt-2"
-                >
-                    <span id="login-btn-label">Login</span>
-                </button>
-
-                <!-- Forgot Password / Admin Token Hint -->
-                <div class="text-center pt-2">
-                    <button type="button" onclick="showTokenHint()" class="text-xs text-slate-500 hover:text-slate-400 transition-colors">
-                        Forgot Password?
-                    </button>
-                </div>
-            </form>
+                    <!-- Forgot Password / Admin Token Hint -->
+                    <div class="text-center pt-2">
+                        <button type="button" onclick="showTokenHint()" class="text-xs text-slate-500 hover:text-slate-400 transition-colors">
+                            Forgot Password?
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </main>
 
@@ -472,7 +548,7 @@
                 osc.type = isTurningOn ? 'triangle' : 'sine';
                 osc.frequency.setValueAtTime(isTurningOn ? 880 : 440, ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(isTurningOn ? 220 : 180, ctx.currentTime + 0.08);
-                gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                gain.gain.setValueAtTime(0.28, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
                 osc.connect(gain);
                 gain.connect(ctx.destination);
@@ -483,17 +559,26 @@
             }
         }
 
-        let isLampOn = true;
+        // Start with Lamp OFF so the user gets the magical experience of pulling the cord to reveal the login interface
+        let isLampOn = false;
 
         function toggleLamp() {
             isLampOn = !isLampOn;
             playCordClickSound(isLampOn);
+
+            const cordHintText = document.getElementById('cord-hint-text');
+            const lampStatusText = document.getElementById('lamp-status-text');
+
             if (isLampOn) {
+                // LIGHT TURNS ON -> LOGIN INTERFACE EMERGES!
                 document.body.classList.remove('lamp-off');
-                document.getElementById('lamp-status-text').textContent = 'Lamp: ON';
+                if (lampStatusText) lampStatusText.textContent = 'Lamp: ON';
+                if (cordHintText) cordHintText.textContent = 'Pull Cord to Turn Off';
             } else {
+                // LIGHT TURNS OFF -> LOGIN INTERFACE VANISHES!
                 document.body.classList.add('lamp-off');
-                document.getElementById('lamp-status-text').textContent = 'Lamp: OFF';
+                if (lampStatusText) lampStatusText.textContent = 'Lamp: OFF (Click Cord)';
+                if (cordHintText) cordHintText.textContent = 'Pull Cord to Turn On';
             }
         }
 
@@ -517,7 +602,6 @@
         }
 
         function handleUsernameFocus() {
-            // Lamp eyes look slightly attentive
             const pupils = document.querySelectorAll('.lamp-pupil');
             pupils.forEach(p => p.setAttribute('transform', 'translate(0, 1)'));
         }
