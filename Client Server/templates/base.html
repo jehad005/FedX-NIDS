@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SecureFed-NIDS Client{% endblock %}</title>
-    <!-- Fonts: Plus Jakarta Sans, IBM Plex Sans & JetBrains Mono -->
+    <!-- Fonts: Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Iconsax Icons Package -->
     <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
@@ -18,8 +18,8 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['"IBM Plex Sans"', 'system-ui', '-apple-system', 'sans-serif'],
-                        heading: ['"Plus Jakarta Sans"', '"IBM Plex Sans"', 'system-ui', 'sans-serif'],
+                        sans: ['"Inter"', 'system-ui', '-apple-system', 'sans-serif'],
+                        heading: ['"Inter"', 'system-ui', '-apple-system', 'sans-serif'],
                         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
                     }
                 }
@@ -71,7 +71,7 @@
         }
 
         body {
-            font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: #f4f7fb;
             background-image:
                 radial-gradient(920px circle at 18% -6%, rgba(37, 99, 235, 0.075), transparent 56%),
@@ -90,7 +90,7 @@
         }
 
         h1, h2, h3, h4, .font-heading {
-            font-family: 'Plus Jakarta Sans', 'IBM Plex Sans', system-ui, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             letter-spacing: -0.02em;
         }
 
@@ -385,10 +385,14 @@
                 <h1 class="font-heading text-[17px] font-bold text-slate-900 dark:text-slate-100">{% block page_heading %}Client Node Management{% endblock %}</h1>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Local DP-SGD &amp; Intrusion Detection Node</p>
             </div>
-            <div class="flex items-center gap-2.5 text-xs font-mono">
+            <div class="flex flex-wrap items-center gap-2.5 text-xs font-mono">
                 <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#181d25] border border-slate-200 dark:border-[#2a313c] text-slate-700 dark:text-slate-200 shadow-xs">
                     <i class="iconsax text-sm text-blue-600 dark:text-blue-400" icon-name="user-1"></i>
                     <span id="header-client-id" class="font-semibold">client_node_01</span>
+                </div>
+                <div id="header-pushed-pill" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600/10 dark:bg-blue-500/15 border border-blue-600/20 dark:border-blue-500/30 text-blue-700 dark:text-blue-300 shadow-xs" title="Last model deployed from HQ">
+                    <i class="iconsax text-sm" icon-name="cpu-charge"></i>
+                    <span id="header-last-pushed">Last Pushed: None</span>
                 </div>
                 <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#181d25] border border-slate-200 dark:border-[#2a313c] text-slate-600 dark:text-slate-300 shadow-xs">
                     <i class="iconsax text-sm text-emerald-600 dark:text-emerald-400" icon-name="link-2"></i>
@@ -455,6 +459,35 @@ async function refreshHeader() {
         const syncBadge = document.getElementById('sync-status-badge');
         if (syncBadge) {
             syncBadge.textContent = state.current_model_version ? `Active: v${state.current_model_version}` : 'Awaiting HQ Push';
+        }
+        const headerPushText = document.getElementById('header-last-pushed');
+        const headerPushPill = document.getElementById('header-pushed-pill');
+        if (headerPushText && headerPushPill) {
+            if (state.last_hq_push_version) {
+                const ts = state.last_hq_push_at ? String(state.last_hq_push_at).slice(0, 19).replace('T', ' ') : '';
+                headerPushText.textContent = `Last HQ Push: v${state.last_hq_push_version}`;
+                headerPushPill.title = ts ? `Last pushed from HQ at ${ts} UTC` : 'Last model pushed from HQ';
+                headerPushPill.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/10 dark:bg-emerald-500/15 border border-emerald-600/20 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-xs';
+            } else if (state.current_model_version) {
+                const src = state.last_deployed_source || state.model_info?.authorized_by || state.model_info?.deployed_by || '';
+                headerPushText.textContent = `Active: v${state.current_model_version}${src ? ' (' + src + ')' : ''}`;
+                headerPushPill.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600/10 dark:bg-blue-500/15 border border-blue-600/20 dark:border-blue-500/30 text-blue-700 dark:text-blue-300 shadow-xs';
+            } else {
+                headerPushText.textContent = 'Last Pushed: None';
+            }
+        }
+        const syncPushPill = document.getElementById('sync-last-pushed-pill');
+        if (syncPushPill) {
+            if (state.last_hq_push_version) {
+                const ts = state.last_hq_push_at ? ` · ${String(state.last_hq_push_at).slice(0, 19).replace('T', ' ')}` : '';
+                syncPushPill.textContent = `Last HQ Push: v${state.last_hq_push_version}${ts}`;
+                syncPushPill.className = 'font-mono text-[11px] font-semibold px-3 py-1 rounded-lg bg-emerald-600/10 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-600/20 dark:border-emerald-500/30';
+            } else if (state.current_model_version) {
+                const src = state.last_deployed_source || state.model_info?.authorized_by || 'Synced';
+                syncPushPill.textContent = `Active: v${state.current_model_version} (${src})`;
+            } else {
+                syncPushPill.textContent = 'Explicit Push Only';
+            }
         }
         const autoEnabled = state.auto_push !== false;
         const autoBadge = document.getElementById('auto-push-badge');

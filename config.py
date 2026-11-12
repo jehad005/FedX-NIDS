@@ -214,6 +214,10 @@ FL_CONFIG = {
     "fedprox_mu": 0.01,
     "moon_temperature": 0.5,
     "moon_mu": 0.01,
+    "partition": "dirichlet",       # "dirichlet" (Non-IID) or "iid"
+    "dirichlet_alpha": 0.3,         # Concentration parameter alpha (lower => stronger Non-IID skew)
+    "partition_seed": 42,
+    "min_client_samples": 10,
 }
 
 DP_CONFIG = {

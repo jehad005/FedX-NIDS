@@ -6,7 +6,7 @@
     <title>Model Versions - SecureFed-NIDS HQ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/modern_hq.css?v=8">
+    <link rel="stylesheet" href="/static/css/modern_hq.css?v=9">
     <script src="/static/js/hq_theme.js?v=2"></script>
 </head>
 <body>
@@ -32,6 +32,9 @@
                     <a class="nav-link" href="/">
                         <i class="iconsax" icon-name="grid-apps"></i> Dashboard
                     </a>
+                    <a class="nav-link" href="/training">
+                        <i class="iconsax" icon-name="cloud-add"></i> Model Training
+                    </a>
                     <a class="nav-link active" href="/models">
                         <i class="iconsax" icon-name="cpu-charge"></i> Model Versions
                     </a>
@@ -40,9 +43,6 @@
                     </a>
                     <a class="nav-link" href="/updates">
                         <i class="iconsax" icon-name="cloud-notif"></i> Updates
-                    </a>
-                    <a class="nav-link" href="/training">
-                        <i class="iconsax" icon-name="cloud-add"></i> Model Training
                     </a>
                     <a class="nav-link" href="/analytics">
                         <i class="iconsax" icon-name="bar-graph-1"></i> Analytics
@@ -165,6 +165,7 @@
                                 <div class="d-flex align-items-center gap-2">
                                     <span><i class="iconsax me-1" icon-name="cpu-charge"></i>All Published Versions</span>
                                     <span class="badge bg-secondary" id="versionCount">0</span>
+                                    <span class="badge bg-info d-none font-mono" id="pushedVersionChip"></span>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
                                     <label for="edgePushUrl" class="small text-muted mb-0 font-mono">Target Edge:</label>
@@ -282,6 +283,22 @@
 
                 if (data.status === 'success') {
                     const versions = data.versions || [];
+                    const lastPushed = data.last_pushed || null;
+                    const pushedVer = lastPushed && lastPushed.version ? lastPushed.version : null;
+                    const pushedChip = document.getElementById('pushedVersionChip');
+                    if (pushedChip) {
+                        if (pushedVer) {
+                            const pushedTargets = Array.isArray(lastPushed.targets) && lastPushed.targets.length
+                                ? ` → ${lastPushed.targets.join(', ')}`
+                                : '';
+                            pushedChip.textContent = `Pushed to Edge: v${pushedVer}${pushedTargets}`;
+                            pushedChip.classList.remove('d-none');
+                        } else {
+                            pushedChip.classList.add('d-none');
+                            pushedChip.textContent = '';
+                        }
+                    }
+
                     const latestVer = typeof data.latest === 'string'
                         ? data.latest
                         : (data.latest && data.latest.version ? data.latest.version : (versions[0]?.version || null));
@@ -325,12 +342,33 @@
                     }
 
                     let html = '';
+                    const pushTargetsText = lastPushed && Array.isArray(lastPushed.targets) && lastPushed.targets.length
+                        ? lastPushed.targets.join(', ')
+                        : 'Client Edge';
+                    const pushedAtText = lastPushed && lastPushed.pushed_at
+                        ? String(lastPushed.pushed_at).slice(0, 19).replace('T', ' ')
+                        : '';
+                    const pushTooltip = pushedVer
+                        ? `Pushed to ${pushTargetsText}${pushedAtText ? ' at ' + pushedAtText : ''}`
+                        : '';
+
                     versions.forEach(v => {
                         const isLatest = latestVer && v.version === latestVer;
+                        const isPushed = Boolean(pushedVer && v.version === pushedVer);
+                        const pushedSideBadge = isPushed
+                            ? `<span class="badge bg-info ms-1" title="${escHtml(pushTooltip)}">✓ Pushed</span>`
+                            : '';
+                        const pushedStatusBadge = isPushed
+                            ? `<span class="badge bg-info ms-1" title="${escHtml(pushTooltip)}">Pushed to Edge</span>`
+                            : '';
+                        const pushBtnClass = isPushed ? 'btn btn-success btn-action' : 'btn btn-primary btn-action';
+                        const pushBtnLabel = isPushed
+                            ? '<i class="iconsax" icon-name="tick-circle"></i> Pushed (Re-push)'
+                            : '<i class="iconsax" icon-name="upload-2"></i> Push to Edge';
                         html += `
                             <tr>
-                                <td>
-                                    <span class="version-badge">v${v.version}</span>
+                                <td class="text-nowrap">
+                                    <span class="version-badge">v${v.version}</span>${pushedSideBadge}
                                 </td>
                                 <td>${v.model_name || 'N/A'}</td>
                                 <td>${v.architecture || 'N/A'}</td>
@@ -343,14 +381,14 @@
                                         '<span class="text-muted">-</span>'}
                                 </td>
                                 <td>${v.created_at ? v.created_at.slice(0, 19) : 'N/A'}</td>
-                                <td>
+                                <td class="text-nowrap">
                                     ${isLatest ?
                                         '<span class="badge badge-latest">Latest</span>' :
-                                        '<span class="badge badge-older">Older</span>'}
+                                        '<span class="badge badge-older">Older</span>'}${pushedStatusBadge}
                                 </td>
                                 <td class="text-nowrap">
-                                    <button type="button" class="btn btn-primary btn-action" onclick="pushToEdge('${escHtml(v.version)}', this)">
-                                        <i class="iconsax" icon-name="upload-2"></i> Push to Edge
+                                    <button type="button" class="${pushBtnClass}" onclick="pushToEdge('${escHtml(v.version)}', this)"${isPushed ? ` title="${escHtml(pushTooltip)}"` : ''}>
+                                        ${pushBtnLabel}
                                     </button>
                                     <button type="button" class="btn btn-outline-dark btn-action" onclick="showPackage('${escHtml(v.version)}')">
                                         <i class="iconsax" icon-name="document-code-1"></i> Details
@@ -409,6 +447,7 @@
                     const targets = (data.results || []).filter(r => r.status === 'success').map(r => r.edge_url).join(', ');
                     alertBox.className = 'alert alert-success mx-3 mt-3 mb-0 py-2 small';
                     alertBox.innerHTML = `<strong>Pushed v${escHtml(version)}:</strong> Deployed directly to <span class="font-mono">${escHtml(targets)}</span>.`;
+                    await loadVersions();
                 } else {
                     const details = (data.results || []).map(r => `${r.edge_url} (${r.status})`).join('; ');
                     alertBox.className = 'alert alert-danger mx-3 mt-3 mb-0 py-2 small';

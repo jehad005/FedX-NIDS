@@ -26,7 +26,13 @@ from models.architectures import ModelFactory
 from models.training import Trainer, train_all_models, train_single_model
 from models.ensemble import EnsembleTrainer, compare_with_without_ensemble
 from models.evaluation import run_kfold_cv, paired_t_test, mcnemar_test, plot_and_save_confusion_matrix
-from fl.federated_learning import run_federated_learning, run_all_fl_methods, FL_METHODS
+from fl.federated_learning import (
+    FL_METHODS,
+    partition_clients_data,
+    print_client_split_summary,
+    run_all_fl_methods,
+    run_federated_learning,
+)
 from dp.differential_privacy import DPTrainer
 from xai.explainability import SHAPExplainer, perturbation_test
 from config import DATASET_CONFIG, TRAINING_CONFIG, FL_CONFIG, DP_CONFIG, ENSEMBLE_CONFIG
@@ -239,6 +245,18 @@ def main():
     parser.add_argument("--kfold", type=int, default=5, help="Number of folds for Cross-Validation (Default: 5)")
     parser.add_argument("--ensemble-method", default="voting", choices=["voting", "stacking", "weighted"], help="Ensemble method")
     parser.add_argument("--voting-type", default="soft", choices=["soft", "hard"], help="Voting type (Default: soft)")
+    parser.add_argument(
+        "--partition",
+        default=FL_CONFIG.get("partition", "dirichlet"),
+        choices=["dirichlet", "iid"],
+        help="FL client data partition strategy: dirichlet (Non-IID) or iid (Default: dirichlet)",
+    )
+    parser.add_argument(
+        "--dirichlet-alpha",
+        type=float,
+        default=FL_CONFIG.get("dirichlet_alpha", 0.3),
+        help="Dirichlet concentration parameter alpha for Non-IID split (Default: 0.3)",
+    )
     args = parser.parse_args()
 
     print("\n" + "="*75)
@@ -393,19 +411,26 @@ def main():
     print(f"Global Model Test Accuracy: {comparison['ensemble_accuracy']*100:.2f}%")
 
     # ==========================================
-    # STAGE 4: Federated Learning (Non-IID)
+    # STAGE 4: Federated Learning (Non-IID - Dirichlet Distribution)
     # ==========================================
     print("\n" + "="*75)
     print("STAGE 4: Federated Learning — FedAvg / FedProx / SCAFFOLD / FedNova / MOON")
     print("="*75)
 
     num_clients = FL_CONFIG.get("num_clients", 5)
-    client_samples = len(X_train) // num_clients
-    clients_data = []
-    for i in range(num_clients):
-        s_idx, e_idx = i * client_samples, (i + 1) * client_samples
-        clients_data.append((X_train[s_idx:e_idx], y_train[s_idx:e_idx]))
+    partition_method = args.partition
+    dirichlet_alpha = args.dirichlet_alpha
+    clients_data = partition_clients_data(
+        X=X_train,
+        y=y_train,
+        num_clients=num_clients,
+        method=partition_method,
+        alpha=dirichlet_alpha,
+        min_samples=FL_CONFIG.get("min_client_samples", 10),
+        seed=FL_CONFIG.get("partition_seed", 42),
+    )
 
+    print_client_split_summary(clients_data, method=partition_method, alpha=dirichlet_alpha)
     print(f"FL Settings: {num_clients} Clients | Rounds: 10 | Local Epochs: 5")
     print(f"Algorithms : {', '.join(m.upper() for m in FL_METHODS)}")
     print(f"Initializing FL from global model: {global_model_name}")
@@ -413,7 +438,9 @@ def main():
         "rounds": 10, "local_epochs": 5, "batch_size": 128, "learning_rate": 0.001,
         "fedprox_mu": FL_CONFIG.get("fedprox_mu", 0.01),
         "moon_mu": FL_CONFIG.get("moon_mu", 0.01),
-        "moon_temperature": FL_CONFIG.get("moon_temperature", 0.5)
+        "moon_temperature": FL_CONFIG.get("moon_temperature", 0.5),
+        "partition": partition_method,
+        "dirichlet_alpha": dirichlet_alpha,
     }
     fl_trained_model, best_fl_method, fl_results = run_all_fl_methods(
         model=global_model,
@@ -478,6 +505,8 @@ def main():
         "model_name": "SecureFed-Global-Ensemble",
         "architecture": f"EnsembleTop2_{args.ensemble_method}",
         "best_fl_method": best_fl_method,
+        "fl_partition": partition_method,
+        "dirichlet_alpha": dirichlet_alpha if partition_method != "iid" else None,
         "input_dim": input_dim,
         "num_classes": num_classes,
         "feature_names": feature_names,
@@ -494,10 +523,11 @@ def main():
     try:
         from server_hq.publish import publish_from_artifacts
         from server_hq.registry import ModelRegistry
+        partition_tag = f"{partition_method}(alpha={dirichlet_alpha})" if partition_method != "iid" else "iid"
         published = publish_from_artifacts(
             weights=Path(global_model_path),
             package=Path(edge_path),
-            notes=f"pipeline run | method={args.ensemble_method} | fl={best_fl_method} | acc={comparison['ensemble_accuracy']:.4f}",
+            notes=f"pipeline run | method={args.ensemble_method} | fl={best_fl_method} | partition={partition_tag} | acc={comparison['ensemble_accuracy']:.4f}",
         )
         ModelRegistry().save_eval_holdout(
             X_test=X_test,

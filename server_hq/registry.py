@@ -218,6 +218,39 @@ class ModelRegistry:
         """Increment and persist the open round after an aggregation completes."""
         return self.set_open_round(self.get_open_round() + 1)
 
+    def record_edge_push(self, version: str, targets: Optional[List[str]] = None) -> Dict[str, Any]:
+        """Persist the most recently pushed model version and Edge targets in fl_state."""
+        now = utc_now()
+        payload = {
+            "version": normalize_version(version),
+            "targets": list(targets or []),
+            "pushed_at": now,
+        }
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO fl_state (key, value, updated_at)
+                VALUES ('last_pushed_model', ?, ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+                """,
+                (json.dumps(payload), now),
+            )
+        return payload
+
+    def get_last_pushed_model(self) -> Optional[Dict[str, Any]]:
+        """Return metadata for the model version most recently pushed from HQ to Edge."""
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT value FROM fl_state WHERE key = 'last_pushed_model'"
+            ).fetchone()
+        if not row:
+            return None
+        try:
+            data = json.loads(row["value"])
+            return data if isinstance(data, dict) and data.get("version") else None
+        except Exception:
+            return None
+
     def fl_state_dir(self) -> Path:
         """Directory storing persistent HQ FL state (e.g. SCAFFOLD control variates)."""
         d = self.store_dir / "fl_state"
@@ -351,8 +384,11 @@ class ModelRegistry:
         was_latest = bool(record.get("is_latest"))
         new_latest: Optional[str] = None
 
+        last_pushed = self.get_last_pushed_model()
         with self._connect() as conn:
             conn.execute("DELETE FROM model_versions WHERE version = ?", (clean_ver,))
+            if last_pushed and last_pushed.get("version") == clean_ver:
+                conn.execute("DELETE FROM fl_state WHERE key = 'last_pushed_model'")
             if was_latest:
                 nxt = conn.execute(
                     "SELECT id, version FROM model_versions ORDER BY id DESC LIMIT 1"

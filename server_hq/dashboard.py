@@ -186,6 +186,7 @@ class Dashboard:
                 "status": "success",
                 "versions": versions,
                 "latest": self.registry.latest_version(),
+                "last_pushed": self.registry.get_last_pushed_model(),
                 "timestamp": datetime.now().isoformat()
             })
 
@@ -540,6 +541,11 @@ class Dashboard:
                     results.append({"edge_url": edge_url, "status": "unreachable", "detail": str(exc)})
 
             status = "success" if success_count > 0 else "error"
+            push_info = None
+            if success_count > 0:
+                pushed_targets = [r["edge_url"] for r in results if r["status"] == "success"]
+                push_info = self.registry.record_edge_push(record["version"], pushed_targets)
+
             return JSONResponse(
                 status_code=200 if success_count > 0 else 502,
                 content={
@@ -547,6 +553,7 @@ class Dashboard:
                     "version": record["version"],
                     "pushed_count": success_count,
                     "total_targets": len(targets),
+                    "push_info": push_info,
                     "results": results,
                 },
             )

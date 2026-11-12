@@ -17,6 +17,7 @@ mlruns/
 # Large Datasets & Model Artifacts
 hq_store/
 data/*.csv
+data/noniid_clients/
 data/*.parquet
 data/*.pq
 Client Server/local_models/

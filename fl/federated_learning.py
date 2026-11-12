@@ -24,6 +24,193 @@ from config import FL_CONFIG
 FL_METHODS = ["fedavg", "fedprox", "scaffold", "fednova", "moon"]
 
 
+def _rebalance_small_clients(
+    client_indices: List[np.ndarray],
+    min_required: int,
+    rng: np.random.Generator,
+) -> List[np.ndarray]:
+    """Borrow samples from largest clients if any client fell below min_required."""
+    bins = [idx.tolist() for idx in client_indices]
+    while True:
+        sizes = [len(b) for b in bins]
+        smallest = int(np.argmin(sizes))
+        largest = int(np.argmax(sizes))
+        if sizes[smallest] >= min_required or sizes[largest] <= min_required:
+            break
+        need = min(min_required - sizes[smallest], sizes[largest] - min_required)
+        if need <= 0:
+            break
+        donor = bins[largest]
+        bins[smallest].extend(donor[-need:])
+        bins[largest] = donor[:-need]
+    out = []
+    for b in bins:
+        arr = np.asarray(b, dtype=np.int64)
+        rng.shuffle(arr)
+        out.append(arr)
+    return out
+
+
+def dirichlet_partition_indices(
+    y: np.ndarray,
+    num_clients: int = 5,
+    alpha: float = 0.3,
+    min_samples: int = 10,
+    seed: int = 42,
+) -> List[np.ndarray]:
+    """
+    Partition sample indices across clients using a Dirichlet label distribution Dir(alpha).
+
+    Lower alpha values (e.g. 0.3) create stronger Non-IID class and sample skew
+    across clients while keeping client sets strictly disjoint.
+    """
+    if num_clients < 1:
+        raise ValueError(f"num_clients must be >= 1, got {num_clients}")
+    if alpha <= 0:
+        raise ValueError(f"Dirichlet alpha must be > 0, got {alpha}")
+
+    y_arr = np.asarray(y)
+    n_total = len(y_arr)
+    if n_total < num_clients:
+        raise ValueError(f"Need at least {num_clients} samples for {num_clients} clients, got {n_total}")
+    if num_clients == 1:
+        return [np.arange(n_total, dtype=np.int64)]
+
+    rng = np.random.default_rng(seed)
+    classes = np.unique(y_arr)
+    effective_min = min(max(int(min_samples), 1), max(1, n_total // (num_clients * 2)))
+
+    best_indices: Optional[List[np.ndarray]] = None
+    for _ in range(50):
+        client_bins: List[List[np.ndarray]] = [[] for _ in range(num_clients)]
+        for cls in classes:
+            cls_idx = np.where(y_arr == cls)[0].copy()
+            rng.shuffle(cls_idx)
+            proportions = rng.dirichlet(np.full(num_clients, float(alpha)))
+            split_points = (np.cumsum(proportions)[:-1] * len(cls_idx)).astype(int)
+            for cid, shard in enumerate(np.split(cls_idx, split_points)):
+                if len(shard) > 0:
+                    client_bins[cid].append(shard)
+
+        candidate = [
+            np.concatenate(bins).astype(np.int64) if bins else np.array([], dtype=np.int64)
+            for bins in client_bins
+        ]
+        best_indices = candidate
+        if min(len(idx) for idx in candidate) >= effective_min:
+            for idx in candidate:
+                rng.shuffle(idx)
+            return candidate
+
+    assert best_indices is not None
+    return _rebalance_small_clients(best_indices, effective_min, rng)
+
+
+def iid_partition_indices(
+    num_samples: int,
+    num_clients: int = 5,
+    seed: int = 42,
+) -> List[np.ndarray]:
+    """Partition sample indices evenly across clients (IID baseline)."""
+    if num_clients < 1:
+        raise ValueError(f"num_clients must be >= 1, got {num_clients}")
+    if num_samples < num_clients:
+        raise ValueError(f"Need at least {num_clients} samples, got {num_samples}")
+    perm = np.random.default_rng(seed).permutation(num_samples).astype(np.int64)
+    return [shard.astype(np.int64) for shard in np.array_split(perm, num_clients)]
+
+
+def create_dirichlet_non_iid_splits(
+    X: np.ndarray,
+    y: np.ndarray,
+    num_clients: int = 5,
+    alpha: float = 0.3,
+    min_samples: int = 10,
+    seed: int = 42,
+) -> List[Tuple[np.ndarray, np.ndarray]]:
+    """Return Non-IID (X_k, y_k) per client partitioned with Dir(alpha)."""
+    indices = dirichlet_partition_indices(
+        y=y,
+        num_clients=num_clients,
+        alpha=alpha,
+        min_samples=min_samples,
+        seed=seed,
+    )
+    return [(X[idx], y[idx]) for idx in indices]
+
+
+def partition_clients_data(
+    X: np.ndarray,
+    y: np.ndarray,
+    num_clients: int = 5,
+    method: str = "dirichlet",
+    alpha: float = 0.3,
+    min_samples: int = 10,
+    seed: int = 42,
+) -> List[Tuple[np.ndarray, np.ndarray]]:
+    """Split (X, y) across clients using 'dirichlet' (Non-IID) or 'iid'."""
+    norm = str(method or "dirichlet").strip().lower()
+    if norm in {"dirichlet", "non-iid", "non_iid", "noniid"}:
+        return create_dirichlet_non_iid_splits(
+            X=X,
+            y=y,
+            num_clients=num_clients,
+            alpha=alpha,
+            min_samples=min_samples,
+            seed=seed,
+        )
+    if norm == "iid":
+        indices = iid_partition_indices(len(y), num_clients=num_clients, seed=seed)
+        return [(X[idx], y[idx]) for idx in indices]
+    raise ValueError(f"Unsupported partition method '{method}'. Choose 'dirichlet' or 'iid'.")
+
+
+def summarize_client_splits(
+    clients_data: List[Tuple[np.ndarray, np.ndarray]],
+) -> List[Dict[str, Any]]:
+    """Compute per-client total samples and class distribution statistics."""
+    summary: List[Dict[str, Any]] = []
+    for cid, (x_c, y_c) in enumerate(clients_data, 1):
+        y_arr = np.asarray(y_c)
+        unique, counts = np.unique(y_arr, return_counts=True)
+        total = int(len(y_arr))
+        class_counts = {str(k): int(v) for k, v in zip(unique, counts)}
+        class_ratios = {
+            str(k): round(float(v) / max(total, 1), 4)
+            for k, v in zip(unique, counts)
+        }
+        summary.append({
+            "client_id": cid,
+            "num_samples": total,
+            "num_features": int(x_c.shape[1]) if np.asarray(x_c).ndim == 2 else 0,
+            "class_counts": class_counts,
+            "class_ratios": class_ratios,
+        })
+    return summary
+
+
+def print_client_split_summary(
+    clients_data: List[Tuple[np.ndarray, np.ndarray]],
+    method: str = "dirichlet",
+    alpha: Optional[float] = 0.3,
+) -> None:
+    """Print a compact summary table of per-client Non-IID/IID class skew."""
+    stats = summarize_client_splits(clients_data)
+    all_classes = sorted({cls for row in stats for cls in row["class_counts"].keys()})
+    header_label = (
+        f"Non-IID Dirichlet Distribution (alpha = {alpha})"
+        if str(method).lower() != "iid"
+        else "IID Balanced Partition"
+    )
+    print(f"Data Partition: {header_label}")
+    for row in stats:
+        cls_desc = " | ".join(
+            f"Class {c}: {row['class_counts'].get(c, 0):>6d} ({row['class_ratios'].get(c, 0.0)*100:5.1f}%)"
+            for c in all_classes
+        )
+        print(f"  Client {row['client_id']}: {row['num_samples']:>6d} samples | {cls_desc}")
+
+
 def _clone_state(state: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
     return {k: v.detach().cpu().clone() for k, v in state.items()}
 

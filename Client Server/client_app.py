@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -62,6 +63,9 @@ CLIENT_STATE = {
     "last_sync": "Never",
     "last_push": "Never",
     "last_push_info": None,
+    "last_hq_push_version": None,
+    "last_hq_push_at": None,
+    "last_deployed_source": None,
     "auto_push": True,
     "status": "Idle",
     "training_logs": [],
@@ -131,6 +135,9 @@ def _save_persisted_state() -> None:
             "last_sync": CLIENT_STATE.get("last_sync"),
             "last_push": CLIENT_STATE.get("last_push"),
             "last_push_info": CLIENT_STATE.get("last_push_info"),
+            "last_hq_push_version": CLIENT_STATE.get("last_hq_push_version"),
+            "last_hq_push_at": CLIENT_STATE.get("last_hq_push_at"),
+            "last_deployed_source": CLIENT_STATE.get("last_deployed_source"),
             "auto_push": bool(CLIENT_STATE.get("auto_push", True)),
             "status": CLIENT_STATE.get("status"),
             "privacy": CLIENT_STATE.get("privacy"),
@@ -161,7 +168,7 @@ def _restore_persisted_state() -> None:
         CLIENT_STATE["hq_url"] = saved["hq_url"]
     if "auto_push" in saved:
         CLIENT_STATE["auto_push"] = bool(saved["auto_push"])
-    for key in ("last_sync", "last_push", "last_push_info", "privacy", "training_logs"):
+    for key in ("last_sync", "last_push", "last_push_info", "last_hq_push_version", "last_hq_push_at", "last_deployed_source", "privacy", "training_logs"):
         if saved.get(key) is not None:
             CLIENT_STATE[key] = saved[key]
 
@@ -242,6 +249,12 @@ def _restore_persisted_state() -> None:
         CLIENT_STATE["model_loaded"] = True
         CLIENT_STATE["model_info"] = model_info
         CLIENT_STATE["feature_names"] = feature_names
+        if not CLIENT_STATE.get("last_deployed_source"):
+            CLIENT_STATE["last_deployed_source"] = model_info.get("authorized_by") or model_info.get("deployed_by")
+        if not CLIENT_STATE.get("last_hq_push_version") and "hq push" in str(model_info.get("authorized_by") or "").lower():
+            CLIENT_STATE["last_hq_push_version"] = ver_label
+            if not CLIENT_STATE.get("last_hq_push_at") and saved.get("last_sync") and saved.get("last_sync") != "Never":
+                CLIENT_STATE["last_hq_push_at"] = saved.get("last_sync")
         if not saved.get("last_sync"):
             CLIENT_STATE["last_sync"] = "Restored from local cache"
         CLIENT_STATE["status"] = saved.get("status") or f"Restored v{ver_label} from local cache"
@@ -616,8 +629,13 @@ def _sync_model_from_hq(raw_hq: str, requested_version: str, admin_key: str, sou
             "authorized_by": source_tag,
         }
         CLIENT_STATE["feature_names"] = feature_names
+        received_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        CLIENT_STATE["last_deployed_source"] = source_tag
+        if "hq push" in source_tag.lower():
+            CLIENT_STATE["last_hq_push_version"] = ver_label
+            CLIENT_STATE["last_hq_push_at"] = received_at
         CLIENT_STATE["status"] = f"Synced v{ver_label} ({source_tag})"
-        CLIENT_STATE["last_sync"] = data.get("created_at", "Just now")
+        CLIENT_STATE["last_sync"] = received_at
         _register_client_heartbeat(hq_url)
         _save_persisted_state()
         return {"status": "success", "message": f"Loaded global ensemble v{ver_label} from HQ ({source_tag}).", "version": ver_label}
@@ -774,6 +792,7 @@ async def upload_model_file(payload: UploadModelFileRequest):
             "deployed_by": "Administrator (Air-Gapped)",
         }
         CLIENT_STATE["feature_names"] = feature_names
+        CLIENT_STATE["last_deployed_source"] = "Admin Manual Push"
         CLIENT_STATE["status"] = f"Manual admin model deployed (v{ver_label})"
         CLIENT_STATE["last_sync"] = "Just now (Admin Manual Push)"
         _save_persisted_state()

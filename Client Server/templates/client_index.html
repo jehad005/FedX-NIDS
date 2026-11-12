@@ -30,6 +30,7 @@
                 </div>
             </div>
             <p id="card-version" class="font-mono text-xl font-bold mt-2.5 text-slate-900 dark:text-slate-100 tabular-nums">Not Synced</p>
+            <p id="card-push-info" class="font-mono text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">No model pushed yet</p>
         </div>
 
         <div class="edge-metric-card bg-white dark:bg-[#131820] p-5 rounded-[14px] border border-slate-200 dark:border-[#222a36]">
@@ -108,6 +109,18 @@ async function refreshOverview() {
     const s = await refreshHeader(); 
     if (!s) return; 
     document.getElementById('card-version').textContent = s.current_model_version ? `v${s.current_model_version}` : 'Not Synced'; 
+    const pushInfoEl = document.getElementById('card-push-info');
+    if (pushInfoEl) {
+        if (s.last_hq_push_version) {
+            const ts = s.last_hq_push_at ? ` · ${String(s.last_hq_push_at).slice(0, 19).replace('T', ' ')}` : '';
+            pushInfoEl.textContent = `Last HQ Push: v${s.last_hq_push_version}${ts}`;
+        } else if (s.current_model_version) {
+            const src = s.last_deployed_source || s.model_info?.authorized_by || s.model_info?.deployed_by || 'Synced';
+            pushInfoEl.textContent = `Loaded via ${src}`;
+        } else {
+            pushInfoEl.textContent = 'No model pushed yet';
+        }
+    }
     document.getElementById('card-status').textContent = s.status; 
     document.getElementById('card-arch').textContent = s.model_info?.architecture || '—'; 
     document.getElementById('card-dim').textContent = s.model_info?.input_dim || '—'; 

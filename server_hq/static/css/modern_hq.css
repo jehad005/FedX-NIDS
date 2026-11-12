@@ -1,9 +1,9 @@
 /* ==========================================================================
    SecureFed-NIDS HQ Control Plane Design System
-   Modern Light-First Operations UI (Plus Jakarta Sans + IBM Plex Sans + JetBrains Mono)
+   Modern Light-First Operations UI (Inter + JetBrains Mono)
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import url('https://iconsax.gitlab.io/i/icons.css');
 
 .iconsax {
@@ -16,8 +16,8 @@
 }
 
 :root {
-    --font-heading: 'Plus Jakarta Sans', 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-body: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-heading: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
     /* Refined Light Surface Palette */
