@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Operator Sign In · SecureFed Client Edge</title>
+    <title>Cute Lamp Login · SecureFed Edge Node</title>
     <!-- Fonts: Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <!-- Iconsax Icons Package -->
     <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -18,487 +16,545 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['"Inter"', 'system-ui', '-apple-system', 'sans-serif'],
-                        heading: ['"Inter"', 'system-ui', '-apple-system', 'sans-serif'],
-                        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+                        sans: ['"Inter"', 'system-ui', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
                     }
                 }
             }
         }
     </script>
     <style>
-        .iconsax {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            vertical-align: middle;
-            line-height: 1;
-            font-style: normal;
-        }
-
         :root {
-            --crystal-blur: blur(28px) saturate(210%);
+            --lamp-shade: #729679;
+            --lamp-shade-dark: #58785e;
+            --lamp-glow: rgba(34, 197, 94, 0.45);
+            --card-glow: 0 0 45px -5px rgba(34, 197, 94, 0.42), 0 20px 40px -15px rgba(0, 0, 0, 0.8);
+            --cord: #cbd5e1;
+            --tongue: #f43f5e;
         }
 
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: #0b0e14;
-            color: #f1f5f9;
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #0d1117;
+            color: #f8fafc;
             min-height: 100vh;
             overflow-x: hidden;
-            position: relative;
+            transition: background 0.4s ease;
         }
 
-        html:not(.dark) body {
-            background-color: #f1f5f9;
-            color: #0f172a;
-        }
-
-        /* Ambient Refraction Mesh */
-        .crystal-canvas {
+        /* Ambient Room Lighting linked to Lamp state */
+        .room-ambient {
             position: fixed;
             inset: 0;
             pointer-events: none;
-            overflow: hidden;
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            background: radial-gradient(circle at 35% 45%, rgba(34, 197, 94, 0.12) 0%, rgba(14, 165, 233, 0.06) 45%, transparent 75%);
             z-index: 0;
         }
 
-        .crystal-orb {
+        body.lamp-off .room-ambient {
+            opacity: 0.15;
+        }
+
+        /* Light Beam Projected from Lamp Bottom */
+        .light-beam {
             position: absolute;
-            border-radius: 9999px;
-            filter: blur(80px);
-            opacity: 0.65;
-            animation: orbFloat 18s ease-in-out infinite alternate;
-        }
-
-        .crystal-orb-1 {
-            width: 520px;
-            height: 520px;
-            background: radial-gradient(circle, rgba(37, 99, 235, 0.55) 0%, rgba(30, 64, 175, 0.15) 70%, transparent 100%);
-            top: -120px;
-            left: -80px;
-            animation-duration: 22s;
-        }
-
-        .crystal-orb-2 {
-            width: 480px;
-            height: 480px;
-            background: radial-gradient(circle, rgba(14, 165, 233, 0.45) 0%, rgba(6, 182, 212, 0.12) 70%, transparent 100%);
-            bottom: -100px;
-            right: -60px;
-            animation-duration: 19s;
-            animation-delay: -5s;
-        }
-
-        .crystal-orb-3 {
-            width: 380px;
-            height: 380px;
-            background: radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, rgba(5, 150, 105, 0.08) 70%, transparent 100%);
-            top: 45%;
-            left: 55%;
-            animation-duration: 24s;
-            animation-delay: -10s;
-        }
-
-        .crystal-orb-4 {
-            width: 320px;
-            height: 320px;
-            background: radial-gradient(circle, rgba(147, 51, 234, 0.30) 0%, rgba(99, 102, 241, 0.06) 70%, transparent 100%);
-            top: 15%;
-            right: 25%;
-            animation-duration: 17s;
-            animation-delay: -3s;
-        }
-
-        @keyframes orbFloat {
-            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-            50% { transform: translate(40px, 30px) scale(1.08) rotate(10deg); }
-            100% { transform: translate(-30px, 50px) scale(0.95) rotate(-8deg); }
-        }
-
-        /* Subtle Crystalline Grid Overlay */
-        .crystal-grid {
-            position: fixed;
-            inset: 0;
-            background-image: 
-                linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-            background-size: 40px 40px;
-            mask-image: radial-gradient(circle at 50% 50%, black 40%, transparent 80%);
-            -webkit-mask-image: radial-gradient(circle at 50% 50%, black 40%, transparent 80%);
+            top: 178px;
+            left: 20px;
+            width: 200px;
+            height: 250px;
+            clip-path: polygon(32% 0%, 68% 0%, 100% 100%, 0% 100%);
+            background: linear-gradient(to bottom, rgba(255, 255, 240, 0.65) 0%, rgba(255, 255, 230, 0.18) 45%, rgba(34, 197, 94, 0.05) 80%, transparent 100%);
+            filter: blur(2.5px);
             pointer-events: none;
-            z-index: 1;
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s ease;
+            transform-origin: top center;
+            z-index: 5;
         }
 
-        html:not(.dark) .crystal-grid {
-            background-image: 
-                linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+        body.lamp-off .light-beam {
+            opacity: 0;
+            transform: scaleY(0.7);
         }
 
-        /* The Crystal Glass Card */
-        .crystal-card {
-            background: rgba(17, 24, 39, 0.52);
-            backdrop-filter: var(--crystal-blur);
-            -webkit-backdrop-filter: var(--crystal-blur);
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            border-top: 1.5px solid rgba(255, 255, 255, 0.38);
-            border-left: 1.5px solid rgba(255, 255, 255, 0.28);
+        /* Surface Spotlight Reflection */
+        .spotlight-floor {
+            position: absolute;
+            bottom: -15px;
+            left: 10px;
+            width: 220px;
+            height: 48px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse, rgba(255, 255, 230, 0.45) 0%, rgba(34, 197, 94, 0.25) 45%, transparent 75%);
+            filter: blur(6px);
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+            z-index: 4;
+        }
+
+        body.lamp-off .spotlight-floor {
+            opacity: 0;
+        }
+
+        /* The Pull Cord Animation */
+        .pull-cord {
+            cursor: pointer;
+            transform-origin: top center;
+            transition: transform 0.12s ease-out;
+        }
+
+        .pull-cord:active, .pull-cord.is-pulling {
+            transform: translateY(18px) scaleY(1.15);
+        }
+
+        .cord-line {
+            stroke: #cbd5e1;
+            stroke-width: 2.2;
+            stroke-linecap: round;
+        }
+
+        .cord-bead {
+            fill: #f1f5f9;
+            stroke: #94a3b8;
+            stroke-width: 1.5;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+            transition: transform 0.15s ease;
+        }
+
+        .pull-cord:hover .cord-bead {
+            fill: #38bdf8;
+            transform: scale(1.18);
+        }
+
+        /* Lamp Face Expression States */
+        .face-eyes-open {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .face-eyes-closed {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        body.lamp-off .face-eyes-open {
+            opacity: 0;
+            transform: scaleY(0.2);
+        }
+        body.lamp-off .face-eyes-closed {
+            opacity: 1;
+        }
+
+        /* Shy Eyes when typing Password */
+        body.is-shy .lamp-pupil {
+            transform: translate(6px, -4px) !important;
+        }
+        body.is-shy .lamp-blush {
+            transform: scale(1.35) !important;
+            opacity: 0.9 !important;
+        }
+
+        /* The Glowing Login Card (Exact Match with Green Neon Glow) */
+        .cute-login-card {
+            background: #151b23;
+            border: 1.5px solid rgba(255, 255, 255, 0.08);
+            border-radius: 28px;
+            box-shadow: var(--card-glow);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        body:not(.lamp-off) .cute-login-card {
+            border-color: rgba(34, 197, 94, 0.55);
             box-shadow: 
-                0 30px 60px -15px rgba(0, 0, 0, 0.65),
-                0 0 50px -10px rgba(37, 99, 235, 0.22),
-                inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
-                inset 0 -1px 1px 0 rgba(255, 255, 255, 0.05);
-            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+                0 0 35px -5px rgba(34, 197, 94, 0.45),
+                0 0 15px -3px rgba(34, 197, 94, 0.3),
+                0 25px 60px -15px rgba(0, 0, 0, 0.85);
         }
 
-        html:not(.dark) .crystal-card {
-            background: rgba(255, 255, 255, 0.68);
-            border: 1px solid rgba(255, 255, 255, 0.75);
-            border-top: 2px solid rgba(255, 255, 255, 0.95);
-            border-left: 2px solid rgba(255, 255, 255, 0.85);
-            box-shadow: 
-                0 30px 60px -15px rgba(15, 23, 42, 0.14),
-                0 0 50px -10px rgba(37, 99, 235, 0.15),
-                inset 0 1px 2px 0 rgba(255, 255, 255, 0.9),
-                inset 0 -1px 2px 0 rgba(15, 23, 42, 0.04);
+        body.lamp-off .cute-login-card {
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85);
+            opacity: 0.72;
         }
 
-        /* Glass Input Fields */
-        .crystal-input {
-            background: rgba(15, 23, 42, 0.55);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            border-top: 1px solid rgba(255, 255, 255, 0.22);
-            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
-            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        /* Input Controls */
+        .cute-input {
+            background: #1c232d;
+            border: 1px solid #283341;
+            color: #f1f5f9;
+            transition: all 0.25s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        .crystal-input:focus {
-            background: rgba(15, 23, 42, 0.75);
-            border-color: rgba(59, 130, 246, 0.75);
-            box-shadow: 
-                0 0 0 3px rgba(37, 99, 235, 0.28),
-                inset 0 1px 2px 0 rgba(255, 255, 255, 0.15);
+        .cute-input:focus {
+            background: #202936;
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.22), inset 0 1px 2px rgba(255, 255, 255, 0.05);
             outline: none;
         }
 
-        html:not(.dark) .crystal-input {
-            background: rgba(255, 255, 255, 0.82);
-            border: 1px solid rgba(203, 213, 225, 0.75);
-            border-top: 1px solid rgba(255, 255, 255, 0.95);
-            box-shadow: inset 0 1px 3px 0 rgba(15, 23, 42, 0.06);
-            color: #0f172a;
+        /* Green Submit Button */
+        .cute-btn-green {
+            background: #22c55e;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            box-shadow: 0 4px 18px -2px rgba(34, 197, 94, 0.45);
+            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        html:not(.dark) .crystal-input:focus {
-            background: #ffffff;
-            border-color: #2563eb;
-            box-shadow: 
-                0 0 0 3px rgba(37, 99, 235, 0.18),
-                inset 0 1px 2px 0 rgba(255, 255, 255, 0.8);
+        .cute-btn-green:hover {
+            transform: translateY(-1.5px);
+            box-shadow: 0 8px 25px -4px rgba(34, 197, 94, 0.65);
+            filter: brightness(1.06);
         }
 
-        /* Prismatic Shield Badge */
-        .crystal-badge-3d {
-            background: linear-gradient(135deg, rgba(37, 99, 235, 0.28) 0%, rgba(14, 165, 233, 0.18) 50%, rgba(16, 185, 129, 0.15) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            box-shadow: 
-                0 10px 25px -5px rgba(37, 99, 235, 0.35),
-                inset 0 1px 2px 0 rgba(255, 255, 255, 0.5);
-        }
-
-        /* Glass Pill Tag */
-        .crystal-pill {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            backdrop-filter: blur(12px);
-        }
-
-        html:not(.dark) .crystal-pill {
-            background: rgba(255, 255, 255, 0.65);
-            border: 1px solid rgba(226, 232, 240, 0.85);
-            color: #1e293b;
-        }
-
-        /* Refined Sheen Button */
-        .crystal-btn-primary {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 55%, #0ea5e9 100%);
-            box-shadow: 
-                0 8px 24px -4px rgba(37, 99, 235, 0.45),
-                inset 0 1px 1px 0 rgba(255, 255, 255, 0.4);
-            position: relative;
-            overflow: hidden;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .crystal-btn-primary::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: -120%;
-            width: 70%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
-            transform: skewX(-20deg);
-            transition: left 0.6s ease;
-            pointer-events: none;
-        }
-
-        .crystal-btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 
-                0 12px 30px -4px rgba(37, 99, 235, 0.58),
-                inset 0 1px 2px 0 rgba(255, 255, 255, 0.6);
-        }
-
-        .crystal-btn-primary:hover::after {
-            left: 140%;
-        }
-
-        .crystal-btn-primary:active {
+        .cute-btn-green:active {
             transform: translateY(0) scale(0.98);
         }
 
-        /* Pulsing Live Dot */
-        .live-dot {
-            animation: livePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        /* Floating Click Hint on Cord */
+        .cord-hint {
+            animation: pulseHint 2s infinite ease-in-out;
         }
 
-        @keyframes livePulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.45; transform: scale(0.85); }
-        }
-
-        /* Entrance Animation */
-        .crystal-enter {
-            animation: cardRise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-        }
-
-        @keyframes cardRise {
-            from {
-                opacity: 0;
-                transform: translateY(22px) scale(0.975);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+        @keyframes pulseHint {
+            0%, 100% { transform: translateY(0); opacity: 0.85; }
+            50% { transform: translateY(4px); opacity: 1; }
         }
     </style>
-    <script>
-        (function () {
-            const saved = localStorage.getItem('edge_theme');
-            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        })();
-    </script>
 </head>
-<body class="flex flex-col justify-between items-center p-4 sm:p-6 md:p-8">
+<body class="flex flex-col justify-between items-center min-h-screen p-4 sm:p-6 md:p-8">
 
-    <!-- Ambient Refraction Elements -->
-    <div class="crystal-canvas" aria-hidden="true">
-        <div class="crystal-orb crystal-orb-1"></div>
-        <div class="crystal-orb crystal-orb-2"></div>
-        <div class="crystal-orb crystal-orb-3"></div>
-        <div class="crystal-orb crystal-orb-4"></div>
-    </div>
-    <div class="crystal-grid" aria-hidden="true"></div>
+    <!-- Ambient Glow Mesh -->
+    <div class="room-ambient" aria-hidden="true"></div>
 
-    <!-- Navigation Bar: Back & Theme Switch -->
+    <!-- Header Navigation -->
     <header class="w-full max-w-5xl flex items-center justify-between z-10 py-2">
-        <a href="/" class="crystal-pill inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold hover:border-blue-500/50 transition-all text-slate-300 dark:text-slate-300 hover:text-white" title="Return to Client Edge Dashboard">
+        <a href="/" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition-all">
             <i class="iconsax text-sm" icon-name="arrow-left-2"></i>
             <span>Node Overview</span>
         </a>
 
         <div class="flex items-center gap-2.5">
-            <a href="http://localhost:8001" target="_blank" class="crystal-pill hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-medium text-slate-300 dark:text-slate-400 hover:text-blue-400 transition-colors" title="Open SecureFed HQ Control Tower">
-                <i class="iconsax text-sm text-blue-400" icon-name="driver-2"></i>
-                <span>HQ Control Tower (:8001)</span>
-            </a>
-
-            <button type="button" onclick="toggleTheme()" class="crystal-pill w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 dark:text-slate-300 hover:text-white transition-all" title="Toggle Theme" aria-label="Toggle dark/light theme">
-                <i id="login-theme-icon" class="iconsax text-base" icon-name="moon"></i>
+            <button type="button" onclick="toggleLamp()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-emerald-400 transition-colors" title="Toggle Desk Lamp">
+                <i class="iconsax text-sm text-emerald-400" icon-name="lamp-charge"></i>
+                <span id="lamp-status-text">Lamp: ON</span>
             </button>
+            <a href="http://localhost:8001" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-blue-400 transition-colors">
+                <i class="iconsax text-sm text-blue-400" icon-name="driver-2"></i>
+                <span>HQ Server (:8001)</span>
+            </a>
         </div>
     </header>
 
-    <!-- Main Crystal Glass Login Card Container -->
-    <main class="w-full max-w-md my-auto py-6 z-10 crystal-enter">
-        <div class="crystal-card rounded-3xl p-7 sm:p-9 relative overflow-hidden">
+    <!-- Main Container: Lamp on Left, Login Card on Right (Just like the Reel!) -->
+    <main class="w-full max-w-4xl my-auto py-6 z-10 flex flex-col md:flex-row items-center justify-center gap-10 lg:gap-16">
+
+        <!-- ======================================================== -->
+        <!-- THE CUTE LAMP COMPONENT (Interactive SVG + Light Beam)   -->
+        <!-- ======================================================== -->
+        <div class="relative flex flex-col items-center select-none" style="width: 240px;">
             
-            <!-- Top Prismatic Specular Accent Bar -->
-            <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-sky-400 to-emerald-400 opacity-90"></div>
+            <!-- Projected Light Beam and Floor Glow -->
+            <div class="light-beam" aria-hidden="true"></div>
+            <div class="spotlight-floor" aria-hidden="true"></div>
 
-            <!-- Header Badge & Title -->
-            <div class="text-center mb-7">
-                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl crystal-badge-3d mb-3.5">
-                    <i class="iconsax text-2xl text-white drop-shadow-[0_2px_8px_rgba(37,99,235,0.6)]" icon-name="shield-tick"></i>
-                </div>
+            <!-- Cute Lamp SVG Illustration -->
+            <svg class="lamp-svg w-full overflow-visible" viewBox="0 0 240 360" width="240" height="360" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <!-- Shade Gradients -->
+                    <linearGradient id="shadeGrad" x1="45" y1="50" x2="195" y2="180" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#84a98c"/>
+                        <stop offset="60%" stop-color="#729679"/>
+                        <stop offset="100%" stop-color="#55735b"/>
+                    </linearGradient>
 
-                <h1 class="font-heading text-2xl font-bold tracking-tight text-white dark:text-white mb-1.5">
-                    SecureFed Edge Node
-                </h1>
-                <p class="text-xs text-slate-400 dark:text-slate-400">
-                    Client-Side Intrusion Detection &amp; DP Training Console
+                    <!-- Metallic Stand Gradient -->
+                    <linearGradient id="metalGrad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#94a3b8"/>
+                        <stop offset="35%" stop-color="#f1f5f9"/>
+                        <stop offset="70%" stop-color="#e2e8f0"/>
+                        <stop offset="100%" stop-color="#64748b"/>
+                    </linearGradient>
+
+                    <!-- Bulb Glow Gradient -->
+                    <radialGradient id="bulbGlow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#fffbeb" stop-opacity="1"/>
+                        <stop offset="40%" stop-color="#fef08a" stop-opacity="0.9"/>
+                        <stop offset="100%" stop-color="#ca8a04" stop-opacity="0"/>
+                    </radialGradient>
+                </defs>
+
+                <!-- Lamp Stem (Stand) -->
+                <rect x="113" y="175" width="14" height="135" rx="7" fill="url(#metalGrad)" stroke="#475569" stroke-width="1.2"/>
+
+                <!-- Lamp Base -->
+                <g id="lamp-base" class="transition-transform duration-300">
+                    <ellipse cx="120" cy="315" rx="48" ry="14" fill="#64748b"/>
+                    <ellipse cx="120" cy="312" rx="46" ry="12" fill="url(#metalGrad)" stroke="#475569" stroke-width="1.2"/>
+                    <ellipse cx="120" cy="310" rx="44" ry="10" fill="#f8fafc" opacity="0.6"/>
+                    <ellipse cx="120" cy="310" rx="14" ry="4" fill="#94a3b8"/>
+                </g>
+
+                <!-- Glowing Under-Shade Bulb & Rim -->
+                <ellipse id="lamp-bulb" cx="120" cy="180" rx="42" ry="11" fill="url(#bulbGlow)"/>
+
+                <!-- Lamp Shade (Cute Green Trapezoid) -->
+                <g id="lamp-head" class="cursor-pointer" onclick="toggleLamp()" title="Click lamp or pull cord to turn on/off">
+                    <path d="M 68 62 L 172 62 L 195 180 C 195 188, 45 188, 45 180 Z" fill="url(#shadeGrad)" stroke="#435e49" stroke-width="2"/>
+                    <!-- Top Cap of Shade -->
+                    <ellipse cx="120" cy="62" rx="52" ry="12" fill="#8cb394" stroke="#435e49" stroke-width="1.5"/>
+                    <ellipse cx="120" cy="62" rx="16" ry="4" fill="#64748b"/>
+                    <rect x="116" y="52" width="8" height="10" rx="3" fill="#cbd5e1" stroke="#475569" stroke-width="1"/>
+
+                    <!-- ============================================== -->
+                    <!-- CUTE FACE ON LAMPSHADE (Smiling, Eyes & Tongue) -->
+                    <!-- ============================================== -->
+                    <g id="lamp-face" transform="translate(0, 15)">
+                        <!-- Eyes OPEN state -->
+                        <g class="face-eyes-open">
+                            <!-- Left Eye -->
+                            <ellipse cx="88" cy="112" rx="7.5" ry="9" fill="#1e293b"/>
+                            <circle class="lamp-pupil" cx="86" cy="109" r="2.8" fill="#ffffff"/>
+                            <circle class="lamp-pupil" cx="90.5" cy="115" r="1.2" fill="#ffffff"/>
+
+                            <!-- Right Eye -->
+                            <ellipse cx="152" cy="112" rx="7.5" ry="9" fill="#1e293b"/>
+                            <circle class="lamp-pupil" cx="150" cy="109" r="2.8" fill="#ffffff"/>
+                            <circle class="lamp-pupil" cx="154.5" cy="115" r="1.2" fill="#ffffff"/>
+                        </g>
+
+                        <!-- Eyes CLOSED state (Sleeping when OFF) -->
+                        <g class="face-eyes-closed">
+                            <path d="M 81 114 Q 88 108 95 114" stroke="#1e293b" stroke-width="3" stroke-linecap="round" fill="none"/>
+                            <path d="M 145 114 Q 152 108 159 114" stroke="#1e293b" stroke-width="3" stroke-linecap="round" fill="none"/>
+                        </g>
+
+                        <!-- Pink Cheeks (Blush) -->
+                        <ellipse class="lamp-blush transition-all duration-300" cx="76" cy="124" rx="6" ry="3.5" fill="#f43f5e" opacity="0.45"/>
+                        <ellipse class="lamp-blush transition-all duration-300" cx="164" cy="124" rx="6" ry="3.5" fill="#f43f5e" opacity="0.45"/>
+
+                        <!-- Cute Mouth with Pink Tongue -->
+                        <g id="lamp-mouth">
+                            <path d="M 106 122 C 106 136, 134 136, 134 122 Z" fill="#1e293b"/>
+                            <!-- Tongue -->
+                            <path class="lamp__tongue" d="M 112 129 C 114 136, 126 136, 128 129 C 124 126, 116 126, 112 129 Z" fill="var(--tongue)"/>
+                        </g>
+                    </g>
+                </g>
+
+                <!-- ============================================== -->
+                <!-- PULL CORD (Interactive Click / Drag Pull Cord)  -->
+                <!-- ============================================== -->
+                <g id="pull-cord" class="pull-cord" onclick="pullCordAction(event)" title="Click to pull cord and toggle light!">
+                    <!-- The Hanging String -->
+                    <path id="cord-path" class="cord-line" d="M 80 182 Q 78 215 76 250"/>
+                    <!-- The Pull Bead / Knob -->
+                    <circle class="cord-bead" cx="76" cy="254" r="7.5"/>
+                    <circle cx="74" cy="252" r="2.2" fill="#ffffff" opacity="0.8"/>
+                </g>
+            </svg>
+
+            <!-- Interactive Cord Pull Hint -->
+            <div class="cord-hint mt-2 flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full cursor-pointer" onclick="pullCordAction(event)">
+                <i class="iconsax text-xs" icon-name="mouse-circle"></i>
+                <span>Pull Cord to Toggle</span>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- THE SLEEK LOGIN CARD (Matching the Reel Exactly)         -->
+        <!-- ======================================================== -->
+        <div class="cute-login-card w-full max-w-sm p-7 sm:p-8">
+            
+            <div class="mb-6">
+                <h2 class="font-heading text-2xl font-bold tracking-tight text-white mb-1">
+                    Welcome Back
+                </h2>
+                <p class="text-xs text-slate-400 font-mono">
+                    SecureFed Edge Intrusion Detection Node
                 </p>
-
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full crystal-pill text-[11px] font-mono mt-3.5">
-                    <span class="live-dot w-2 h-2 rounded-full bg-emerald-400"></span>
-                    <span class="text-slate-300 dark:text-slate-300 font-semibold" id="node-id-pill">{{ state.client_id or 'client_node_01' }}</span>
-                    <span class="text-slate-500 dark:text-slate-500">·</span>
-                    <span class="text-emerald-400 dark:text-emerald-400 font-medium">Port 5000</span>
-                </div>
             </div>
 
-            <!-- Dynamic Alert Message Box -->
-            <div id="login-alert" class="hidden mb-5 p-3.5 rounded-xl text-xs font-medium border flex items-start gap-2.5 transition-all">
+            <!-- Alert message box -->
+            <div id="login-alert" class="hidden mb-4 p-3 rounded-xl text-xs font-medium border flex items-start gap-2">
                 <i id="login-alert-icon" class="iconsax text-base shrink-0 mt-0.5" icon-name="info-circle"></i>
-                <div id="login-alert-text" class="flex-1 leading-relaxed"></div>
+                <div id="login-alert-text" class="flex-1"></div>
             </div>
 
-            <!-- Login Form -->
-            <form onsubmit="handleLogin(event)" class="space-y-4">
+            <form onsubmit="handleCuteLogin(event)" class="space-y-4">
                 
-                <!-- Operator / Node ID Field -->
+                <!-- Username Input -->
                 <div>
-                    <label for="login-username" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 dark:text-slate-300 mb-1.5 font-mono">
-                        Operator / Client ID
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">
+                        Username
+                    </label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        required 
+                        value="{{ state.client_id or 'client_node_01' }}" 
+                        placeholder="Enter your username"
+                        onfocus="handleUsernameFocus()"
+                        onblur="handleUsernameBlur()"
+                        class="cute-input w-full px-4 py-2.5 rounded-xl text-xs font-sans placeholder-slate-500"
+                    >
+                </div>
+
+                <!-- Password / Admin Key Input -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">
+                        Password
                     </label>
                     <div class="relative">
-                        <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-3" icon-name="user-1"></i>
-                        <input 
-                            type="text" 
-                            id="login-username" 
-                            required 
-                            value="{{ state.client_id or 'client_node_01' }}" 
-                            placeholder="e.g. client_node_01"
-                            class="crystal-input w-full pl-9 pr-3.5 py-2.5 rounded-xl text-xs text-white placeholder-slate-500 font-mono"
-                        >
-                    </div>
-                </div>
-
-                <!-- Admin Secret Key Field -->
-                <div>
-                    <div class="flex items-center justify-between mb-1.5">
-                        <label for="login-admin-key" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 dark:text-slate-300 font-mono">
-                            Admin Secret Key
-                        </label>
-                        <span class="text-[10px] text-slate-400 font-mono">Required for DP &amp; Sync</span>
-                    </div>
-                    <div class="relative">
-                        <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-3" icon-name="key"></i>
                         <input 
                             type="password" 
-                            id="login-admin-key" 
+                            id="password" 
                             required 
                             value="securefed-admin-token-2026"
-                            placeholder="Enter Admin Secret Token"
-                            class="crystal-input w-full pl-9 pr-10 py-2.5 rounded-xl text-xs text-white placeholder-slate-500 font-mono"
+                            placeholder="Enter your password"
+                            onfocus="handlePasswordFocus()"
+                            onblur="handlePasswordBlur()"
+                            class="cute-input w-full px-4 pr-10 py-2.5 rounded-xl text-xs font-mono placeholder-slate-500"
                         >
                         <button 
                             type="button" 
-                            onclick="togglePasswordVisibility()" 
+                            onclick="togglePasswordView()" 
                             class="absolute right-3 top-2.5 text-slate-400 hover:text-white transition-colors"
-                            title="Show/Hide Token"
-                            aria-label="Toggle password visibility"
+                            aria-label="Toggle password view"
                         >
-                            <i id="pwd-eye-icon" class="iconsax text-base" icon-name="eye"></i>
+                            <i id="eye-icon" class="iconsax text-base" icon-name="eye"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Session Options & Demo Pre-fill -->
+                <!-- Remember & Quick Demo Link -->
                 <div class="flex items-center justify-between text-xs pt-1">
-                    <label class="flex items-center gap-2 cursor-pointer select-none text-slate-300 dark:text-slate-400">
-                        <input type="checkbox" id="login-remember" checked class="w-3.5 h-3.5 rounded bg-slate-900/60 border-slate-700 text-blue-600 focus:ring-0 cursor-pointer">
-                        <span>Remember Credentials</span>
+                    <label class="flex items-center gap-2 cursor-pointer text-slate-400 text-xs">
+                        <input type="checkbox" id="remember-me" checked class="rounded bg-slate-800 border-slate-700 text-green-500 focus:ring-0">
+                        <span>Remember me</span>
                     </label>
-
-                    <button 
-                        type="button" 
-                        onclick="fillDemoCredentials()" 
-                        class="text-blue-400 hover:text-blue-300 text-xs font-semibold inline-flex items-center gap-1 transition-colors"
-                        title="Auto-fill default admin credentials"
-                    >
-                        <i class="iconsax text-sm" icon-name="magic-star"></i>
-                        <span>Demo Key</span>
+                    <button type="button" onclick="fillDemoCredentials()" class="text-emerald-400 hover:text-emerald-300 text-xs font-medium transition-colors">
+                        Demo Credentials
                     </button>
                 </div>
 
-                <!-- Submit Button -->
+                <!-- Green Submit Button (Exact Match) -->
                 <button 
                     type="submit" 
-                    id="login-submit-btn" 
-                    class="crystal-btn-primary w-full py-3 rounded-xl font-heading font-semibold text-xs text-white uppercase tracking-wider flex items-center justify-center gap-2 mt-2"
+                    id="login-btn" 
+                    class="cute-btn-green w-full py-2.5 rounded-xl font-heading font-semibold text-xs text-white uppercase tracking-wider flex items-center justify-center gap-2 mt-2"
                 >
-                    <i class="iconsax text-base" icon-name="unlock"></i>
-                    <span id="login-btn-text">Authenticate &amp; Unlock</span>
+                    <span id="login-btn-label">Login</span>
                 </button>
-            </form>
 
-            <!-- Card Footer Metadata -->
-            <div class="mt-6 pt-5 border-t border-white/10 dark:border-white/10 text-center text-[11px] text-slate-400 font-mono">
-                <div class="flex items-center justify-center gap-2">
-                    <i class="iconsax text-xs text-emerald-400" icon-name="lock-1"></i>
-                    <span>Zero Raw Traffic Leakage · DP-SGD Guaranteed</span>
+                <!-- Forgot Password / Admin Token Hint -->
+                <div class="text-center pt-2">
+                    <button type="button" onclick="showTokenHint()" class="text-xs text-slate-500 hover:text-slate-400 transition-colors">
+                        Forgot Password?
+                    </button>
                 </div>
-            </div>
+            </form>
         </div>
     </main>
 
-    <!-- Bottom Terminal Watermark -->
+    <!-- Footer Terminal Tag -->
     <footer class="w-full max-w-5xl text-center py-2 z-10 text-[11px] font-mono text-slate-500">
-        SecureFed-NIDS v2.0 · Federated Defense Control Architecture
+        Cute Lamp Interface · SecureFed-NIDS Client Edge Node (:5000)
     </footer>
 
+    <!-- Audio Element for Tactile Cord Snap Sound (Synthesized with Web Audio API) -->
     <script>
-        function updateThemeIcon() {
-            const isDark = document.documentElement.classList.contains('dark');
-            const icon = document.getElementById('login-theme-icon');
-            if (icon) {
-                icon.setAttribute('icon-name', isDark ? 'sun-1' : 'moon');
+        // Web Audio Synthesizer for realistic tactile cord switch "click" sound
+        function playCordClickSound(isTurningOn) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = isTurningOn ? 'triangle' : 'sine';
+                osc.frequency.setValueAtTime(isTurningOn ? 880 : 440, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(isTurningOn ? 220 : 180, ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.08);
+            } catch (e) {
+                // AudioContext fallback
             }
         }
 
-        function toggleTheme() {
-            if (document.documentElement.classList.contains('dark')) {
-                document.documentElement.classList.remove('dark');
-                localStorage.setItem('edge_theme', 'light');
+        let isLampOn = true;
+
+        function toggleLamp() {
+            isLampOn = !isLampOn;
+            playCordClickSound(isLampOn);
+            if (isLampOn) {
+                document.body.classList.remove('lamp-off');
+                document.getElementById('lamp-status-text').textContent = 'Lamp: ON';
             } else {
-                document.documentElement.classList.add('dark');
-                localStorage.setItem('edge_theme', 'dark');
+                document.body.classList.add('lamp-off');
+                document.getElementById('lamp-status-text').textContent = 'Lamp: OFF';
             }
-            updateThemeIcon();
         }
 
-        function togglePasswordVisibility() {
-            const input = document.getElementById('login-admin-key');
-            const icon = document.getElementById('pwd-eye-icon');
-            if (input.type === 'password') {
-                input.type = 'text';
+        function pullCordAction(e) {
+            if (e) e.stopPropagation();
+            const cord = document.getElementById('pull-cord');
+            cord.classList.add('is-pulling');
+            setTimeout(() => {
+                cord.classList.remove('is-pulling');
+                toggleLamp();
+            }, 120);
+        }
+
+        // Cute Lamp Interactive Reactions
+        function handlePasswordFocus() {
+            document.body.classList.add('is-shy');
+        }
+
+        function handlePasswordBlur() {
+            document.body.classList.remove('is-shy');
+        }
+
+        function handleUsernameFocus() {
+            // Lamp eyes look slightly attentive
+            const pupils = document.querySelectorAll('.lamp-pupil');
+            pupils.forEach(p => p.setAttribute('transform', 'translate(0, 1)'));
+        }
+
+        function handleUsernameBlur() {
+            const pupils = document.querySelectorAll('.lamp-pupil');
+            pupils.forEach(p => p.removeAttribute('transform'));
+        }
+
+        function togglePasswordView() {
+            const pwd = document.getElementById('password');
+            const icon = document.getElementById('eye-icon');
+            if (pwd.type === 'password') {
+                pwd.type = 'text';
                 icon.setAttribute('icon-name', 'eye-slash');
             } else {
-                input.type = 'password';
+                pwd.type = 'password';
                 icon.setAttribute('icon-name', 'eye');
             }
         }
 
         function fillDemoCredentials() {
-            document.getElementById('login-username').value = 'client_node_01';
-            document.getElementById('login-admin-key').value = 'securefed-admin-token-2026';
-            showAlert('info', 'Pre-filled demo credentials: client_node_01 & default admin token.');
+            document.getElementById('username').value = 'client_node_01';
+            document.getElementById('password').value = 'securefed-admin-token-2026';
+            showAlert('info', 'Demo credentials loaded: client_node_01 & default admin token.');
         }
 
-        function showAlert(type, message) {
+        function showTokenHint() {
+            showAlert('info', 'Default Admin Secret Token is: securefed-admin-token-2026');
+        }
+
+        function showAlert(type, msg) {
             const box = document.getElementById('login-alert');
             const text = document.getElementById('login-alert-text');
             const icon = document.getElementById('login-alert-icon');
             box.classList.remove('hidden', 'bg-red-500/15', 'border-red-500/30', 'text-red-300', 'bg-emerald-500/15', 'border-emerald-500/30', 'text-emerald-300', 'bg-blue-500/15', 'border-blue-500/30', 'text-blue-300');
-            
+
             if (type === 'error') {
                 box.classList.add('bg-red-500/15', 'border-red-500/30', 'text-red-300');
                 icon.setAttribute('icon-name', 'danger');
@@ -509,24 +565,24 @@
                 box.classList.add('bg-blue-500/15', 'border-blue-500/30', 'text-blue-300');
                 icon.setAttribute('icon-name', 'info-circle');
             }
-            text.textContent = message;
+            text.textContent = msg;
         }
 
-        async function handleLogin(e) {
+        async function handleCuteLogin(e) {
             e.preventDefault();
-            const username = document.getElementById('login-username').value.trim();
-            const adminKey = document.getElementById('login-admin-key').value.trim();
-            const remember = document.getElementById('login-remember').checked;
-            const btn = document.getElementById('login-submit-btn');
-            const btnText = document.getElementById('login-btn-text');
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const remember = document.getElementById('remember-me').checked;
+            const btn = document.getElementById('login-btn');
+            const label = document.getElementById('login-btn-label');
 
-            if (!adminKey) {
-                showAlert('error', 'Please enter your Admin Secret Key to authorize this Edge Node.');
+            if (!password) {
+                showAlert('error', 'Please enter your password / Admin Secret Key.');
                 return;
             }
 
             btn.disabled = true;
-            btnText.textContent = 'Verifying Crystal Credentials...';
+            label.textContent = 'Verifying...';
 
             try {
                 const response = await fetch('/api/client/login', {
@@ -534,7 +590,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         username: username,
-                        admin_key: adminKey,
+                        admin_key: password,
                         remember: remember
                     })
                 });
@@ -542,37 +598,35 @@
                 const data = await response.json();
 
                 if (response.ok && data.status === 'success') {
-                    // Store admin key for the entire Edge session
-                    sessionStorage.setItem('securefed_admin_key', adminKey);
+                    sessionStorage.setItem('securefed_admin_key', password);
                     sessionStorage.setItem('securefed_operator_user', username);
                     if (remember) {
                         localStorage.setItem('securefed_saved_operator', username);
-                        localStorage.setItem('securefed_saved_admin_key', adminKey);
+                        localStorage.setItem('securefed_saved_admin_key', password);
                     }
-                    showAlert('success', `${data.message} Redirecting to Node Overview...`);
-                    btnText.textContent = '✓ Unlocked! Redirecting...';
+                    showAlert('success', `${data.message} Redirecting...`);
+                    label.textContent = '✓ Welcome!';
                     setTimeout(() => {
                         window.location.href = '/';
-                    }, 850);
+                    }, 800);
                 } else {
-                    showAlert('error', data.detail || 'Authentication failed. Please verify your Admin Secret Key.');
+                    showAlert('error', data.detail || 'Authentication failed. Please verify your password / Admin Secret Key.');
                     btn.disabled = false;
-                    btnText.textContent = 'Authenticate & Unlock';
+                    label.textContent = 'Login';
                 }
             } catch (err) {
-                showAlert('error', `Connection error: ${err.message}. Ensure Client Edge server is running.`);
+                showAlert('error', `Connection error: ${err.message}`);
                 btn.disabled = false;
-                btnText.textContent = 'Authenticate & Unlock';
+                label.textContent = 'Login';
             }
         }
 
-        // Initialize saved key if exists
+        // Restore saved credentials if available
         document.addEventListener('DOMContentLoaded', () => {
-            updateThemeIcon();
             const savedUser = localStorage.getItem('securefed_saved_operator') || sessionStorage.getItem('securefed_operator_user');
             const savedKey = localStorage.getItem('securefed_saved_admin_key') || sessionStorage.getItem('securefed_admin_key');
-            if (savedUser) document.getElementById('login-username').value = savedUser;
-            if (savedKey) document.getElementById('login-admin-key').value = savedKey;
+            if (savedUser) document.getElementById('username').value = savedUser;
+            if (savedKey) document.getElementById('password').value = savedKey;
         });
     </script>
 </body>
