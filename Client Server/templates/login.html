@@ -94,6 +94,31 @@
                     {{ state.hq_url or 'http://localhost:8000' }}
                 </span>
             </div>
+
+            <!-- Active Operator Session & Logout Card in Left Panel (Bottom) -->
+            <div id="left-panel-session-card" class="hidden edge-card p-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.07] space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                        <span class="edge-live-dot h-2 w-2 rounded-full bg-emerald-500"></span>
+                        Active Operator Session
+                    </span>
+                    <span id="left-panel-provider-badge" class="font-mono text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                        Admin Session
+                    </span>
+                </div>
+                <div class="flex items-center justify-between gap-3 text-xs font-mono">
+                    <div class="min-w-0 flex-1">
+                        <span class="text-slate-400 text-[10px] block uppercase">Current Operator</span>
+                        <span id="left-panel-username" class="font-bold text-slate-800 dark:text-slate-200 truncate block mt-0.5">
+                            client_node_01
+                        </span>
+                    </div>
+                    <button type="button" onclick="handleLogout()" class="edge-btn edge-btn-sheen px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-semibold text-xs inline-flex items-center gap-1.5 shadow-[0_4px_12px_-2px_rgba(225,29,72,0.35)] shrink-0 cursor-pointer" title="Sign out of operator session">
+                        <i class="iconsax text-sm" icon-name="logout"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Right Column: Ultra-Modern SaaS Login Card (7 cols) -->
@@ -677,13 +702,20 @@
             const sessionAvatar = document.getElementById('session-avatar');
             const providerBadge = document.getElementById('session-provider-badge');
 
+            // Left column session indicators
+            const leftSessionCard = document.getElementById('left-panel-session-card');
+            const leftUsername = document.getElementById('left-panel-username');
+            const leftBadge = document.getElementById('left-panel-provider-badge');
+
             if (isAuth) {
                 if (activeSessionCard) activeSessionCard.classList.remove('hidden');
                 if (signinCard) signinCard.classList.add('hidden');
                 if (forgotCard) forgotCard.classList.add('hidden');
+                if (leftSessionCard) leftSessionCard.classList.remove('hidden');
                 
                 const userDisplay = savedUser || state.client_id || 'client_node_01';
                 if (activeUser) activeUser.textContent = userDisplay;
+                if (leftUsername) leftUsername.textContent = userDisplay;
                 
                 // Set Avatar Initials
                 if (sessionAvatar) {
@@ -701,6 +733,9 @@
                         providerBadge.textContent = 'Email & HMAC Key';
                     }
                 }
+                if (leftBadge) {
+                    leftBadge.textContent = provider === 'google' ? 'Google SSO' : (provider === 'github' ? 'GitHub SSO' : 'Admin Session');
+                }
 
                 if (activeMethod) {
                     activeMethod.textContent = provider === 'google' ? 'Google OAuth 2.0' : (provider === 'github' ? 'GitHub SSO Token' : 'HMAC Secret Key');
@@ -714,6 +749,7 @@
                 if (activeSessionCard) activeSessionCard.classList.add('hidden');
                 if (signinCard) signinCard.classList.remove('hidden');
                 if (forgotCard) forgotCard.classList.add('hidden');
+                if (leftSessionCard) leftSessionCard.classList.add('hidden');
                 const usernameInput = document.getElementById('login-username');
                 if (usernameInput && !usernameInput.value) {
                     usernameInput.value = state.client_id || 'operator@securefed.internal';

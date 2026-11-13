@@ -524,6 +524,40 @@
             </div>
         </nav>
 
+        <!-- Operator Session & Logout Strip in Left Panel (Bottom) -->
+        <div id="sidebar-auth-card" class="px-3.5 py-3 border-t border-slate-200/80 dark:border-white/10 bg-slate-50/60 dark:bg-black/25">
+            <!-- When Logged In -->
+            <div id="sidebar-logged-in" class="hidden flex items-center justify-between gap-2.5">
+                <a href="/login" class="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity no-underline cursor-pointer" title="View Operator Profile">
+                    <div id="sidebar-avatar" class="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 via-sky-600 to-indigo-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                        OP
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div id="sidebar-user" class="font-heading text-xs font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">
+                            client_node_01
+                        </div>
+                        <div class="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
+                            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Admin Session
+                        </div>
+                    </div>
+                </a>
+                <button type="button" onclick="globalLogout()" class="edge-btn w-8 h-8 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/25 flex items-center justify-center shrink-0 transition-all shadow-xs cursor-pointer" title="Sign Out / Logout">
+                    <i class="iconsax text-sm" icon-name="logout"></i>
+                </button>
+            </div>
+
+            <!-- When Logged Out -->
+            <div id="sidebar-logged-out" class="flex items-center justify-between gap-2 text-xs">
+                <span class="font-mono text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                    <i class="iconsax text-sm text-slate-400" icon-name="user"></i> Guest Mode
+                </span>
+                <a href="/login" class="px-2.5 py-1 rounded-lg bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 font-mono text-[11px] font-semibold hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1">
+                    <span>Sign In</span>
+                    <i class="iconsax text-xs" icon-name="arrow-right-3"></i>
+                </a>
+            </div>
+        </div>
+
         <!-- Node Status Live Telemetry Footer -->
         <div class="px-4 py-3.5 border-t border-slate-200/80 dark:border-white/10 bg-slate-50/70 dark:bg-black/35 backdrop-blur-md space-y-2">
             <div class="flex items-center justify-between text-xs">
@@ -690,6 +724,11 @@ async function refreshHeader() {
         const opPill = document.getElementById('header-operator-pill');
         const headerLogoutBtn = document.getElementById('header-logout-btn');
         const navLoginLabel = document.getElementById('nav-login-label');
+        const sideLoggedIn = document.getElementById('sidebar-logged-in');
+        const sideLoggedOut = document.getElementById('sidebar-logged-out');
+        const sideUser = document.getElementById('sidebar-user');
+        const sideAvatar = document.getElementById('sidebar-avatar');
+
         const savedKey = sessionStorage.getItem('securefed_admin_key') || localStorage.getItem('securefed_saved_admin_key');
         const savedUser = sessionStorage.getItem('securefed_operator_user') || localStorage.getItem('securefed_saved_operator') || state.operator_user;
         const isAuth = Boolean(state.operator_authenticated || (savedKey && savedKey.length > 5));
@@ -711,6 +750,18 @@ async function refreshHeader() {
                 if (navLoginLabel) navLoginLabel.textContent = 'Operator Login';
                 if (headerLogoutBtn) headerLogoutBtn.classList.add('hidden');
             }
+        }
+
+        // Update left sidebar panel auth state
+        if (isAuth) {
+            if (sideLoggedIn) sideLoggedIn.classList.remove('hidden');
+            if (sideLoggedOut) sideLoggedOut.classList.add('hidden');
+            const uDisplay = savedUser || state.client_id || 'client_node_01';
+            if (sideUser) sideUser.textContent = uDisplay;
+            if (sideAvatar) sideAvatar.textContent = uDisplay.split('@')[0].slice(0, 2).toUpperCase();
+        } else {
+            if (sideLoggedIn) sideLoggedIn.classList.add('hidden');
+            if (sideLoggedOut) sideLoggedOut.classList.remove('hidden');
         }
 
         const autoEnabled = state.auto_push !== false;
