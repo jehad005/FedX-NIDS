@@ -575,6 +575,12 @@
                     <i id="header-operator-icon" class="iconsax text-sm text-amber-500" icon-name="lock-1"></i>
                     <span id="header-operator-label" class="font-semibold">Sign In</span>
                 </a>
+
+                <!-- Quick Logout Button (Visible only when authenticated) -->
+                <button type="button" id="header-logout-btn" onclick="globalLogout()" class="hidden edge-pill-glass flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/40 font-semibold shadow-xs transition-all cursor-pointer" title="Sign out of operator session">
+                    <i class="iconsax text-sm" icon-name="logout"></i>
+                    <span class="hidden sm:inline">Sign Out</span>
+                </button>
             </div>
         </header>
 
@@ -682,6 +688,7 @@ async function refreshHeader() {
         const opLabel = document.getElementById('header-operator-label');
         const opIcon = document.getElementById('header-operator-icon');
         const opPill = document.getElementById('header-operator-pill');
+        const headerLogoutBtn = document.getElementById('header-logout-btn');
         const navLoginLabel = document.getElementById('nav-login-label');
         const savedKey = sessionStorage.getItem('securefed_admin_key') || localStorage.getItem('securefed_saved_admin_key');
         const savedUser = sessionStorage.getItem('securefed_operator_user') || localStorage.getItem('securefed_saved_operator') || state.operator_user;
@@ -695,12 +702,14 @@ async function refreshHeader() {
                 opPill.className = 'edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/10 dark:bg-emerald-500/15 border-emerald-600/25 dark:border-emerald-500/35 text-emerald-700 dark:text-emerald-300 shadow-xs hover:border-emerald-500 transition-all cursor-pointer';
                 opPill.title = 'Operator Authenticated (Admin Privileges Active)';
                 if (navLoginLabel) navLoginLabel.textContent = 'Operator Session';
+                if (headerLogoutBtn) headerLogoutBtn.classList.remove('hidden');
             } else {
                 opLabel.textContent = 'Sign In';
                 opIcon.setAttribute('icon-name', 'lock-1');
                 opIcon.className = 'iconsax text-sm text-amber-500';
                 opPill.className = 'edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-700 dark:text-slate-200 hover:border-blue-500/60 transition-all cursor-pointer';
                 if (navLoginLabel) navLoginLabel.textContent = 'Operator Login';
+                if (headerLogoutBtn) headerLogoutBtn.classList.add('hidden');
             }
         }
 
@@ -760,6 +769,24 @@ async function postJSON(url, payload) {
         body: JSON.stringify(payload)
     });
     return {response, data: await response.json()};
+}
+
+async function globalLogout() {
+    if (!confirm('Are you sure you want to sign out of the active operator session?')) return;
+    try {
+        await fetch('/api/client/logout', { method: 'POST' });
+    } catch (e) {
+        console.error('Logout error:', e);
+    }
+    sessionStorage.removeItem('securefed_admin_key');
+    sessionStorage.removeItem('securefed_operator_user');
+    localStorage.removeItem('securefed_saved_operator');
+    localStorage.removeItem('securefed_saved_admin_key');
+    
+    await refreshHeader();
+    if (window.location.pathname === '/login') {
+        window.location.reload();
+    }
 }
 
 function getAdminKey() {

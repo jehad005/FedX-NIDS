@@ -2,23 +2,23 @@
 {% block title %}Operator Authentication · SecureFed Edge{% endblock %}
 {% block page_heading %}Operator Authentication &amp; Access Control{% endblock %}
 {% block content %}
-<div class="edge-stagger-stack space-y-6">
+<div class="edge-stagger-stack max-w-5xl mx-auto space-y-6">
 
-    <!-- Top Security Banner -->
-    <div class="edge-card p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <!-- Top Security & Trust Banner -->
+    <div class="edge-card p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-3.5">
-            <div class="w-11 h-11 rounded-xl bg-blue-600/[0.09] dark:bg-blue-500/15 border border-blue-600/20 dark:border-blue-500/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                <i class="iconsax text-xl" icon-name="shield-security"></i>
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 via-sky-600 to-indigo-600 border border-white/35 shadow-[0_8px_20px_-4px_rgba(37,99,235,0.45)] text-white flex items-center justify-center shrink-0">
+                <i class="iconsax text-2xl" icon-name="shield-security"></i>
             </div>
             <div>
-                <h2 class="font-heading text-[15px] font-bold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
+                <h2 class="font-heading text-base font-bold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
                     <span>Edge Node Cryptographic Access Gateway</span>
-                    <span class="font-mono text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                    <span class="font-mono text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                         <span class="edge-live-dot h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Zero Trust Edge
                     </span>
                 </h2>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Authenticate operator identity with an HMAC Admin Secret Key to authorize model pushes, training deltas, and telemetry changes.
+                    Authenticate operator identity via Google Workspace SSO, GitHub Enterprise, or Email &amp; HMAC Secret Key to authorize model deployments and training deltas.
                 </p>
             </div>
         </div>
@@ -32,7 +32,7 @@
         </div>
     </div>
 
-    <!-- Main Grid: Left Node Profile, Right Sign In / Active Session -->
+    <!-- Main Grid: Left Node Security Profile, Right Dynamic Auth Gateway -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         <!-- Left Column: Edge Node Security Profile (5 cols) -->
@@ -78,7 +78,7 @@
                     Administrative Privileges
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Signing in as an authenticated operator unlocks sensitive pipeline controls on this edge instance:
+                    Signing in as an authenticated operator unlocks write-level cybersecurity and training controls:
                 </p>
                 <ul class="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
                     <li class="flex items-start gap-2">
@@ -95,113 +95,203 @@
                     </li>
                     <li class="flex items-start gap-2">
                         <i class="iconsax text-sm text-emerald-500 mt-0.5 shrink-0" icon-name="tick-circle"></i>
-                        <span><strong>Air-Gapped Fallback:</strong> Manually upload verified <code>.pt</code> model state dictionaries.</span>
+                        <span><strong>Air-Gapped Ingestion:</strong> Manually upload verified <code>.pt</code> model state dictionaries.</span>
                     </li>
                 </ul>
             </div>
         </div>
 
-        <!-- Right Column: Operator Authentication Console (7 cols) -->
-        <div class="lg:col-span-7 space-y-5">
-            
-            <!-- Already Authenticated Panel (shown if active session exists) -->
+        <!-- Right Column: Authentication Card / Active Session View (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+
+            <!-- ========================================== -->
+            <!-- 1. ACTIVE SESSION VIEW (Shown when logged in) -->
+            <!-- ========================================== -->
             <div id="active-session-card" class="hidden edge-card p-7 sm:p-8 rounded-2xl space-y-6">
-                <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.2)] shrink-0">
-                        <i class="iconsax text-3xl" icon-name="shield-tick"></i>
-                    </div>
-                    <div>
-                        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-mono text-[10px] font-semibold mb-1">
-                            <span class="edge-live-dot h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Session Authenticated
+                <!-- User Profile Header -->
+                <div class="flex items-start sm:items-center justify-between gap-4 border-b pb-5 border-slate-200/80 dark:border-white/10">
+                    <div class="flex items-center gap-3.5">
+                        <div id="session-avatar" class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-sky-500 border-2 border-white/40 shadow-[0_8px_20px_-4px_rgba(37,99,235,0.4)] flex items-center justify-center text-white font-bold text-xl uppercase font-mono shrink-0">
+                            OP
                         </div>
-                        <h3 class="font-heading text-lg font-bold text-slate-900 dark:text-slate-100">
-                            Operator Privileges Active
-                        </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            Authenticated as <span id="active-session-user" class="font-mono font-semibold text-slate-800 dark:text-slate-200">client_node_01</span>.
-                        </p>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 id="active-session-user" class="font-heading text-lg font-bold text-slate-900 dark:text-slate-100">
+                                    client_node_01
+                                </h3>
+                                <span id="session-provider-badge" class="font-mono text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                                    Email &amp; Key
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+                                <span class="edge-live-dot h-2 w-2 rounded-full bg-emerald-500 inline-block"></span>
+                                <span>Verified Operator Session &middot; Full Edge Privileges</span>
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="p-4 rounded-xl edge-pill-glass space-y-2 font-mono text-xs">
-                    <div class="flex justify-between">
+                <!-- Session Metadata Details -->
+                <div class="p-4 rounded-xl edge-pill-glass space-y-2.5 font-mono text-xs">
+                    <div class="flex items-center justify-between">
                         <span class="text-slate-500 dark:text-slate-400">Authenticated At:</span>
                         <span id="active-session-time" class="text-slate-800 dark:text-slate-200 font-semibold">—</span>
                     </div>
-                    <div class="flex justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500 dark:text-slate-400">Authentication Method:</span>
+                        <span id="active-session-method" class="text-slate-800 dark:text-slate-200 font-semibold">HMAC Secret Token</span>
+                    </div>
+                    <div class="flex items-center justify-between">
                         <span class="text-slate-500 dark:text-slate-400">Access Scope:</span>
-                        <span class="text-emerald-600 dark:text-emerald-400 font-semibold">Edge Admin (Full)</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-semibold">Edge Admin (Read / Write / Train)</span>
                     </div>
                 </div>
 
-                <div class="flex flex-wrap gap-3 pt-2">
-                    <a href="/" class="edge-btn edge-btn-sheen px-5 py-2.5 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold text-xs inline-flex items-center gap-2 shadow-[0_4px_14px_-2px_rgba(37,99,235,0.3)]">
-                        <i class="iconsax text-sm" icon-name="grid-apps"></i>
-                        <span>Go to Node Overview</span>
-                    </a>
-                    <a href="/sync" class="edge-btn px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 font-semibold text-xs inline-flex items-center gap-2">
-                        <i class="iconsax text-sm" icon-name="cloud-add"></i>
-                        <span>Sync Global Model</span>
-                    </a>
-                    <button type="button" onclick="handleLogout()" class="edge-btn ml-auto px-4 py-2.5 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-600 dark:text-red-400 border border-red-500/25 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer">
-                        <i class="iconsax text-sm" icon-name="logout"></i>
-                        <span>Terminate Session</span>
+                <!-- Fast Navigation Actions -->
+                <div>
+                    <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-2.5">
+                        Quick Console Navigation
+                    </span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <a href="/" class="edge-btn edge-btn-sheen px-4 py-2.5 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold text-xs inline-flex items-center justify-between shadow-[0_4px_12px_-2px_rgba(37,99,235,0.28)]">
+                            <span class="flex items-center gap-2">
+                                <i class="iconsax text-base" icon-name="category"></i>
+                                <span>Node Overview</span>
+                            </span>
+                            <i class="iconsax text-sm" icon-name="arrow-right-3"></i>
+                        </a>
+
+                        <a href="/sync" class="edge-btn px-4 py-2.5 rounded-xl bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 font-semibold text-xs inline-flex items-center justify-between shadow-xs">
+                            <span class="flex items-center gap-2">
+                                <i class="iconsax text-base text-blue-600 dark:text-blue-400" icon-name="cloud-add"></i>
+                                <span>HQ Sync Center</span>
+                            </span>
+                            <i class="iconsax text-sm text-slate-400" icon-name="arrow-right-3"></i>
+                        </a>
+
+                        <a href="/training" class="edge-btn px-4 py-2.5 rounded-xl bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 font-semibold text-xs inline-flex items-center justify-between shadow-xs">
+                            <span class="flex items-center gap-2">
+                                <i class="iconsax text-base text-amber-500" icon-name="cpu-charge"></i>
+                                <span>DP Local Training</span>
+                            </span>
+                            <i class="iconsax text-sm text-slate-400" icon-name="arrow-right-3"></i>
+                        </a>
+
+                        <a href="/inference" class="edge-btn px-4 py-2.5 rounded-xl bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 font-semibold text-xs inline-flex items-center justify-between shadow-xs">
+                            <span class="flex items-center gap-2">
+                                <i class="iconsax text-base text-emerald-500" icon-name="shield-search"></i>
+                                <span>Traffic Inference</span>
+                            </span>
+                            <i class="iconsax text-sm text-slate-400" icon-name="arrow-right-3"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Dedicated Logout Section -->
+                <div class="pt-5 border-t border-slate-200/80 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-rose-500/[0.04] dark:bg-rose-500/[0.07] border border-rose-500/20">
+                    <div>
+                        <h4 class="font-heading text-xs font-bold text-slate-900 dark:text-slate-100">Terminate Operator Session</h4>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Revoke local administrative privileges and lock this node</p>
+                    </div>
+                    <button type="button" onclick="handleLogout()" class="edge-btn edge-btn-sheen px-5 py-2.5 rounded-xl bg-gradient-to-br from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-semibold text-xs inline-flex items-center justify-center gap-2 shadow-[0_4px_14px_-2px_rgba(225,29,72,0.35)] shrink-0 cursor-pointer">
+                        <i class="iconsax text-base" icon-name="logout"></i>
+                        <span>Sign Out / Logout</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Sign In Form Card -->
+            <!-- ========================================== -->
+            <!-- 2. SIGN IN CARD (Shown when logged out)    -->
+            <!-- ========================================== -->
             <div id="signin-card" class="edge-card p-7 sm:p-8 rounded-2xl space-y-6">
+                
+                <!-- Sign In Header -->
                 <div>
                     <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 font-mono text-[10px] font-semibold mb-2 border border-blue-600/20">
-                        <i class="iconsax text-xs" icon-name="lock"></i> Administrative Access
+                        <i class="iconsax text-xs" icon-name="lock"></i> Operator Gateway
                     </div>
                     <h3 class="font-heading text-xl font-bold text-slate-900 dark:text-slate-100">
                         Sign In as Operator
                     </h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        Enter your operator credentials or Admin Secret Key to unlock this node.
+                        Select a single sign-on provider or use your operator email and HMAC key.
                     </p>
                 </div>
 
-                <!-- Alert Message Container -->
+                <!-- Alert Message Banner -->
                 <div id="login-alert" class="hidden p-3.5 rounded-xl text-xs font-mono border flex items-start gap-2.5">
                     <i id="login-alert-icon" class="iconsax text-base mt-0.5 shrink-0" icon-name="info-circle"></i>
                     <span id="login-alert-text" class="leading-relaxed"></span>
                 </div>
 
+                <!-- Social SSO Buttons (Google & GitHub) -->
+                <div class="space-y-2.5">
+                    <!-- Google SSO Button -->
+                    <button type="button" onclick="handleSocialLogin('google')" class="edge-btn w-full py-2.5 px-4 rounded-xl bg-white/80 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 text-slate-800 dark:text-slate-200 border border-slate-200/90 dark:border-white/10 font-semibold text-xs flex items-center justify-center gap-3 shadow-xs transition-all cursor-pointer">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                        </svg>
+                        <span>Continue with Google</span>
+                    </button>
+
+                    <!-- GitHub SSO Button -->
+                    <button type="button" onclick="handleSocialLogin('github')" class="edge-btn w-full py-2.5 px-4 rounded-xl bg-white/80 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 text-slate-800 dark:text-slate-200 border border-slate-200/90 dark:border-white/10 font-semibold text-xs flex items-center justify-center gap-3 shadow-xs transition-all cursor-pointer">
+                        <svg class="w-4 h-4 fill-current text-slate-900 dark:text-white" viewBox="0 0 24 24">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                        </svg>
+                        <span>Continue with GitHub</span>
+                    </button>
+                </div>
+
+                <!-- Divider -->
+                <div class="relative flex items-center justify-center my-4">
+                    <div class="border-t border-slate-200/80 dark:border-white/10 w-full"></div>
+                    <span class="bg-white/80 dark:bg-[#131820] px-3 font-mono text-[10px] text-slate-400 uppercase tracking-wider relative shrink-0">
+                        Or sign in with email &amp; key
+                    </span>
+                </div>
+
+                <!-- Email & HMAC Key Login Form -->
                 <form id="operator-login-form" onsubmit="handleOperatorLogin(event)" class="space-y-4">
-                    <!-- Operator Username -->
+                    <!-- Operator Email / Username Input -->
                     <div>
                         <label for="login-username" class="block font-mono text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                            Operator Identifier
+                            Operator Email / Identifier
                         </label>
                         <div class="relative">
-                            <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-3" icon-name="user-1"></i>
+                            <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-3" icon-name="sms"></i>
                             <input 
                                 id="login-username" 
                                 type="text" 
                                 required
-                                value="client_node_01"
-                                placeholder="e.g. client_node_01 or admin_secops"
-                                class="w-full pl-9 pr-3.5 py-2.5 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-0"
+                                value="operator@securefed.internal"
+                                placeholder="operator@securefed.internal or client_node_01"
+                                class="w-full pl-9 pr-3.5 py-2.5 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 edge-glass-input focus:outline-none transition-all"
                             >
                         </div>
                     </div>
 
-                    <!-- Admin Secret Key -->
+                    <!-- Password / Admin Secret Key Input -->
                     <div>
-                        <label for="login-admin-key" class="block font-mono text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                            Admin Secret Key / Token
-                        </label>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label for="login-admin-key" class="font-mono text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                                Admin Secret Key / Password
+                            </label>
+                            <button type="button" onclick="toggleForgotPasswordView(true)" class="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-mono font-semibold cursor-pointer">
+                                Forgot Password?
+                            </button>
+                        </div>
                         <div class="relative">
                             <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-3" icon-name="key"></i>
                             <input 
                                 id="login-admin-key" 
                                 type="password" 
                                 required
-                                placeholder="Enter Admin Secret Key"
-                                class="w-full pl-9 pr-10 py-2.5 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-0"
+                                placeholder="Enter securefed-admin-token-2026"
+                                class="w-full pl-9 pr-10 py-2.5 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 edge-glass-input focus:outline-none transition-all"
                             >
                             <button 
                                 type="button" 
@@ -214,11 +304,11 @@
                         </div>
                     </div>
 
-                    <!-- Remember & Demo Credentials Row -->
+                    <!-- Remember & Demo Credentials Helpers -->
                     <div class="flex items-center justify-between text-xs pt-1">
                         <label class="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-slate-400 text-xs">
                             <input type="checkbox" id="login-remember" checked class="rounded border-slate-300 dark:border-white/10 text-blue-600 focus:ring-0">
-                            <span>Remember credentials</span>
+                            <span>Remember session</span>
                         </label>
                         <button type="button" onclick="fillDemoCredentials()" class="text-blue-600 dark:text-blue-400 hover:underline font-mono text-[11px] font-semibold cursor-pointer">
                             Auto-fill Demo Token
@@ -236,16 +326,91 @@
                     </button>
                 </form>
 
-                <!-- Help & Guidance Footer -->
+                <!-- Footer Info -->
                 <div class="pt-4 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-mono text-[11px]">
                     <span class="flex items-center gap-1.5">
                         <i class="iconsax text-sm text-emerald-500" icon-name="shield-tick"></i> SHA-256 HMAC Protected
                     </span>
                     <button type="button" onclick="showTokenHint()" class="hover:underline text-slate-500 dark:text-slate-400 cursor-pointer">
-                        Default Token Info
+                        Cluster Token Info
                     </button>
                 </div>
             </div>
+
+            <!-- ========================================== -->
+            <!-- 3. FORGOT PASSWORD VIEW (Toggled when requested) -->
+            <!-- ========================================== -->
+            <div id="forgot-password-card" class="hidden edge-card p-7 sm:p-8 rounded-2xl space-y-6">
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="toggleForgotPasswordView(false)" class="w-8 h-8 rounded-xl bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-blue-600 flex items-center justify-center cursor-pointer shadow-xs" title="Back to Sign In">
+                        <i class="iconsax text-base" icon-name="arrow-left-2"></i>
+                    </button>
+                    <div>
+                        <h3 class="font-heading text-lg font-bold text-slate-900 dark:text-slate-100">
+                            Reset Operator Access
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            Recover your edge node authentication credentials
+                        </p>
+                    </div>
+                </div>
+
+                <div id="forgot-alert" class="hidden p-3.5 rounded-xl text-xs font-mono border flex items-start gap-2.5">
+                    <i class="iconsax text-base mt-0.5 shrink-0" icon-name="info-circle"></i>
+                    <span id="forgot-alert-text" class="leading-relaxed"></span>
+                </div>
+
+                <form onsubmit="handleForgotPassword(event)" class="space-y-4">
+                    <div>
+                        <label for="forgot-email" class="block font-mono text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                            Operator Registered Email
+                        </label>
+                        <div class="relative">
+                            <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-3" icon-name="sms"></i>
+                            <input 
+                                id="forgot-email" 
+                                type="email" 
+                                required
+                                value="operator@securefed.internal"
+                                placeholder="operator@securefed.internal"
+                                class="w-full pl-9 pr-3.5 py-2.5 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 edge-glass-input focus:outline-none transition-all"
+                            >
+                        </div>
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        id="forgot-submit-btn" 
+                        class="edge-btn edge-btn-sheen w-full py-3 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-heading font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_16px_-2px_rgba(37,99,235,0.35)] cursor-pointer"
+                    >
+                        <i class="iconsax text-sm" icon-name="send-2"></i>
+                        <span id="forgot-btn-text">Send Recovery Instructions</span>
+                    </button>
+                </form>
+
+                <!-- Immediate Recovery Guidance Card -->
+                <div id="forgot-recovery-guide" class="hidden p-4 rounded-xl edge-pill-glass space-y-3 font-mono text-xs border border-blue-500/25">
+                    <div class="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold">
+                        <i class="iconsax text-base" icon-name="key"></i>
+                        <span>Edge Node Emergency Recovery Token</span>
+                    </div>
+                    <p id="forgot-guide-detail" class="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed"></p>
+                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-100 dark:bg-black/30 text-xs">
+                        <span class="text-slate-500 dark:text-slate-400">Default Node Token:</span>
+                        <code id="forgot-guide-token" class="text-emerald-600 dark:text-emerald-400 font-bold select-all">securefed-admin-token-2026</code>
+                    </div>
+                    <button type="button" onclick="useRecoveryToken()" class="edge-btn w-full py-2 rounded-lg bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 font-semibold text-xs border border-blue-600/20">
+                        Populate Token &amp; Return to Sign In
+                    </button>
+                </div>
+
+                <div class="text-center pt-2">
+                    <button type="button" onclick="toggleForgotPasswordView(false)" class="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer font-mono">
+                        &larr; Back to Operator Sign In
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -263,14 +428,26 @@
         }
     }
 
+    function toggleForgotPasswordView(showForgot) {
+        const signinCard = document.getElementById('signin-card');
+        const forgotCard = document.getElementById('forgot-password-card');
+        if (showForgot) {
+            signinCard.classList.add('hidden');
+            forgotCard.classList.remove('hidden');
+        } else {
+            forgotCard.classList.add('hidden');
+            signinCard.classList.remove('hidden');
+        }
+    }
+
     function fillDemoCredentials() {
-        document.getElementById('login-username').value = 'client_node_01';
+        document.getElementById('login-username').value = 'operator@securefed.internal';
         document.getElementById('login-admin-key').value = 'securefed-admin-token-2026';
-        showAlert('info', 'Demo credentials populated: client_node_01 / securefed-admin-token-2026');
+        showAlert('info', 'Demo credentials populated: operator@securefed.internal / securefed-admin-token-2026');
     }
 
     function showTokenHint() {
-        showAlert('info', 'Default administrative token is pre-configured as "securefed-admin-token-2026". You can click "Auto-fill Demo Token" to populate it.');
+        showAlert('info', 'Default administrative token is pre-configured as "securefed-admin-token-2026". Click "Auto-fill Demo Token" to quickly populate it.');
     }
 
     function showAlert(type, msg) {
@@ -278,69 +455,100 @@
         const icon = document.getElementById('login-alert-icon');
         const text = document.getElementById('login-alert-text');
         
-        alertBox.className = 'p-3.5 rounded-xl text-xs font-mono border flex items-start gap-2.5';
-        
+        alertBox.classList.remove('hidden', 'bg-red-50', 'dark:bg-red-950/60', 'text-red-700', 'dark:text-red-300', 'border-red-200', 'dark:border-red-800/70',
+                                    'bg-emerald-50', 'dark:bg-emerald-950/60', 'text-emerald-700', 'dark:text-emerald-300', 'border-emerald-200', 'dark:border-emerald-800/70',
+                                    'bg-blue-50', 'dark:bg-blue-950/60', 'text-blue-700', 'dark:text-blue-300', 'border-blue-200', 'dark:border-blue-800/70');
+
         if (type === 'error') {
-            alertBox.classList.add('bg-red-500/10', 'border-red-500/30', 'text-red-700', 'dark:text-red-300');
+            alertBox.classList.add('bg-red-50', 'dark:bg-red-950/60', 'text-red-700', 'dark:text-red-300', 'border-red-200', 'dark:border-red-800/70');
             icon.setAttribute('icon-name', 'danger');
         } else if (type === 'success') {
-            alertBox.classList.add('bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-700', 'dark:text-emerald-300');
-            icon.setAttribute('icon-name', 'tick-circle');
+            alertBox.classList.add('bg-emerald-50', 'dark:bg-emerald-950/60', 'text-emerald-700', 'dark:text-emerald-300', 'border-emerald-200', 'dark:border-emerald-800/70');
+            icon.setAttribute('icon-name', 'shield-tick');
         } else {
-            alertBox.classList.add('bg-blue-500/10', 'border-blue-500/30', 'text-blue-700', 'dark:text-blue-300');
+            alertBox.classList.add('bg-blue-50', 'dark:bg-blue-950/60', 'text-blue-700', 'dark:text-blue-300', 'border-blue-200', 'dark:border-blue-800/70');
             icon.setAttribute('icon-name', 'info-circle');
         }
-        
         text.textContent = msg;
-        alertBox.classList.remove('hidden');
     }
 
-    async function handleOperatorLogin(e) {
-        e.preventDefault();
+    // Social SSO Handler (Google / GitHub)
+    async function handleSocialLogin(provider) {
+        const providerName = provider === 'google' ? 'Google Workspace' : 'GitHub Enterprise';
+        showAlert('info', `Connecting to ${providerName} Single Sign-On...`);
+        
+        try {
+            const res = await fetch('/api/client/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    auth_provider: provider,
+                    username: provider === 'google' ? 'operator.google@securefed.internal' : 'github-dev@fedx-nids',
+                    remember: true
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                showAlert('success', `Signed in successfully via ${providerName}!`);
+                sessionStorage.setItem('securefed_admin_key', data.admin_key || 'securefed-admin-token-2026');
+                sessionStorage.setItem('securefed_operator_user', data.username);
+                localStorage.setItem('securefed_saved_operator', data.username);
+                localStorage.setItem('securefed_saved_admin_key', data.admin_key || 'securefed-admin-token-2026');
+                
+                setTimeout(() => {
+                    refreshAuthState();
+                    if (typeof refreshHeader === 'function') refreshHeader();
+                }, 500);
+            } else {
+                showAlert('error', data.detail || `Failed to authenticate with ${providerName}.`);
+            }
+        } catch (err) {
+            showAlert('error', `SSO connection error: ${err.message}`);
+        }
+    }
+
+    // Email & HMAC Key Login
+    async function handleOperatorLogin(event) {
+        event.preventDefault();
         const username = document.getElementById('login-username').value.trim();
         const adminKey = document.getElementById('login-admin-key').value.trim();
         const remember = document.getElementById('login-remember').checked;
         const btn = document.getElementById('login-submit-btn');
         const btnText = document.getElementById('login-btn-text');
 
-        if (!adminKey) {
-            showAlert('error', 'Please enter your Admin Secret Key.');
-            return;
-        }
-
         btn.disabled = true;
-        btnText.textContent = 'Verifying Credentials...';
+        btnText.textContent = 'Verifying HMAC Key...';
 
         try {
-            const response = await fetch('/api/client/login', {
+            const res = await fetch('/api/client/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    username: username || 'client_node_01',
+                    username: username,
+                    email: username.includes('@') ? username : null,
                     admin_key: adminKey,
+                    auth_provider: 'email',
                     remember: remember
                 })
             });
 
-            const data = await response.json();
-
-            if (response.ok && data.status === 'success') {
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                showAlert('success', data.message || 'Credentials verified successfully!');
                 sessionStorage.setItem('securefed_admin_key', adminKey);
                 sessionStorage.setItem('securefed_operator_user', username);
                 if (remember) {
                     localStorage.setItem('securefed_saved_operator', username);
                     localStorage.setItem('securefed_saved_admin_key', adminKey);
+                } else {
+                    localStorage.removeItem('securefed_saved_operator');
+                    localStorage.removeItem('securefed_saved_admin_key');
                 }
 
-                showAlert('success', `${data.message} Authenticated!`);
-                btnText.textContent = '✓ Access Granted';
-
-                // Refresh state and transition view
                 setTimeout(() => {
                     refreshAuthState();
-                    if (typeof fetchClientStatus === 'function') {
-                        fetchClientStatus();
-                    }
+                    if (typeof refreshHeader === 'function') refreshHeader();
                 }, 600);
             } else {
                 showAlert('error', data.detail || 'Authentication failed. Please verify your Admin Secret Key.');
@@ -354,6 +562,62 @@
         }
     }
 
+    // Forgot Password Handler
+    async function handleForgotPassword(event) {
+        event.preventDefault();
+        const email = document.getElementById('forgot-email').value.trim();
+        const btn = document.getElementById('forgot-submit-btn');
+        const btnText = document.getElementById('forgot-btn-text');
+        const alertBox = document.getElementById('forgot-alert');
+        const alertText = document.getElementById('forgot-alert-text');
+        const guideBox = document.getElementById('forgot-recovery-guide');
+        const guideDetail = document.getElementById('forgot-guide-detail');
+        const guideToken = document.getElementById('forgot-guide-token');
+
+        btn.disabled = true;
+        btnText.textContent = 'Preparing instructions...';
+
+        try {
+            const res = await fetch('/api/client/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                alertBox.className = 'p-3.5 rounded-xl text-xs font-mono border flex items-start gap-2.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/70';
+                alertText.textContent = data.message;
+                alertBox.classList.remove('hidden');
+
+                guideBox.classList.remove('hidden');
+                guideDetail.textContent = data.detail;
+                guideToken.textContent = data.default_token || 'securefed-admin-token-2026';
+            } else {
+                alertBox.className = 'p-3.5 rounded-xl text-xs font-mono border flex items-start gap-2.5 bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/70';
+                alertText.textContent = data.detail || 'Failed to send recovery instructions.';
+                alertBox.classList.remove('hidden');
+            }
+        } catch (err) {
+            alertBox.className = 'p-3.5 rounded-xl text-xs font-mono border flex items-start gap-2.5 bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/70';
+            alertText.textContent = `Error: ${err.message}`;
+            alertBox.classList.remove('hidden');
+        } finally {
+            btn.disabled = false;
+            btnText.textContent = 'Send Recovery Instructions';
+        }
+    }
+
+    function useRecoveryToken() {
+        const token = document.getElementById('forgot-guide-token').textContent.trim();
+        const email = document.getElementById('forgot-email').value.trim();
+        document.getElementById('login-admin-key').value = token;
+        document.getElementById('login-username').value = email;
+        toggleForgotPasswordView(false);
+        showAlert('info', 'Recovery token populated into sign-in form. Click Verify & Unlock to proceed.');
+    }
+
+    // Logout Handler
     async function handleLogout() {
         if (!confirm('Are you sure you want to terminate the active operator session?')) return;
         try {
@@ -368,8 +632,8 @@
 
         showAlert('info', 'Operator session terminated.');
         refreshAuthState();
-        if (typeof fetchClientStatus === 'function') {
-            fetchClientStatus();
+        if (typeof refreshHeader === 'function') {
+            refreshHeader();
         }
     }
 
@@ -399,26 +663,56 @@
                 }
             }
 
-            // Toggle panels
+            // Toggle active session card vs signin card
             const activeSessionCard = document.getElementById('active-session-card');
             const signinCard = document.getElementById('signin-card');
+            const forgotCard = document.getElementById('forgot-password-card');
             const activeUser = document.getElementById('active-session-user');
             const activeTime = document.getElementById('active-session-time');
+            const activeMethod = document.getElementById('active-session-method');
+            const sessionAvatar = document.getElementById('session-avatar');
+            const providerBadge = document.getElementById('session-provider-badge');
 
             if (isAuth) {
                 if (activeSessionCard) activeSessionCard.classList.remove('hidden');
                 if (signinCard) signinCard.classList.add('hidden');
-                if (activeUser) activeUser.textContent = savedUser || state.client_id || 'client_node_01';
+                if (forgotCard) forgotCard.classList.add('hidden');
+                
+                const userDisplay = savedUser || state.client_id || 'client_node_01';
+                if (activeUser) activeUser.textContent = userDisplay;
+                
+                // Set Avatar Initials
+                if (sessionAvatar) {
+                    const initials = userDisplay.split('@')[0].slice(0, 2).toUpperCase();
+                    sessionAvatar.textContent = initials;
+                }
+
+                const provider = state.auth_provider || (userDisplay.includes('google') ? 'google' : (userDisplay.includes('github') ? 'github' : 'email'));
+                if (providerBadge) {
+                    if (provider === 'google') {
+                        providerBadge.textContent = 'Google Workspace SSO';
+                    } else if (provider === 'github') {
+                        providerBadge.textContent = 'GitHub Enterprise SSO';
+                    } else {
+                        providerBadge.textContent = 'Email & HMAC Key';
+                    }
+                }
+
+                if (activeMethod) {
+                    activeMethod.textContent = provider === 'google' ? 'Google OAuth 2.0' : (provider === 'github' ? 'GitHub SSO Token' : 'HMAC Secret Key');
+                }
+
                 if (activeTime) {
                     const at = state.operator_authenticated_at;
-                    activeTime.textContent = at ? new Date(at).toLocaleString() : 'Active in this browser';
+                    activeTime.textContent = at ? new Date(at).toLocaleString() : 'Active in this browser session';
                 }
             } else {
                 if (activeSessionCard) activeSessionCard.classList.add('hidden');
                 if (signinCard) signinCard.classList.remove('hidden');
+                if (forgotCard) forgotCard.classList.add('hidden');
                 const usernameInput = document.getElementById('login-username');
                 if (usernameInput && !usernameInput.value) {
-                    usernameInput.value = state.client_id || 'client_node_01';
+                    usernameInput.value = state.client_id || 'operator@securefed.internal';
                 }
             }
         } catch (err) {
