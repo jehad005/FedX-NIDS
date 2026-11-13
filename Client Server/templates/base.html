@@ -7,7 +7,7 @@
     <!-- Fonts: Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Iconsax Icons Package -->
     <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
@@ -59,8 +59,8 @@
         }
 
         @keyframes edgeLivePulse {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
-            70% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
+            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
             100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
@@ -74,11 +74,11 @@
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: #eef3f9;
             background-image:
-                radial-gradient(1000px circle at 12% 8%, rgba(59, 130, 246, 0.14), transparent 52%),
-                radial-gradient(850px circle at 88% 12%, rgba(14, 165, 233, 0.12), transparent 48%),
-                radial-gradient(750px circle at 50% 92%, rgba(16, 185, 129, 0.08), transparent 52%),
-                radial-gradient(650px circle at 85% 75%, rgba(139, 92, 246, 0.09), transparent 50%),
-                radial-gradient(550px circle at 15% 85%, rgba(245, 158, 11, 0.06), transparent 45%);
+                radial-gradient(1100px circle at 10% 8%, rgba(59, 130, 246, 0.14), transparent 52%),
+                radial-gradient(900px circle at 90% 12%, rgba(14, 165, 233, 0.13), transparent 48%),
+                radial-gradient(800px circle at 50% 92%, rgba(16, 185, 129, 0.09), transparent 52%),
+                radial-gradient(700px circle at 85% 75%, rgba(139, 92, 246, 0.09), transparent 50%),
+                radial-gradient(600px circle at 15% 85%, rgba(245, 158, 11, 0.06), transparent 45%);
             background-attachment: fixed;
             -webkit-font-smoothing: antialiased;
             transition: background-color 0.25s ease, color 0.25s ease;
@@ -87,11 +87,11 @@
         html.dark body {
             background-color: #080c14;
             background-image:
-                radial-gradient(1100px circle at 15% 5%, rgba(37, 99, 235, 0.18), transparent 55%),
-                radial-gradient(950px circle at 85% 15%, rgba(14, 165, 233, 0.14), transparent 50%),
-                radial-gradient(850px circle at 50% 90%, rgba(16, 185, 129, 0.11), transparent 55%),
-                radial-gradient(750px circle at 85% 75%, rgba(139, 92, 246, 0.13), transparent 50%),
-                radial-gradient(600px circle at 20% 80%, rgba(56, 189, 248, 0.08), transparent 45%);
+                radial-gradient(1200px circle at 12% 6%, rgba(37, 99, 235, 0.18), transparent 55%),
+                radial-gradient(1000px circle at 88% 14%, rgba(14, 165, 233, 0.14), transparent 50%),
+                radial-gradient(900px circle at 50% 90%, rgba(16, 185, 129, 0.11), transparent 55%),
+                radial-gradient(800px circle at 85% 75%, rgba(139, 92, 246, 0.13), transparent 50%),
+                radial-gradient(650px circle at 20% 80%, rgba(56, 189, 248, 0.08), transparent 45%);
         }
 
         h1, h2, h3, h4, .font-heading {
@@ -101,15 +101,15 @@
 
         /* Glassmorphism Sidebar */
         aside.edge-sidebar {
-            background: rgba(255, 255, 255, 0.75) !important;
-            backdrop-filter: blur(20px) saturate(180%) !important;
-            -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+            background: rgba(255, 255, 255, 0.78) !important;
+            backdrop-filter: blur(24px) saturate(190%) !important;
+            -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
             border-right: 1px solid rgba(255, 255, 255, 0.85) !important;
             box-shadow: 4px 0 24px -10px rgba(15, 23, 42, 0.08) !important;
         }
 
         html.dark aside.edge-sidebar {
-            background: rgba(13, 18, 28, 0.72) !important;
+            background: rgba(13, 18, 28, 0.76) !important;
             border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
             box-shadow: 4px 0 24px -10px rgba(0, 0, 0, 0.5) !important;
         }
@@ -164,7 +164,7 @@
         .edge-topbar {
             position: sticky;
             top: 0;
-            background: rgba(255, 255, 255, 0.72) !important;
+            background: rgba(255, 255, 255, 0.76) !important;
             backdrop-filter: blur(20px) saturate(180%) !important;
             -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.85) !important;
@@ -173,7 +173,7 @@
         }
 
         html.dark .edge-topbar {
-            background: rgba(13, 18, 28, 0.72) !important;
+            background: rgba(13, 18, 28, 0.76) !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
             box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
         }
@@ -209,7 +209,7 @@
         .edge-card,
         .edge-metric-card,
         .edge-workflow-card {
-            background: rgba(255, 255, 255, 0.72) !important;
+            background: rgba(255, 255, 255, 0.74) !important;
             backdrop-filter: blur(18px) saturate(180%) !important;
             -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
             border: 1px solid rgba(255, 255, 255, 0.85) !important;
@@ -221,7 +221,7 @@
         html.dark .edge-card,
         html.dark .edge-metric-card,
         html.dark .edge-workflow-card {
-            background: rgba(17, 24, 37, 0.65) !important;
+            background: rgba(17, 24, 37, 0.68) !important;
             border: 1px solid rgba(255, 255, 255, 0.08) !important;
             box-shadow: 0 14px 36px 0 rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.12) !important;
         }
@@ -288,7 +288,7 @@
             top: 0;
             left: 0;
             bottom: 0;
-            width: 3px;
+            width: 3.5px;
             background: linear-gradient(180deg, #2563eb 0%, #0ea5e9 100%);
             transform: scaleY(0);
             transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
@@ -311,7 +311,7 @@
 
         /* Glass Form Inputs & Controls */
         input[type="text"], input[type="password"], input[type="number"], select, .edge-glass-input {
-            background: rgba(255, 255, 255, 0.75) !important;
+            background: rgba(255, 255, 255, 0.8) !important;
             backdrop-filter: blur(12px) !important;
             -webkit-backdrop-filter: blur(12px) !important;
             border: 1px solid rgba(203, 213, 225, 0.85) !important;
@@ -319,41 +319,92 @@
         }
 
         html.dark input[type="text"], html.dark input[type="password"], html.dark input[type="number"], html.dark select, html.dark .edge-glass-input {
-            background: rgba(10, 15, 24, 0.65) !important;
+            background: rgba(10, 15, 24, 0.72) !important;
             border: 1px solid rgba(255, 255, 255, 0.12) !important;
         }
 
-        input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus, select:focus {
+        input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus, select:focus, .edge-glass-input:focus {
             border-color: #2563eb !important;
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
         }
 
-        html.dark input[type="text"]:focus, html.dark input[type="password"]:focus, html.dark input[type="number"]:focus, html.dark select:focus {
+        html.dark input[type="text"]:focus, html.dark input[type="password"]:focus, html.dark input[type="number"]:focus, html.dark select:focus, html.dark .edge-glass-input:focus {
             border-color: #3b82f6 !important;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.28) !important;
         }
 
         /* Glass Header Pills */
         .edge-pill-glass {
-            background: rgba(255, 255, 255, 0.68) !important;
+            background: rgba(255, 255, 255, 0.72) !important;
             backdrop-filter: blur(12px) !important;
             -webkit-backdrop-filter: blur(12px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.82) !important;
+            border: 1px solid rgba(255, 255, 255, 0.85) !important;
             box-shadow: 0 2px 8px rgba(31, 38, 135, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
         }
 
         html.dark .edge-pill-glass {
-            background: rgba(17, 24, 37, 0.65) !important;
-            border: 1px solid rgba(255, 255, 255, 0.09) !important;
+            background: rgba(17, 24, 37, 0.7) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
         }
 
-        /* Glass Terminal Pre */
-        pre {
-            backdrop-filter: blur(16px) !important;
-            -webkit-backdrop-filter: blur(16px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        /* Glass Dropzone */
+        .edge-dropzone {
+            border: 2px dashed rgba(203, 213, 225, 0.9);
+            background: rgba(248, 250, 252, 0.65);
+            backdrop-filter: blur(14px);
+            transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
         }
+
+        html.dark .edge-dropzone {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(11, 16, 26, 0.6);
+        }
+
+        .edge-dropzone:hover, .edge-dropzone.dragover {
+            border-color: #2563eb;
+            background: rgba(37, 99, 235, 0.05);
+            transform: translateY(-2px);
+        }
+
+        html.dark .edge-dropzone:hover, html.dark .edge-dropzone.dragover {
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.07);
+        }
+
+        /* Glass Terminal Console */
+        .edge-terminal {
+            background: #090d16 !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 14px !important;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+            font-family: 'JetBrains Mono', ui-monospace, monospace !important;
+        }
+
+        .edge-terminal-header {
+            background: rgba(255, 255, 255, 0.04);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .edge-terminal-dots {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .edge-terminal-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
 
         /* Tactile Buttons with Sheen */
         .edge-btn {
@@ -364,7 +415,7 @@
         }
 
         .edge-btn:hover {
-            transform: translateY(-1px);
+            transform: translateY(-1.5px);
         }
 
         .edge-btn:active {
@@ -390,11 +441,12 @@
 
         .edge-table-row {
             animation: edgeRowFade 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+            transition: background-color 0.18s ease;
         }
 
         /* Scrollbar polish */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.25); border-radius: 999px; }
+        ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.28); border-radius: 999px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(37, 99, 235, 0.45); }
 
         @media (prefers-reduced-motion: reduce) {
@@ -420,98 +472,114 @@
 <body class="text-slate-900 dark:text-slate-100 min-h-screen md:h-screen md:overflow-hidden">
 <div class="min-h-screen md:h-screen flex flex-col md:flex-row md:overflow-hidden">
     <!-- Independent Fixed Left Navigation Rail -->
-    <aside class="edge-sidebar w-full md:w-60 md:h-screen overflow-y-auto flex flex-col md:fixed md:inset-y-0 md:left-0 z-30">
+    <aside class="edge-sidebar w-full md:w-64 md:h-screen overflow-y-auto flex flex-col md:fixed md:inset-y-0 md:left-0 z-30">
         <!-- Brand Header -->
-        <div class="px-4 py-4 border-b border-slate-200/80 dark:border-white/10 flex justify-between items-center gap-2">
-            <a href="/" class="edge-brand-link flex items-center gap-2.5 group no-underline cursor-pointer" title="Go to Edge Node Overview">
-                <div class="edge-brand-icon w-9 h-9 rounded-[10px] bg-gradient-to-br from-blue-600 to-sky-500 border border-white/35 shadow-[0_6px_16px_-4px_rgba(37,99,235,0.38)] flex items-center justify-center text-white shrink-0">
-                    <i class="iconsax text-base" icon-name="shield-tick"></i>
+        <div class="px-5 py-4 border-b border-slate-200/80 dark:border-white/10 flex justify-between items-center gap-2">
+            <a href="/" class="edge-brand-link flex items-center gap-3 group no-underline cursor-pointer" title="Go to Edge Node Overview">
+                <div class="edge-brand-icon w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-sky-600 to-indigo-600 border border-white/35 shadow-[0_6px_18px_-4px_rgba(37,99,235,0.42)] flex items-center justify-center text-white shrink-0">
+                    <i class="iconsax text-lg" icon-name="shield-tick"></i>
                 </div>
                 <div>
-                    <div class="font-heading text-[15px] font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">SecureFed</div>
-                    <div class="font-mono text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Edge · Port 5000</div>
+                    <div class="font-heading text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight tracking-tight">SecureFed</div>
+                    <div class="font-mono text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <span>Edge · Port {{ state.edge_port or 5000 }}</span>
+                    </div>
                 </div>
             </a>
-            <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn w-8 h-8 rounded-[10px] bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center border border-slate-200/80 dark:border-white/10 shadow-xs" title="Switch to Dark Mode" aria-label="Toggle theme">
+            <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn w-8 h-8 rounded-xl bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center border border-slate-200/80 dark:border-white/10 shadow-xs" title="Switch to Dark Mode" aria-label="Toggle theme">
                 <i id="theme-icon" class="iconsax text-base" icon-name="moon"></i>
             </button>
         </div>
 
         <!-- Navigation Menu -->
-        <nav class="flex-1 px-3 py-3.5 space-y-1 text-[13.5px] font-medium">
-            <div class="px-2.5 pb-1.5 pt-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Node Console</div>
+        <nav class="flex-1 px-3.5 py-4 space-y-1.5 text-[13.5px] font-medium">
+            <div class="px-3 pb-2 pt-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Node Operations</div>
             
-            <a href="/" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'overview' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
-                <i class="iconsax text-base" icon-name="grid-apps"></i>
+            <a href="/" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'overview' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+                <i class="iconsax text-lg" icon-name="category"></i>
                 <span>Node Overview</span>
             </a>
 
-            <a href="/sync" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'sync' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
-                <i class="iconsax text-base" icon-name="cloud-add"></i>
+            <a href="/sync" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'sync' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+                <i class="iconsax text-lg" icon-name="cloud-add"></i>
                 <span>HQ Synchronization</span>
             </a>
 
-            <a href="/training" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'training' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
-                <i class="iconsax text-base" icon-name="cpu-charge"></i>
+            <a href="/training" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'training' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+                <i class="iconsax text-lg" icon-name="cpu-charge"></i>
                 <span>DP Local Training</span>
             </a>
 
-            <a href="/inference" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'inference' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
-                <i class="iconsax text-base" icon-name="shield-search"></i>
+            <a href="/inference" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'inference' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+                <i class="iconsax text-lg" icon-name="shield-search"></i>
                 <span>Traffic Inference &amp; XAI</span>
             </a>
 
-            <a href="/login" class="edge-nav-link flex items-center gap-2.5 py-2.5 px-3 rounded-[10px] border-l-[3px] {% if active_page == 'login' %}bg-gradient-to-r from-blue-600/10 to-sky-500/5 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
-                <i class="iconsax text-base" icon-name="key"></i>
-                <span id="nav-login-label">Operator Login</span>
-            </a>
+            <div class="pt-2">
+                <a href="/login" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'login' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+                    <i class="iconsax text-lg" icon-name="key"></i>
+                    <span id="nav-login-label">Operator Login</span>
+                </a>
+            </div>
         </nav>
 
-        <!-- Node Status Footer -->
-        <div class="px-4 py-3.5 border-t border-slate-200/80 dark:border-white/10 bg-slate-50/60 dark:bg-black/30 backdrop-blur-md">
+        <!-- Node Status Live Telemetry Footer -->
+        <div class="px-4 py-3.5 border-t border-slate-200/80 dark:border-white/10 bg-slate-50/70 dark:bg-black/35 backdrop-blur-md space-y-2">
             <div class="flex items-center justify-between text-xs">
                 <span class="font-mono text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                    <i class="iconsax text-sm" icon-name="driver-2"></i> Edge Engine
+                    <i class="iconsax text-sm" icon-name="driver-2"></i> Edge Node Engine
                 </span>
-                <span class="inline-flex items-center gap-2 font-mono text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                <span class="inline-flex items-center gap-1.5 font-mono text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
                     <span class="edge-live-dot h-2 w-2 rounded-full bg-emerald-500"></span>
                     Online
                 </span>
             </div>
-            <div class="text-[11px] text-slate-500 dark:text-slate-500 font-mono mt-1 truncate">Privacy: DP-SGD Local</div>
+            <div class="flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-slate-400 pt-0.5">
+                <span>Privacy Mode:</span>
+                <span class="font-semibold text-blue-600 dark:text-blue-400">Local DP-SGD</span>
+            </div>
         </div>
     </aside>
 
     <!-- Main Independent Scrollable Workspace -->
-    <div class="md:ml-60 flex-1 md:h-screen md:overflow-y-auto flex flex-col">
+    <div class="md:ml-64 flex-1 md:h-screen md:overflow-y-auto flex flex-col">
         <!-- Top Header Bar -->
-        <header class="edge-topbar z-20 px-7 py-4 flex flex-wrap justify-between items-center gap-4">
+        <header class="edge-topbar z-20 px-6 sm:px-8 py-3.5 flex flex-wrap justify-between items-center gap-3">
             <div>
                 <h1 class="font-heading text-[17px] font-bold text-slate-900 dark:text-slate-100">{% block page_heading %}Client Node Management{% endblock %}</h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Local DP-SGD &amp; Intrusion Detection Node</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Secure Federated Edge Node · Port {{ state.edge_port or 5000 }}</p>
             </div>
-            <div class="flex flex-wrap items-center gap-2.5 text-xs font-mono">
-                <div class="edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-700 dark:text-slate-200">
-                    <i class="iconsax text-sm text-blue-600 dark:text-blue-400" icon-name="user-1"></i>
-                    <span id="header-client-id" class="font-semibold">client_node_01</span>
+            
+            <div class="flex flex-wrap items-center gap-2 text-xs font-mono">
+                <!-- Node ID Pill -->
+                <div class="edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-700 dark:text-slate-200 shadow-xs" title="Edge Node Identity">
+                    <i class="iconsax text-sm text-blue-600 dark:text-blue-400" icon-name="cpu"></i>
+                    <span id="header-client-id" class="font-semibold">{{ state.client_id or 'client_node_01' }}</span>
                 </div>
-                <a href="/login" id="header-operator-pill" class="edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-700 dark:text-slate-200 hover:border-blue-500/60 transition-all cursor-pointer" title="Operator Authentication &amp; Credentials">
+
+                <!-- Active Deployed Model Pill -->
+                <div id="header-pushed-pill" class="edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-blue-700 dark:text-blue-300 shadow-xs" title="Currently deployed global model">
+                    <i class="iconsax text-sm" icon-name="hierarchy-square-2"></i>
+                    <span id="header-last-pushed">Awaiting HQ Push</span>
+                </div>
+
+                <!-- HQ Connection Pill -->
+                <div class="edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-300 shadow-xs" title="Connected HQ API Endpoint">
+                    <i class="iconsax text-sm text-emerald-600 dark:text-emerald-400" icon-name="link-2"></i>
+                    <span id="header-hq-url" class="truncate max-w-[140px] sm:max-w-[200px]">{{ state.hq_url or 'http://localhost:8000' }}</span>
+                </div>
+
+                <!-- Operator Authentication Pill -->
+                <a href="/login" id="header-operator-pill" class="edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-700 dark:text-slate-200 hover:border-blue-500/60 shadow-xs transition-all cursor-pointer" title="Operator Authentication &amp; Credentials">
                     <i id="header-operator-icon" class="iconsax text-sm text-amber-500" icon-name="lock-1"></i>
                     <span id="header-operator-label" class="font-semibold">Sign In</span>
                 </a>
-                <div id="header-pushed-pill" class="edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-blue-700 dark:text-blue-300" title="Last model deployed from HQ">
-                    <i class="iconsax text-sm" icon-name="cpu-charge"></i>
-                    <span id="header-last-pushed">Last Pushed: None</span>
-                </div>
-                <div class="edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-300">
-                    <i class="iconsax text-sm text-emerald-600 dark:text-emerald-400" icon-name="link-2"></i>
-                    <span id="header-hq-url">http://localhost:8000</span>
-                </div>
             </div>
         </header>
 
         <!-- Page Content -->
-        <main class="p-7 max-w-6xl w-full mx-auto flex-1">
+        <main class="p-6 sm:p-8 max-w-7xl w-full mx-auto flex-1">
             {% block content %}{% endblock %}
         </main>
     </div>
@@ -553,44 +621,56 @@ function toggleDarkMode() {
 document.addEventListener('DOMContentLoaded', updateThemeIcon);
 
 async function getState() {
-    const response = await fetch('/api/client/status');
-    const data = await response.json();
-    return data.client_state;
+    try {
+        const response = await fetch('/api/client/status');
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data.client_state;
+    } catch (err) {
+        console.warn('Failed to fetch client state:', err);
+        return null;
+    }
 }
 
 async function refreshHeader() {
     try {
         const state = await getState();
+        if (!state) return null;
+
         const clientId = document.getElementById('header-client-id');
         const hqUrl = document.getElementById('header-hq-url');
         if (clientId) clientId.textContent = state.client_id;
         if (hqUrl) hqUrl.textContent = state.hq_url;
+
         const syncBadge = document.getElementById('sync-status-badge');
         if (syncBadge) {
             syncBadge.textContent = state.current_model_version ? `Active: v${state.current_model_version}` : 'Awaiting HQ Push';
         }
+
         const headerPushText = document.getElementById('header-last-pushed');
         const headerPushPill = document.getElementById('header-pushed-pill');
         if (headerPushText && headerPushPill) {
             if (state.last_hq_push_version) {
                 const ts = state.last_hq_push_at ? String(state.last_hq_push_at).slice(0, 19).replace('T', ' ') : '';
-                headerPushText.textContent = `Last HQ Push: v${state.last_hq_push_version}`;
-                headerPushPill.title = ts ? `Last pushed from HQ at ${ts} UTC` : 'Last model pushed from HQ';
-                headerPushPill.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/10 dark:bg-emerald-500/15 border border-emerald-600/20 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-xs';
+                headerPushText.textContent = `Active: v${state.last_hq_push_version}`;
+                headerPushPill.title = ts ? `HQ Pushed at ${ts} UTC` : 'Pushed from HQ';
+                headerPushPill.className = 'edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/10 dark:bg-emerald-500/15 border-emerald-600/25 dark:border-emerald-500/35 text-emerald-700 dark:text-emerald-300 shadow-xs';
             } else if (state.current_model_version) {
                 const src = state.last_deployed_source || state.model_info?.authorized_by || state.model_info?.deployed_by || '';
                 headerPushText.textContent = `Active: v${state.current_model_version}${src ? ' (' + src + ')' : ''}`;
-                headerPushPill.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600/10 dark:bg-blue-500/15 border border-blue-600/20 dark:border-blue-500/30 text-blue-700 dark:text-blue-300 shadow-xs';
+                headerPushPill.className = 'edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600/10 dark:bg-blue-500/15 border-blue-600/25 dark:border-blue-500/35 text-blue-700 dark:text-blue-300 shadow-xs';
             } else {
-                headerPushText.textContent = 'Last Pushed: None';
+                headerPushText.textContent = 'Awaiting HQ Push';
+                headerPushPill.className = 'edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 shadow-xs';
             }
         }
+
         const syncPushPill = document.getElementById('sync-last-pushed-pill');
         if (syncPushPill) {
             if (state.last_hq_push_version) {
                 const ts = state.last_hq_push_at ? ` · ${String(state.last_hq_push_at).slice(0, 19).replace('T', ' ')}` : '';
                 syncPushPill.textContent = `Last HQ Push: v${state.last_hq_push_version}${ts}`;
-                syncPushPill.className = 'font-mono text-[11px] font-semibold px-3 py-1 rounded-lg bg-emerald-600/10 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-600/20 dark:border-emerald-500/30';
+                syncPushPill.className = 'font-mono text-[11px] font-semibold px-3 py-1 rounded-xl bg-emerald-600/10 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-600/20 dark:border-emerald-500/30';
             } else if (state.current_model_version) {
                 const src = state.last_deployed_source || state.model_info?.authorized_by || 'Synced';
                 syncPushPill.textContent = `Active: v${state.current_model_version} (${src})`;
@@ -598,6 +678,7 @@ async function refreshHeader() {
                 syncPushPill.textContent = 'Explicit Push Only';
             }
         }
+
         const opLabel = document.getElementById('header-operator-label');
         const opIcon = document.getElementById('header-operator-icon');
         const opPill = document.getElementById('header-operator-pill');
@@ -605,30 +686,33 @@ async function refreshHeader() {
         const savedKey = sessionStorage.getItem('securefed_admin_key') || localStorage.getItem('securefed_saved_admin_key');
         const savedUser = sessionStorage.getItem('securefed_operator_user') || localStorage.getItem('securefed_saved_operator') || state.operator_user;
         const isAuth = Boolean(state.operator_authenticated || (savedKey && savedKey.length > 5));
+        
         if (opLabel && opIcon && opPill) {
             if (isAuth) {
                 opLabel.textContent = `Admin: ${savedUser || state.client_id || 'Auth'}`;
                 opIcon.setAttribute('icon-name', 'shield-tick');
                 opIcon.className = 'iconsax text-sm text-emerald-500';
-                opPill.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/10 dark:bg-emerald-500/15 border border-emerald-600/25 dark:border-emerald-500/35 text-emerald-700 dark:text-emerald-300 shadow-xs hover:border-emerald-500 transition-all cursor-pointer';
+                opPill.className = 'edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/10 dark:bg-emerald-500/15 border-emerald-600/25 dark:border-emerald-500/35 text-emerald-700 dark:text-emerald-300 shadow-xs hover:border-emerald-500 transition-all cursor-pointer';
                 opPill.title = 'Operator Authenticated (Admin Privileges Active)';
                 if (navLoginLabel) navLoginLabel.textContent = 'Operator Session';
             } else {
                 opLabel.textContent = 'Sign In';
                 opIcon.setAttribute('icon-name', 'lock-1');
                 opIcon.className = 'iconsax text-sm text-amber-500';
-                opPill.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#181d25] border border-slate-200 dark:border-[#2a313c] text-slate-700 dark:text-slate-200 shadow-xs hover:border-blue-500/60 transition-all cursor-pointer';
+                opPill.className = 'edge-pill-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-700 dark:text-slate-200 hover:border-blue-500/60 transition-all cursor-pointer';
                 if (navLoginLabel) navLoginLabel.textContent = 'Operator Login';
             }
         }
+
         const autoEnabled = state.auto_push !== false;
         const autoBadge = document.getElementById('auto-push-badge');
         if (autoBadge) {
             autoBadge.className = autoEnabled
-                ? 'font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-600/20'
-                : 'font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/70';
+                ? 'font-mono text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-600/20'
+                : 'font-mono text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/70';
             autoBadge.textContent = autoEnabled ? 'Auto-Push Active' : 'Manual Push Only';
         }
+
         const lastPushPill = document.getElementById('last-push-pill');
         if (lastPushPill) {
             const lp = state.last_push_info;
@@ -636,6 +720,7 @@ async function refreshHeader() {
                 ? `Last Auto-Push: #${lp.update_id}`
                 : (autoEnabled ? 'Auto · After Training' : 'Auto-Push Disabled');
         }
+
         const trainAutoBadge = document.getElementById('training-auto-push-badge');
         if (trainAutoBadge) {
             trainAutoBadge.className = autoEnabled
@@ -643,15 +728,20 @@ async function refreshHeader() {
                 : 'inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 dark:bg-[#1a212c] dark:text-slate-300 border border-slate-200 dark:border-[#2d3748]';
             trainAutoBadge.textContent = autoEnabled ? 'Auto-Push to HQ: ON' : 'Auto-Push to HQ: OFF';
         }
+
         return state;
-    } catch (error) { console.error(error); return null; }
+    } catch (error) { 
+        console.error(error); 
+        return null; 
+    }
 }
 
 function showResult(elementId, data) {
     const box = document.getElementById(elementId);
     if (!box) return;
     box.classList.remove('hidden');
-    box.textContent = JSON.stringify(data, null, 2);
+    const content = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    box.textContent = content;
 }
 
 function readFileAsBase64(file) {
@@ -764,31 +854,95 @@ async function runInference(event) {
     const file_b64 = await readFileAsBase64(file);
     const {response, data} = await postJSON('/api/client/inference', {file_b64: file_b64});
     if (!response.ok) { showResult('inference-error', data); return; }
+    
     document.getElementById('inference-error').classList.add('hidden');
     document.getElementById('inference-results').classList.remove('hidden');
-    document.getElementById('inference-summary').textContent = `Showing ${data.analyzed_rows} of ${data.total_rows} traffic records`;
-    const bodyEl = document.getElementById('inference-tbody');
-    bodyEl.innerHTML = data.predictions.map(p => {
-        const indicatorsHtml = (p.top_indicators || []).map(ind => {
-            const isAttack = p.prediction.includes('Attack');
-            const badgeBg = isAttack ? 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/70' : 'bg-slate-100 dark:bg-[#1b2029] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#2c3340]';
-            return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono ${badgeBg}"><span>${ind.feature}</span><span class="opacity-75 font-semibold">(${ind.impact > 0 ? '+' : ''}${ind.impact})</span></span>`;
-        }).join(' ') || '<span class="text-xs text-slate-400">N/A</span>';
+    
+    // Update summary analytics if elements exist
+    const totalCount = data.predictions ? data.predictions.length : 0;
+    const attackCount = (data.predictions || []).filter(p => p.prediction.includes('Attack')).length;
+    const benignCount = totalCount - attackCount;
+    const threatRatio = totalCount > 0 ? ((attackCount / totalCount) * 100).toFixed(1) : '0.0';
+    const meanConf = totalCount > 0 ? ((data.predictions || []).reduce((acc, p) => acc + (p.confidence || 0), 0) / totalCount).toFixed(1) : '0.0';
 
-        return `<tr class="edge-table-row border-t border-slate-200 dark:border-[#222a36] hover:bg-blue-600/[0.035] dark:hover:bg-blue-500/[0.06] transition-colors">
-            <td class="px-4 py-3 text-slate-900 dark:text-slate-100 font-mono text-xs">${p.row_index}</td>
-            <td class="px-4 py-3 font-semibold text-xs">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border ${p.prediction.includes('Attack') ? 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/70' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/70'}">
-                    <i class="iconsax text-sm" icon-name="${p.prediction.includes('Attack') ? 'shield-slash' : 'shield-tick'}"></i>
+    const sumEl = document.getElementById('inference-summary');
+    if (sumEl) sumEl.textContent = `Analyzed ${data.analyzed_rows} of ${data.total_rows} recorded packet flows`;
+    
+    const kpiTotal = document.getElementById('kpi-total-flows');
+    if (kpiTotal) kpiTotal.textContent = totalCount;
+    const kpiAttacks = document.getElementById('kpi-attack-count');
+    if (kpiAttacks) kpiAttacks.textContent = attackCount;
+    const kpiBenign = document.getElementById('kpi-benign-count');
+    if (kpiBenign) kpiBenign.textContent = benignCount;
+    const kpiRatio = document.getElementById('kpi-threat-ratio');
+    if (kpiRatio) kpiRatio.textContent = `${threatRatio}%`;
+    const kpiConf = document.getElementById('kpi-mean-confidence');
+    if (kpiConf) kpiConf.textContent = `${meanConf}%`;
+
+    window._allInferencePredictions = data.predictions || [];
+    renderInferenceTable(window._allInferencePredictions);
+}
+
+function renderInferenceTable(predictions) {
+    const bodyEl = document.getElementById('inference-tbody');
+    if (!bodyEl) return;
+    
+    if (!predictions || predictions.length === 0) {
+        bodyEl.innerHTML = `<tr><td colspan="6" class="px-5 py-8 text-center text-slate-400 font-mono text-xs">No matching traffic flows found for this filter.</td></tr>`;
+        return;
+    }
+
+    bodyEl.innerHTML = predictions.map(p => {
+        const isAttack = p.prediction.includes('Attack');
+        const indicatorsHtml = (p.top_indicators || []).map(ind => {
+            const badgeBg = isAttack 
+                ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/25' 
+                : 'bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10';
+            const impactSign = ind.impact > 0 ? '+' : '';
+            return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono ${badgeBg}"><span>${ind.feature}</span><span class="opacity-75 font-semibold font-mono">(${impactSign}${ind.impact})</span></span>`;
+        }).join(' ') || '<span class="text-xs text-slate-400">Baseline</span>';
+
+        return `<tr class="edge-table-row border-t border-slate-200/80 dark:border-white/10 hover:bg-blue-600/[0.04] dark:hover:bg-blue-500/[0.06] transition-colors">
+            <td class="px-5 py-3.5 text-slate-900 dark:text-slate-100 font-mono text-xs font-semibold">#${p.row_index}</td>
+            <td class="px-5 py-3.5 font-semibold text-xs">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border ${isAttack ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'}">
+                    <i class="iconsax text-sm" icon-name="${isAttack ? 'shield-slash' : 'shield-tick'}"></i>
                     ${p.prediction}
                 </span>
             </td>
-            <td class="px-4 py-3 font-mono font-semibold text-slate-800 dark:text-slate-200">${p.confidence}%</td>
-            <td class="px-4 py-3"><div class="flex flex-wrap gap-1.5">${indicatorsHtml}</div></td>
-            <td class="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono text-xs">${p.probabilities.benign}</td>
-            <td class="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono text-xs">${p.probabilities.attack}</td>
+            <td class="px-5 py-3.5 font-mono font-bold text-slate-900 dark:text-slate-100">
+                <div class="flex items-center gap-2">
+                    <span>${p.confidence}%</span>
+                    <div class="w-12 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                        <div class="h-full ${isAttack ? 'bg-rose-500' : 'bg-emerald-500'}" style="width: ${p.confidence}%"></div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-5 py-3.5"><div class="flex flex-wrap gap-1.5">${indicatorsHtml}</div></td>
+            <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400 font-mono text-xs">${p.probabilities.benign}</td>
+            <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400 font-mono text-xs">${p.probabilities.attack}</td>
         </tr>`;
     }).join('');
+}
+
+function filterInference(filterType) {
+    const preds = window._allInferencePredictions || [];
+    let filtered = preds;
+    if (filterType === 'attack') {
+        filtered = preds.filter(p => p.prediction.includes('Attack'));
+    } else if (filterType === 'benign') {
+        filtered = preds.filter(p => !p.prediction.includes('Attack'));
+    }
+    renderInferenceTable(filtered);
+    
+    // Update button states
+    ['btn-filter-all', 'btn-filter-attacks', 'btn-filter-benign'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.className = 'px-3 py-1.5 rounded-xl font-mono text-xs font-semibold border transition-all ' + 
+                (id.includes(filterType) ? 'bg-blue-600 text-white border-blue-600 shadow-xs' : 'bg-white/60 dark:bg-white/5 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/10');
+        }
+    });
 }
 
 refreshHeader();

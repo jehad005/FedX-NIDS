@@ -1,71 +1,201 @@
 {% extends "base.html" %}
-{% block title %}DP Training · SecureFed Client{% endblock %}
+{% block title %}DP Local Training · SecureFed Client{% endblock %}
 {% block page_heading %}Local DP-SGD Training{% endblock %}
 {% block content %}
-<div class="edge-stagger-stack max-w-4xl space-y-5">
-    <!-- Note -->
-    <div class="edge-card flex items-start gap-3.5 bg-white dark:bg-[#131820] border border-slate-200 dark:border-[#222a36] border-l-4 border-l-amber-500 rounded-2xl px-5 py-4">
-        <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-            <i class="iconsax text-lg" icon-name="shield-lock"></i>
+<div class="edge-stagger-stack max-w-5xl space-y-6">
+
+    <!-- Differential Privacy Guardrail Banner -->
+    <div class="edge-card p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-amber-500">
+        <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <i class="iconsax text-xl" icon-name="shield-security"></i>
+            </div>
+            <div>
+                <h2 class="font-heading text-[15px] font-bold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
+                    <span>Differential Privacy Enforcement</span>
+                    <span class="font-mono text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                        Local DP-SGD Active
+                    </span>
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Private network flow logs never leave this edge node. Per-sample gradients are bounded by clipping norm <code class="font-mono text-slate-700 dark:text-slate-300">C</code> and perturbed with Gaussian noise <code class="font-mono text-slate-700 dark:text-slate-300">&sigma;</code> before delta serialization.
+                </p>
+            </div>
         </div>
-        <div class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-0.5">
-            <strong class="text-slate-900 dark:text-slate-100">Differential Privacy Guardrail:</strong> Ensure a global model is deployed via <a class="underline text-blue-600 dark:text-blue-400 font-semibold" href="/sync">HQ Synchronization</a> first. Training CSV data stays local; only clipped &amp; noised parameter deltas are serialized.
+        <div class="flex items-center gap-2 font-mono text-xs text-slate-500 dark:text-slate-400">
+            <span class="px-3 py-1.5 rounded-xl edge-pill-glass">Base Model: Synced</span>
         </div>
     </div>
 
     <!-- Training Form Card -->
-    <form id="training-form" onsubmit="startTraining(event)" class="edge-card bg-white dark:bg-[#131820] p-6 rounded-2xl border border-slate-200 dark:border-[#222a36] space-y-5">
-        <div>
-            <h2 class="font-heading text-[15px] font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <i class="iconsax text-blue-600 dark:text-blue-400 text-lg" icon-name="document-upload"></i>
-                Local Traffic Dataset (CSV)
-            </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Select labeled benign/attack flow logs stored locally on this edge node.</p>
-            <input type="file" id="train-file" accept=".csv" required class="mt-3 block w-full text-xs border-2 border-dashed border-slate-300 dark:border-[#2d3748] hover:border-blue-500 rounded-xl p-3.5 bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-100 cursor-pointer transition-colors">
-        </div>
+    <form id="training-form" onsubmit="startTraining(event)" class="edge-card p-6 rounded-2xl space-y-6">
+        
+        <!-- Step 1: Dataset Dropzone -->
+        <div class="space-y-3">
+            <div class="flex items-center justify-between">
+                <label class="font-mono text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-blue-600/15 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[11px] font-bold">1</span>
+                    <span>Local Traffic Dataset (CSV)</span>
+                </label>
+                <span class="font-mono text-[11px] text-slate-400">CIC-IDS2017 / UNSW-NB15 compatible</span>
+            </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-                <label class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Epochs</label>
-                <input type="number" id="train-epochs" value="3" min="1" max="20" class="mt-1.5 w-full border border-slate-300 dark:border-[#2d3748] rounded-[10px] p-2.5 bg-white dark:bg-[#0d1117] text-slate-900 dark:text-slate-100 font-mono text-xs focus:border-blue-600 focus:ring-[3px] focus:ring-blue-600/15 focus:outline-none transition-all">
-            </div>
-            <div>
-                <label class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Batch Size</label>
-                <input type="number" id="train-batch" value="64" min="1" class="mt-1.5 w-full border border-slate-300 dark:border-[#2d3748] rounded-[10px] p-2.5 bg-white dark:bg-[#0d1117] text-slate-900 dark:text-slate-100 font-mono text-xs focus:border-blue-600 focus:ring-[3px] focus:ring-blue-600/15 focus:outline-none transition-all">
-            </div>
-            <div>
-                <label class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Learning Rate</label>
-                <input type="number" id="train-lr" value="0.001" step="0.0001" min="0.0001" class="mt-1.5 w-full border border-slate-300 dark:border-[#2d3748] rounded-[10px] p-2.5 bg-white dark:bg-[#0d1117] text-slate-900 dark:text-slate-100 font-mono text-xs focus:border-blue-600 focus:ring-[3px] focus:ring-blue-600/15 focus:outline-none transition-all">
-            </div>
-        </div>
-
-        <div class="border-t border-slate-200 dark:border-[#222a36] pt-4">
-            <h3 class="font-heading text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                <i class="iconsax text-sm text-blue-600 dark:text-blue-400" icon-name="lock-1"></i>
-                DP-SGD Parameters
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                <div>
-                    <label class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Clipping Norm (C)</label>
-                    <input type="number" id="train-clip" value="1.0" step="0.1" min="0.1" class="mt-1.5 w-full border border-slate-300 dark:border-[#2d3748] rounded-[10px] p-2.5 bg-white dark:bg-[#0d1117] text-slate-900 dark:text-slate-100 font-mono text-xs focus:border-blue-600 focus:ring-[3px] focus:ring-blue-600/15 focus:outline-none transition-all">
-                </div>
-                <div>
-                    <label class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Noise Multiplier (&sigma;)</label>
-                    <input type="number" id="train-noise" value="1.1" step="0.1" min="0.1" class="mt-1.5 w-full border border-slate-300 dark:border-[#2d3748] rounded-[10px] p-2.5 bg-white dark:bg-[#0d1117] text-slate-900 dark:text-slate-100 font-mono text-xs focus:border-blue-600 focus:ring-[3px] focus:ring-blue-600/15 focus:outline-none transition-all">
+            <div class="edge-dropzone rounded-2xl p-6 text-center cursor-pointer relative" id="train-dropzone" onclick="document.getElementById('train-file').click()">
+                <input type="file" id="train-file" accept=".csv" required class="hidden" onchange="handleTrainFileSelect(this)">
+                <div class="flex flex-col items-center justify-center gap-2">
+                    <div class="w-12 h-12 rounded-xl bg-blue-600/10 dark:bg-blue-500/15 border border-blue-600/20 dark:border-blue-500/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                        <i class="iconsax text-2xl" icon-name="document-upload"></i>
+                    </div>
+                    <div class="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        <span class="text-blue-600 dark:text-blue-400 hover:underline">Click to browse</span> or drag and drop CSV file
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
+                        Select a CSV file containing flow features (destination port, flow duration, packet rates, flags, and labels).
+                    </p>
+                    <div id="train-file-info" class="hidden mt-2 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-blue-600/10 dark:bg-blue-500/15 border border-blue-600/20 text-blue-700 dark:text-blue-300 font-mono text-xs">
+                        <i class="iconsax text-sm" icon-name="document-text"></i>
+                        <span id="train-file-name" class="font-semibold truncate max-w-xs">selected_data.csv</span>
+                        <span id="train-file-size" class="opacity-75">(0 KB)</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <button type="submit" class="edge-btn edge-btn-sheen px-5 py-2.5 rounded-[10px] bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold text-xs inline-flex items-center gap-1.5 shadow-[0_4px_12px_-2px_rgba(37,99,235,0.28)]">
-                <i class="iconsax text-sm" icon-name="play"></i>
+        <!-- Step 2: Hyperparameters & DP Guardrails Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2 border-t border-slate-200/80 dark:border-white/10">
+            
+            <!-- Training Parameters (7 cols) -->
+            <div class="lg:col-span-7 space-y-4">
+                <div class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-blue-600/15 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[11px] font-bold">2</span>
+                    <h3 class="font-heading font-bold text-slate-900 dark:text-slate-100 text-sm">Fine-Tuning Hyperparameters</h3>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <div>
+                        <label class="block font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">Epochs</label>
+                        <input type="number" id="train-epochs" value="3" min="1" max="20" class="w-full rounded-xl p-2.5 text-xs font-mono edge-glass-input focus:outline-none transition-all">
+                        <span class="block text-[10px] text-slate-400 mt-1">1 – 20 iterations</span>
+                    </div>
+                    <div>
+                        <label class="block font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">Batch Size</label>
+                        <input type="number" id="train-batch" value="64" min="1" max="512" class="w-full rounded-xl p-2.5 text-xs font-mono edge-glass-input focus:outline-none transition-all">
+                        <span class="block text-[10px] text-slate-400 mt-1">Recommended: 64</span>
+                    </div>
+                    <div>
+                        <label class="block font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">Learning Rate</label>
+                        <input type="number" id="train-lr" value="0.001" step="0.0001" min="0.00001" class="w-full rounded-xl p-2.5 text-xs font-mono edge-glass-input focus:outline-none transition-all">
+                        <span class="block text-[10px] text-slate-400 mt-1">Step: 1e-4</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DP Guardrails (5 cols) -->
+            <div class="lg:col-span-5 space-y-4">
+                <div class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[11px] font-bold">3</span>
+                    <h3 class="font-heading font-bold text-slate-900 dark:text-slate-100 text-sm">Privacy Budget Guardrails</h3>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                        <label class="block font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">Clipping Norm (C)</label>
+                        <input type="number" id="train-clip" value="1.0" step="0.1" min="0.1" class="w-full rounded-xl p-2.5 text-xs font-mono edge-glass-input focus:outline-none transition-all">
+                        <span class="block text-[10px] text-slate-400 mt-1">Gradient bound</span>
+                    </div>
+                    <div>
+                        <label class="block font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">Noise Scale (&sigma;)</label>
+                        <input type="number" id="train-noise" value="1.1" step="0.1" min="0.1" class="w-full rounded-xl p-2.5 text-xs font-mono edge-glass-input focus:outline-none transition-all">
+                        <span class="block text-[10px] text-slate-400 mt-1">Gaussian &sigma;</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Step 3: Launch Toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-200/80 dark:border-white/10">
+            <button type="submit" id="btn-start-training" class="edge-btn edge-btn-sheen px-6 py-3 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold text-xs inline-flex items-center gap-2 shadow-[0_4px_14px_-2px_rgba(37,99,235,0.35)]">
+                <i class="iconsax text-base" icon-name="play"></i>
                 <span>Start DP Local Training</span>
             </button>
-            <span id="training-auto-push-badge" class="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-600/20">Auto-Push to HQ: ON</span>
+
+            <div class="flex items-center gap-3">
+                <span id="training-auto-push-badge" class="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-600/20">
+                    <span class="edge-live-dot h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Auto-Push to HQ: ON
+                </span>
+            </div>
         </div>
+
     </form>
 
+    <!-- Training Result Banner -->
     <div id="training-push-banner" class="hidden rounded-2xl border px-5 py-3.5 text-xs font-medium"></div>
-    <pre id="training-output" class="hidden overflow-auto text-xs bg-[#0f172a] text-emerald-400 p-4 rounded-xl border border-slate-800 shadow-inner font-mono"></pre>
+
+    <!-- Smoked Glass Training Console -->
+    <div class="edge-terminal overflow-hidden">
+        <div class="edge-terminal-header">
+            <div class="edge-terminal-dots">
+                <span class="edge-terminal-dot dot-red"></span>
+                <span class="edge-terminal-dot dot-yellow"></span>
+                <span class="edge-terminal-dot dot-green"></span>
+            </div>
+            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">DP Training Console</span>
+            <button type="button" onclick="clearTrainingTerminal()" class="text-[11px] font-mono text-slate-400 hover:text-white transition-colors">Clear</button>
+        </div>
+        <pre id="training-output" class="p-4 text-xs text-emerald-400 font-mono overflow-auto max-h-72 leading-relaxed">DP-SGD Local Engine ready. Select a CSV traffic dataset and click "Start DP Local Training".</pre>
+    </div>
+
 </div>
+
+<script>
+function handleTrainFileSelect(input) {
+    const file = input.files[0];
+    const info = document.getElementById('train-file-info');
+    const nameEl = document.getElementById('train-file-name');
+    const sizeEl = document.getElementById('train-file-size');
+    if (file) {
+        info.classList.remove('hidden');
+        nameEl.textContent = file.name;
+        sizeEl.textContent = `(${(file.size / 1024).toFixed(1)} KB)`;
+    } else {
+        info.classList.add('hidden');
+    }
+}
+
+function clearTrainingTerminal() {
+    const el = document.getElementById('training-output');
+    if (el) el.textContent = 'Terminal cleared.';
+}
+
+// Drag & drop handlers
+const dropzone = document.getElementById('train-dropzone');
+if (dropzone) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.add('dragover');
+        });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.remove('dragover');
+        });
+    });
+
+    dropzone.addEventListener('drop', e => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length) {
+            const input = document.getElementById('train-file');
+            input.files = files;
+            handleTrainFileSelect(input);
+        }
+    });
+}
+</script>
 {% endblock %}

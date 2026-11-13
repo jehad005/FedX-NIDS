@@ -1,63 +1,191 @@
 {% extends "base.html" %}
-{% block title %}Inference · SecureFed Client{% endblock %}
+{% block title %}Traffic Inference &amp; XAI · SecureFed Client{% endblock %}
 {% block page_heading %}Traffic Inference &amp; On-Device XAI{% endblock %}
 {% block content %}
-<div class="edge-stagger-stack space-y-5">
-    <!-- Brief Banner -->
-    <div class="edge-card flex items-start gap-3.5 bg-white dark:bg-[#131820] border border-slate-200 dark:border-[#222a36] border-l-4 border-l-blue-600 rounded-2xl px-5 py-4">
-        <div class="w-9 h-9 rounded-xl bg-blue-600/10 border border-blue-600/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-            <i class="iconsax text-lg" icon-name="bulb"></i>
+<div class="edge-stagger-stack max-w-6xl space-y-6">
+
+    <!-- Top Context Banner -->
+    <div class="edge-card p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-blue-600">
+        <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-xl bg-blue-600/10 border border-blue-600/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <i class="iconsax text-xl" icon-name="shield-search"></i>
+            </div>
+            <div>
+                <h2 class="font-heading text-[15px] font-bold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
+                    <span>On-Device Threat Detection &amp; Explainability</span>
+                    <span class="font-mono text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                        Input Saliency (x &middot; &nabla;x)
+                    </span>
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Evaluates network packet flows locally against the active PyTorch ensemble and extracts per-flow feature attribution rankings.
+                </p>
+            </div>
         </div>
-        <div class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-0.5">
-            <strong class="text-slate-900 dark:text-slate-100">On-Device Intrusion Detection:</strong> Evaluates CSV network flows locally against the deployed model and computes feature-level gradient attributions per record.
+        <div class="flex items-center gap-2 font-mono text-xs text-slate-500 dark:text-slate-400">
+            <span class="px-3 py-1.5 rounded-xl edge-pill-glass">Engine: Local PyTorch</span>
         </div>
     </div>
 
-    <!-- Upload Form Card -->
-    <form id="inference-form" onsubmit="runInference(event)" class="edge-card bg-white dark:bg-[#131820] p-6 rounded-2xl border border-slate-200 dark:border-[#222a36] flex flex-col md:flex-row md:items-end gap-4">
-        <div class="flex-1">
-            <label class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                <i class="iconsax text-sm text-blue-600 dark:text-blue-400" icon-name="document-upload"></i>
-                Traffic Log CSV File
+    <!-- Upload Form Card with Dropzone -->
+    <form id="inference-form" onsubmit="runInference(event)" class="edge-card p-6 rounded-2xl space-y-4">
+        <div class="flex items-center justify-between">
+            <label class="font-mono text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <i class="iconsax text-base text-blue-600 dark:text-blue-400" icon-name="document-upload"></i>
+                <span>Traffic Log CSV File</span>
             </label>
-            <input type="file" id="inference-file" accept=".csv" required class="mt-2 block w-full text-xs border-2 border-dashed border-slate-300 dark:border-[#2d3748] hover:border-blue-500 rounded-xl p-2.5 bg-slate-50 dark:bg-[#0d1117] text-slate-900 dark:text-slate-100 cursor-pointer transition-colors">
+            <span class="font-mono text-[11px] text-slate-400">Flow captures (.csv format)</span>
         </div>
-        <button type="submit" class="edge-btn edge-btn-sheen px-5 py-2.5 rounded-[10px] bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold text-xs inline-flex items-center justify-center gap-1.5 shadow-[0_4px_12px_-2px_rgba(5,150,105,0.26)] whitespace-nowrap">
-            <i class="iconsax text-sm" icon-name="search-normal-2"></i>
-            <span>Run Local Inference &amp; XAI</span>
-        </button>
-    </form>
 
-    <pre id="inference-error" class="hidden overflow-auto text-xs bg-red-950 text-red-200 p-4 rounded-xl border border-red-800 font-mono"></pre>
-
-    <!-- Results Table Card -->
-    <section id="inference-results" class="hidden edge-card bg-white dark:bg-[#131820] rounded-2xl border border-slate-200 dark:border-[#222a36] overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-200 dark:border-[#222a36] flex flex-wrap justify-between items-center gap-3">
-            <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-emerald-600/10 border border-emerald-600/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                    <i class="iconsax text-base" icon-name="activity-chart"></i>
+        <div class="edge-dropzone rounded-2xl p-6 text-center cursor-pointer relative" id="inference-dropzone" onclick="document.getElementById('inference-file').click()">
+            <input type="file" id="inference-file" accept=".csv" required class="hidden" onchange="handleInferenceFileSelect(this)">
+            <div class="flex flex-col items-center justify-center gap-2">
+                <div class="w-12 h-12 rounded-xl bg-blue-600/10 dark:bg-blue-500/15 border border-blue-600/20 dark:border-blue-500/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <i class="iconsax text-2xl" icon-name="document-code"></i>
                 </div>
-                <div>
-                    <h2 class="font-heading font-bold text-slate-900 dark:text-slate-100 text-sm">Prediction &amp; Attribution Results</h2>
-                    <p id="inference-summary" class="font-mono text-[11px] text-slate-500 dark:text-slate-400"></p>
+                <div class="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    <span class="text-blue-600 dark:text-blue-400 hover:underline">Click to browse</span> or drag and drop flow CSV
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
+                    Upload unlabelled or test network flows to detect malicious activity and calculate feature impacts.
+                </p>
+                <div id="inference-file-info" class="hidden mt-2 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-blue-600/10 dark:bg-blue-500/15 border border-blue-600/20 text-blue-700 dark:text-blue-300 font-mono text-xs">
+                    <i class="iconsax text-sm" icon-name="document-text"></i>
+                    <span id="inference-file-name" class="font-semibold truncate max-w-xs">selected_flows.csv</span>
+                    <span id="inference-file-size" class="opacity-75">(0 KB)</span>
                 </div>
             </div>
         </div>
-        <div class="overflow-auto">
-            <table class="w-full text-xs">
-                <thead class="bg-slate-50 dark:bg-[#0f141b] text-left font-mono text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-[#222a36]">
-                    <tr>
-                        <th class="px-4 py-3.5">Row</th>
-                        <th class="px-4 py-3.5">Classification</th>
-                        <th class="px-4 py-3.5">Confidence</th>
-                        <th class="px-4 py-3.5">Key Threat Indicators (XAI)</th>
-                        <th class="px-4 py-3.5">Benign Prob</th>
-                        <th class="px-4 py-3.5">Attack Prob</th>
-                    </tr>
-                </thead>
-                <tbody id="inference-tbody"></tbody>
-            </table>
+
+        <div class="flex justify-end pt-1">
+            <button type="submit" id="btn-run-inference" class="edge-btn edge-btn-sheen px-6 py-2.5 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold text-xs inline-flex items-center justify-center gap-2 shadow-[0_4px_14px_-2px_rgba(5,150,105,0.32)] whitespace-nowrap">
+                <i class="iconsax text-base" icon-name="search-normal-2"></i>
+                <span>Run Local Inference &amp; XAI</span>
+            </button>
         </div>
+    </form>
+
+    <!-- Error Banner -->
+    <pre id="inference-error" class="hidden p-4 rounded-2xl bg-rose-950/80 border border-rose-800 text-rose-200 text-xs font-mono overflow-auto"></pre>
+
+    <!-- Results Section -->
+    <section id="inference-results" class="hidden space-y-5">
+        
+        <!-- Threat Detection Summary Analytics Bar (5 Cards) -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+            <div class="edge-card p-4 rounded-xl">
+                <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">Total Flows</span>
+                <span id="kpi-total-flows" class="font-mono text-xl font-bold text-slate-900 dark:text-slate-100 mt-1 block">0</span>
+            </div>
+            <div class="edge-card p-4 rounded-xl border-l-2 border-l-rose-500">
+                <span class="text-[10px] font-mono uppercase tracking-wider text-rose-500 block">Attacks Detected</span>
+                <span id="kpi-attack-count" class="font-mono text-xl font-bold text-rose-600 dark:text-rose-400 mt-1 block">0</span>
+            </div>
+            <div class="edge-card p-4 rounded-xl border-l-2 border-l-emerald-500">
+                <span class="text-[10px] font-mono uppercase tracking-wider text-emerald-500 block">Benign Normal</span>
+                <span id="kpi-benign-count" class="font-mono text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 block">0</span>
+            </div>
+            <div class="edge-card p-4 rounded-xl">
+                <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">Threat Ratio</span>
+                <span id="kpi-threat-ratio" class="font-mono text-xl font-bold text-slate-900 dark:text-slate-100 mt-1 block">0.0%</span>
+            </div>
+            <div class="edge-card p-4 rounded-xl">
+                <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">Mean Confidence</span>
+                <span id="kpi-mean-confidence" class="font-mono text-xl font-bold text-blue-600 dark:text-blue-400 mt-1 block">0.0%</span>
+            </div>
+        </div>
+
+        <!-- Predictions & Attribution Table Card -->
+        <div class="edge-card rounded-2xl overflow-hidden space-y-0">
+            <div class="px-6 py-4 border-b border-slate-200/80 dark:border-white/10 flex flex-wrap justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-600/10 dark:bg-emerald-500/15 border border-emerald-600/20 dark:border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                        <i class="iconsax text-lg" icon-name="activity"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-heading font-bold text-slate-900 dark:text-slate-100 text-sm">Classification &amp; Feature Attribution Matrix</h3>
+                        <p id="inference-summary" class="font-mono text-[11px] text-slate-500 dark:text-slate-400">Showing evaluated flows</p>
+                    </div>
+                </div>
+
+                <!-- Filter Pills -->
+                <div class="flex items-center gap-2">
+                    <button type="button" id="btn-filter-all" onclick="filterInference('all')" class="px-3 py-1.5 rounded-xl font-mono text-xs font-semibold bg-blue-600 text-white border border-blue-600 shadow-xs">
+                        All Flows
+                    </button>
+                    <button type="button" id="btn-filter-attacks" onclick="filterInference('attack')" class="px-3 py-1.5 rounded-xl font-mono text-xs font-semibold bg-white/60 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/10">
+                        Threats Only
+                    </button>
+                    <button type="button" id="btn-filter-benign" onclick="filterInference('benign')" class="px-3 py-1.5 rounded-xl font-mono text-xs font-semibold bg-white/60 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/10">
+                        Benign Only
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead class="bg-slate-50/70 dark:bg-white/5 text-left font-mono text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200/80 dark:border-white/10">
+                        <tr>
+                            <th class="px-5 py-3.5">Flow</th>
+                            <th class="px-5 py-3.5">Classification</th>
+                            <th class="px-5 py-3.5">Confidence</th>
+                            <th class="px-5 py-3.5">Key Threat Attribution (XAI Saliency)</th>
+                            <th class="px-5 py-3.5">Benign Prob</th>
+                            <th class="px-5 py-3.5">Attack Prob</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inference-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
     </section>
+
 </div>
+
+<script>
+function handleInferenceFileSelect(input) {
+    const file = input.files[0];
+    const info = document.getElementById('inference-file-info');
+    const nameEl = document.getElementById('inference-file-name');
+    const sizeEl = document.getElementById('inference-file-size');
+    if (file) {
+        info.classList.remove('hidden');
+        nameEl.textContent = file.name;
+        sizeEl.textContent = `(${(file.size / 1024).toFixed(1)} KB)`;
+    } else {
+        info.classList.add('hidden');
+    }
+}
+
+// Drag & drop handlers
+const infDropzone = document.getElementById('inference-dropzone');
+if (infDropzone) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+        infDropzone.addEventListener(eventName, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            infDropzone.classList.add('dragover');
+        });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        infDropzone.addEventListener(eventName, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            infDropzone.classList.remove('dragover');
+        });
+    });
+
+    infDropzone.addEventListener('drop', e => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length) {
+            const input = document.getElementById('inference-file');
+            input.files = files;
+            handleInferenceFileSelect(input);
+        }
+    });
+}
+</script>
 {% endblock %}
