@@ -136,8 +136,8 @@ start_hq() {
 
 # Function: Start client interface
 start_client() {
-    print_info "Starting client interface..."
-    "$VENV_PATH/bin/python" client_interface.py --hq-url http://localhost:8000 --open-browser
+    print_info "Starting Edge Client Node..."
+    exec ./run_client.sh 5000
 }
 
 # Function: Run everything
