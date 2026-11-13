@@ -19,6 +19,12 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / ".env")
+except Exception:
+    pass
+
 import base64
 import zlib
 import pickle
@@ -32,7 +38,7 @@ import torch.nn as nn
 import requests
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
@@ -606,6 +612,142 @@ def client_forgot_password(payload: ForgotPasswordRequest):
         "recovery_key_hint": masked,
         "default_token": expected,
     }
+
+
+@app.get("/api/client/auth/oauth-status")
+def get_oauth_status():
+    """Return whether real Google and GitHub OAuth credentials are configured in .env."""
+    google_id = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    google_secret = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+    github_id = os.getenv("GITHUB_CLIENT_ID", "").strip()
+    github_secret = os.getenv("GITHUB_CLIENT_SECRET", "").strip()
+    return {
+        "status": "success",
+        "google": bool(google_id and google_secret),
+        "github": bool(github_id and github_secret),
+    }
+
+
+@app.get("/api/client/auth/oauth-login/{provider}")
+def oauth_login_redirect(provider: str, request: Request):
+    """Initiate official OAuth2 login redirect for Google or GitHub if configured."""
+    provider = provider.lower()
+    host = request.headers.get("host") or f"localhost:{CLIENT_STATE.get('edge_port', 5000)}"
+    scheme = request.url.scheme or "http"
+    callback_base = f"{scheme}://{host}"
+
+    if provider == "google":
+        client_id = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+        if not client_id:
+            return RedirectResponse(url="/login?simulated=google")
+        redirect_uri = f"{callback_base}/api/client/auth/callback/google"
+        scope = "openid email profile"
+        url = (
+            f"https://accounts.google.com/o/oauth2/v2/auth"
+            f"?client_id={client_id}"
+            f"&redirect_uri={redirect_uri}"
+            f"&response_type=code"
+            f"&scope={requests.utils.quote(scope)}"
+            f"&prompt=select_account"
+        )
+        return RedirectResponse(url=url)
+
+    elif provider == "github":
+        client_id = os.getenv("GITHUB_CLIENT_ID", "").strip()
+        if not client_id:
+            return RedirectResponse(url="/login?simulated=github")
+        redirect_uri = f"{callback_base}/api/client/auth/callback/github"
+        scope = "read:user user:email"
+        url = (
+            f"https://github.com/login/oauth/authorize"
+            f"?client_id={client_id}"
+            f"&redirect_uri={redirect_uri}"
+            f"&scope={requests.utils.quote(scope)}"
+        )
+        return RedirectResponse(url=url)
+
+    raise HTTPException(status_code=400, detail="Unsupported OAuth provider.")
+
+
+@app.get("/api/client/auth/callback/{provider}")
+def oauth_callback(provider: str, request: Request, code: Optional[str] = None, error: Optional[str] = None):
+    """Handle OAuth2 authorization code callback and exchange for user identity."""
+    if error or not code:
+        return RedirectResponse(url=f"/login?error={error or 'cancelled'}")
+
+    provider = provider.lower()
+    host = request.headers.get("host") or f"localhost:{CLIENT_STATE.get('edge_port', 5000)}"
+    scheme = request.url.scheme or "http"
+    redirect_uri = f"{scheme}://{host}/api/client/auth/callback/{provider}"
+    user_email = ""
+    user_name = ""
+
+    try:
+        if provider == "google":
+            client_id = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+            client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+            token_resp = requests.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code": code,
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code",
+                },
+                timeout=10,
+            )
+            token_data = token_resp.json()
+            access_token = token_data.get("access_token")
+            if not access_token:
+                return RedirectResponse(url="/login?error=google_token_failed")
+            
+            user_info = requests.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=10,
+            ).json()
+            user_email = user_info.get("email", "")
+            user_name = user_info.get("name") or user_email
+
+        elif provider == "github":
+            client_id = os.getenv("GITHUB_CLIENT_ID", "").strip()
+            client_secret = os.getenv("GITHUB_CLIENT_SECRET", "").strip()
+            token_resp = requests.post(
+                "https://github.com/login/oauth/access_token",
+                headers={"Accept": "application/json"},
+                data={
+                    "code": code,
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "redirect_uri": redirect_uri,
+                },
+                timeout=10,
+            )
+            token_data = token_resp.json()
+            access_token = token_data.get("access_token")
+            if not access_token:
+                return RedirectResponse(url="/login?error=github_token_failed")
+
+            user_info = requests.get(
+                "https://api.github.com/user",
+                headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+                timeout=10,
+            ).json()
+            user_name = user_info.get("login") or user_info.get("name") or "github-operator"
+            user_email = user_info.get("email") or f"{user_name}@users.noreply.github.com"
+        
+        # Authenticate operator session
+        username = user_email or user_name or f"operator.{provider}"
+        CLIENT_STATE["operator_user"] = username
+        CLIENT_STATE["operator_authenticated"] = True
+        CLIENT_STATE["operator_authenticated_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        CLIENT_STATE["auth_provider"] = provider
+        _save_persisted_state()
+        return RedirectResponse(url="/login?oauth_success=1")
+
+    except Exception as exc:
+        return RedirectResponse(url=f"/login?error={str(exc)}")
 
 
 @app.post("/api/client/configure")

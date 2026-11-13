@@ -507,6 +507,17 @@
         showAlert('info', `Connecting to ${providerName} Single Sign-On...`);
         
         try {
+            // Check if real OAuth is configured in .env
+            const statusRes = await fetch('/api/client/auth/oauth-status');
+            const statusData = await statusRes.json();
+            
+            if (statusData && statusData[provider]) {
+                // Real OAuth is configured! Redirect to official provider login page
+                window.location.href = `/api/client/auth/oauth-login/${provider}`;
+                return;
+            }
+
+            // Fallback to seamless instant local demo SSO
             const res = await fetch('/api/client/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -519,7 +530,7 @@
 
             const data = await res.json();
             if (res.ok && data.status === 'success') {
-                showAlert('success', `Signed in successfully via ${providerName}!`);
+                showAlert('success', `Signed in via ${providerName}! (Real OAuth can be enabled via .env)`);
                 sessionStorage.setItem('securefed_admin_key', data.admin_key || 'securefed-admin-token-2026');
                 sessionStorage.setItem('securefed_operator_user', data.username);
                 localStorage.setItem('securefed_saved_operator', data.username);
@@ -761,6 +772,15 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('oauth_success') === '1') {
+            showAlert('success', 'OAuth Single Sign-On authenticated successfully! Edge privileges active.');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (urlParams.get('error')) {
+            showAlert('error', `OAuth authentication error: ${urlParams.get('error')}`);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         const savedUser = localStorage.getItem('securefed_saved_operator') || sessionStorage.getItem('securefed_operator_user');
         const savedKey = localStorage.getItem('securefed_saved_admin_key') || sessionStorage.getItem('securefed_admin_key');
         if (savedUser) {

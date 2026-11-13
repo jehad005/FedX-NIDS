@@ -28,6 +28,7 @@ Client Server/local_models/
 # Environment & Secrets
 .env
 .env.*
+!.env.example
 
 # IDE & OS
 .vscode/
