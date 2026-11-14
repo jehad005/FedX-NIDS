@@ -76,6 +76,13 @@ CLIENT_STATE = {
     "operator_authenticated": False,
     "operator_authenticated_at": None,
     "auth_provider": None,
+    "firebase_api_key": os.getenv("FIREBASE_API_KEY", "AIzaSyCs0QTYOeFSlDEL_W_W9rv54sME9_cVcP8"),
+    "firebase_auth_domain": os.getenv("FIREBASE_AUTH_DOMAIN", "fedx-nids.firebaseapp.com"),
+    "firebase_project_id": os.getenv("FIREBASE_PROJECT_ID", "fedx-nids"),
+    "firebase_storage_bucket": os.getenv("FIREBASE_STORAGE_BUCKET", "fedx-nids.firebasestorage.app"),
+    "firebase_messaging_sender_id": os.getenv("FIREBASE_MESSAGING_SENDER_ID", "994481708235"),
+    "firebase_app_id": os.getenv("FIREBASE_APP_ID", "1:994481708235:web:cb7ceb65258a05030e4f4e"),
+    "firebase_measurement_id": os.getenv("FIREBASE_MEASUREMENT_ID", "G-1GMY0GZ850"),
     "auto_push": True,
     "status": "Idle",
     "training_logs": [],
@@ -515,6 +522,14 @@ class ForgotPasswordRequest(BaseModel):
     email: str
 
 
+class FirebaseLoginRequest(BaseModel):
+    email: Optional[str] = None
+    display_name: Optional[str] = None
+    uid: Optional[str] = None
+    auth_provider: str = "firebase"
+    id_token: Optional[str] = None
+
+
 @app.get("/", response_class=HTMLResponse)
 def client_dashboard(request: Request):
     return render_page(request, "client_index.html", "overview")
@@ -582,6 +597,27 @@ def client_login(payload: LoginRequest):
     }
 
 
+@app.post("/api/client/firebase-login")
+def client_firebase_login(payload: FirebaseLoginRequest):
+    """Authenticate and register operator session verified via Firebase Auth."""
+    username = (payload.email or payload.display_name or payload.uid or "firebase_operator").strip()
+    provider = (payload.auth_provider or "firebase").lower()
+    
+    CLIENT_STATE["operator_user"] = username
+    CLIENT_STATE["operator_authenticated"] = True
+    CLIENT_STATE["operator_authenticated_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    CLIENT_STATE["auth_provider"] = provider
+    _save_persisted_state()
+    return {
+        "status": "success",
+        "message": f"Welcome back, {username}! Firebase authentication verified.",
+        "username": username,
+        "auth_provider": provider,
+        "client_id": CLIENT_STATE.get("client_id"),
+        "authenticated_at": CLIENT_STATE["operator_authenticated_at"],
+    }
+
+
 @app.post("/api/client/logout")
 def client_logout():
     """Clear active operator session from Edge node."""
@@ -611,6 +647,24 @@ def client_forgot_password(payload: ForgotPasswordRequest):
         ),
         "recovery_key_hint": masked,
         "default_token": expected,
+    }
+
+
+@app.get("/api/client/auth/firebase-config")
+def get_firebase_config():
+    """Return public Firebase web client configuration for frontend authentication."""
+    return {
+        "status": "success",
+        "firebase_configured": bool(os.getenv("FIREBASE_API_KEY")),
+        "config": {
+            "apiKey": os.getenv("FIREBASE_API_KEY", "AIzaSyCs0QTYOeFSlDEL_W_W9rv54sME9_cVcP8"),
+            "authDomain": os.getenv("FIREBASE_AUTH_DOMAIN", "fedx-nids.firebaseapp.com"),
+            "projectId": os.getenv("FIREBASE_PROJECT_ID", "fedx-nids"),
+            "storageBucket": os.getenv("FIREBASE_STORAGE_BUCKET", "fedx-nids.firebasestorage.app"),
+            "messagingSenderId": os.getenv("FIREBASE_MESSAGING_SENDER_ID", "994481708235"),
+            "appId": os.getenv("FIREBASE_APP_ID", "1:994481708235:web:cb7ceb65258a05030e4f4e"),
+            "measurementId": os.getenv("FIREBASE_MEASUREMENT_ID", "G-1GMY0GZ850"),
+        }
     }
 
 

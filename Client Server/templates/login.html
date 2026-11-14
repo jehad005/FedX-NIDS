@@ -501,23 +501,77 @@
         text.textContent = msg;
     }
 
-    // Social SSO Handler (Google / GitHub)
+    // Social SSO Handler (Google / GitHub) via Firebase Auth
     async function handleSocialLogin(provider) {
         const providerName = provider === 'google' ? 'Google Workspace' : 'GitHub Enterprise';
-        showAlert('info', `Connecting to ${providerName} Single Sign-On...`);
+        showAlert('info', `Connecting to ${providerName} via Firebase Authentication...`);
         
-        try {
-            // Check if real OAuth is configured in .env
-            const statusRes = await fetch('/api/client/auth/oauth-status');
-            const statusData = await statusRes.json();
-            
-            if (statusData && statusData[provider]) {
-                // Real OAuth is configured! Redirect to official provider login page
-                window.location.href = `/api/client/auth/oauth-login/${provider}`;
-                return;
-            }
+        // 1. Try Firebase Popup Authentication
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+            try {
+                let authProvider;
+                if (provider === 'google') {
+                    authProvider = new firebase.auth.GoogleAuthProvider();
+                    authProvider.addScope('email');
+                    authProvider.addScope('profile');
+                } else if (provider === 'github') {
+                    authProvider = new firebase.auth.GithubAuthProvider();
+                    authProvider.addScope('user:email');
+                }
 
-            // Fallback to seamless instant local demo SSO
+                if (authProvider) {
+                    const result = await firebase.auth().signInWithPopup(authProvider);
+                    const user = result.user;
+                    let idToken = null;
+                    try {
+                        idToken = await user.getIdToken();
+                    } catch (tokErr) {
+                        console.warn('Could not fetch idToken:', tokErr);
+                    }
+
+                    // Synchronize authenticated session with Edge backend
+                    const syncRes = await fetch('/api/client/firebase-login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: user.email,
+                            display_name: user.displayName || user.email.split('@')[0],
+                            uid: user.uid,
+                            auth_provider: provider,
+                            id_token: idToken
+                        })
+                    });
+                    const syncData = await syncRes.json();
+
+                    showAlert('success', `Signed in as ${user.displayName || user.email} via Firebase ${providerName}!`);
+                    sessionStorage.setItem('securefed_admin_key', 'firebase-token-' + user.uid.slice(0, 8));
+                    sessionStorage.setItem('securefed_operator_user', user.email || user.displayName);
+                    localStorage.setItem('securefed_saved_operator', user.email || user.displayName);
+                    localStorage.setItem('securefed_saved_admin_key', 'firebase-token-' + user.uid.slice(0, 8));
+
+                    setTimeout(() => {
+                        refreshAuthState();
+                        if (typeof refreshHeader === 'function') refreshHeader();
+                    }, 500);
+                    return;
+                }
+            } catch (fbErr) {
+                console.warn('Firebase popup error:', fbErr);
+                if (fbErr.code === 'auth/popup-closed-by-user') {
+                    showAlert('info', `${providerName} sign-in popup was closed.`);
+                    return;
+                } else if (fbErr.code === 'auth/operation-not-allowed' || fbErr.code === 'auth/configuration-not-found') {
+                    showAlert('info', `${providerName} provider is not yet enabled in Firebase Console. Enable it under Firebase Authentication > Sign-in method.`);
+                } else if (fbErr.code === 'auth/unauthorized-domain') {
+                    showAlert('error', `Domain "${window.location.hostname}" is not authorized in Firebase. Add it to Firebase Console > Authentication > Settings > Authorized domains.`);
+                } else {
+                    showAlert('info', `Firebase SSO notice: ${fbErr.message}. Attempting fallback...`);
+                }
+            }
+        }
+
+        // 2. Fallback to Local Edge Backend Demo SSO if Firebase was not completed
+        try {
             const res = await fetch('/api/client/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -530,7 +584,7 @@
 
             const data = await res.json();
             if (res.ok && data.status === 'success') {
-                showAlert('success', `Signed in via ${providerName}! (Real OAuth can be enabled via .env)`);
+                showAlert('success', `Signed in via ${providerName} demo fallback.`);
                 sessionStorage.setItem('securefed_admin_key', data.admin_key || 'securefed-admin-token-2026');
                 sessionStorage.setItem('securefed_operator_user', data.username);
                 localStorage.setItem('securefed_saved_operator', data.username);
@@ -548,7 +602,7 @@
         }
     }
 
-    // Email & HMAC Key Login
+    // Email & HMAC Key Login (Firebase Auth + Edge Master Token Fallback)
     async function handleOperatorLogin(event) {
         event.preventDefault();
         const username = document.getElementById('login-username').value.trim();
@@ -558,9 +612,65 @@
         const btnText = document.getElementById('login-btn-text');
 
         btn.disabled = true;
-        btnText.textContent = 'Verifying Secret Key...';
+        btnText.textContent = 'Verifying Credentials...';
 
+        // 1. If username is an email and Firebase is available, attempt Firebase Email/Password
+        let fbSuccess = false;
+        if (typeof firebase !== 'undefined' && firebase.auth && username.includes('@') && adminKey.length >= 6 && adminKey !== 'securefed-admin-token-2026') {
+            try {
+                btnText.textContent = 'Authenticating with Firebase...';
+                let userCred;
+                try {
+                    userCred = await firebase.auth().signInWithEmailAndPassword(username, adminKey);
+                } catch (signErr) {
+                    // If user does not exist in Firebase, attempt auto-registration
+                    if (signErr.code === 'auth/user-not-found' || signErr.code === 'auth/invalid-credential') {
+                        userCred = await firebase.auth().createUserWithEmailAndPassword(username, adminKey);
+                    } else {
+                        throw signErr;
+                    }
+                }
+
+                if (userCred && userCred.user) {
+                    const user = userCred.user;
+                    const idToken = await user.getIdToken();
+                    
+                    // Sync session with Edge backend
+                    await fetch('/api/client/firebase-login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: user.email,
+                            display_name: user.email.split('@')[0],
+                            uid: user.uid,
+                            auth_provider: 'firebase_email',
+                            id_token: idToken
+                        })
+                    });
+
+                    showAlert('success', `Signed in via Firebase Auth as ${user.email}!`);
+                    sessionStorage.setItem('securefed_admin_key', 'firebase-token-' + user.uid.slice(0, 8));
+                    sessionStorage.setItem('securefed_operator_user', user.email);
+                    if (remember) {
+                        localStorage.setItem('securefed_saved_operator', user.email);
+                        localStorage.setItem('securefed_saved_admin_key', 'firebase-token-' + user.uid.slice(0, 8));
+                    }
+                    fbSuccess = true;
+                    setTimeout(() => {
+                        refreshAuthState();
+                        if (typeof refreshHeader === 'function') refreshHeader();
+                    }, 500);
+                    return;
+                }
+            } catch (fbErr) {
+                console.warn('Firebase email auth notice:', fbErr);
+                // Continue to local Edge Node Master Key verification below
+            }
+        }
+
+        // 2. Local Edge Node Master Key verification (/api/client/login)
         try {
+            btnText.textContent = 'Verifying Edge Node Key...';
             const res = await fetch('/api/client/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -602,7 +712,7 @@
         }
     }
 
-    // Forgot Password Handler
+    // Forgot Password Handler (Firebase Reset Email + Emergency Key)
     async function handleForgotPassword(event) {
         event.preventDefault();
         const email = document.getElementById('forgot-email').value.trim();
@@ -617,7 +727,22 @@
         btn.disabled = true;
         btnText.textContent = 'Preparing instructions...';
 
+        let firebaseResetSent = false;
+        let firebaseNote = '';
+
+        if (typeof firebase !== 'undefined' && firebase.auth && email.includes('@')) {
+            try {
+                btnText.textContent = 'Sending Firebase password reset email...';
+                await firebase.auth().sendPasswordResetEmail(email);
+                firebaseResetSent = true;
+            } catch (fbErr) {
+                console.warn('Firebase reset email notice:', fbErr);
+                firebaseNote = fbErr.message;
+            }
+        }
+
         try {
+            btnText.textContent = 'Retrieving Edge recovery info...';
             const res = await fetch('/api/client/forgot-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -627,7 +752,12 @@
             const data = await res.json();
             if (res.ok && data.status === 'success') {
                 alertBox.className = 'p-3.5 rounded-xl text-xs font-mono border flex items-start gap-2.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/70';
-                alertText.textContent = data.message;
+                
+                if (firebaseResetSent) {
+                    alertText.textContent = `Firebase password reset email dispatched to ${email}! Check your inbox. Emergency node token is also available below.`;
+                } else {
+                    alertText.textContent = data.message + (firebaseNote ? ` (Firebase info: ${firebaseNote})` : '');
+                }
                 alertBox.classList.remove('hidden');
 
                 guideBox.classList.remove('hidden');
@@ -657,9 +787,16 @@
         showAlert('info', 'Recovery token populated into sign-in form. Click Sign In to proceed.');
     }
 
-    // Logout Handler
+    // Logout Handler (Firebase Sign Out + Edge Backend Sign Out)
     async function handleLogout() {
         if (!confirm('Are you sure you want to sign out of the active operator session?')) return;
+        try {
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                await firebase.auth().signOut();
+            }
+        } catch (fbErr) {
+            console.warn('Firebase signOut notice:', fbErr);
+        }
         try {
             await fetch('/api/client/logout', { method: 'POST' });
         } catch (e) {

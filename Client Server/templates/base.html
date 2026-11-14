@@ -12,6 +12,27 @@
     <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase Compat SDK for Authentication -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script>
+        window.FIREBASE_CONFIG = {
+            apiKey: "{{ state.firebase_api_key or 'AIzaSyCs0QTYOeFSlDEL_W_W9rv54sME9_cVcP8' }}",
+            authDomain: "{{ state.firebase_auth_domain or 'fedx-nids.firebaseapp.com' }}",
+            projectId: "{{ state.firebase_project_id or 'fedx-nids' }}",
+            storageBucket: "{{ state.firebase_storage_bucket or 'fedx-nids.firebasestorage.app' }}",
+            messagingSenderId: "{{ state.firebase_messaging_sender_id or '994481708235' }}",
+            appId: "{{ state.firebase_app_id or '1:994481708235:web:cb7ceb65258a05030e4f4e' }}",
+            measurementId: "{{ state.firebase_measurement_id or 'G-1GMY0GZ850' }}"
+        };
+        try {
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(window.FIREBASE_CONFIG);
+            }
+        } catch (e) {
+            console.warn('Firebase init notice:', e);
+        }
+    </script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -824,6 +845,13 @@ async function postJSON(url, payload) {
 
 async function globalLogout() {
     if (!confirm('Are you sure you want to sign out of the active operator session?')) return;
+    try {
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+            await firebase.auth().signOut();
+        }
+    } catch (fbErr) {
+        console.warn('Firebase logout notice:', fbErr);
+    }
     try {
         await fetch('/api/client/logout', { method: 'POST' });
     } catch (e) {
