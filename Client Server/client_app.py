@@ -1409,11 +1409,13 @@ async def run_client_inference(payload: InferenceRequest):
                 for f_idx in top_indices
             ]
 
+            p_benign = round(float(probs[idx][0]), 4) if probs.shape[1] > 0 else 0.0
+            p_attack = round(float(probs[idx][1]), 4) if probs.shape[1] > 1 else round(1.0 - p_benign, 4)
             results.append({
                 "row_index": idx,
                 "prediction": label_name,
                 "confidence": round(confidence * 100, 2),
-                "probabilities": {"benign": round(float(probs[idx][0]), 4), "attack": round(float(probs[idx][1]), 4)},
+                "probabilities": {"benign": p_benign, "attack": p_attack},
                 "top_indicators": top_indicators,
             })
 

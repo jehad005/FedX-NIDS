@@ -34,6 +34,14 @@
         }
     </script>
     <script>
+        // Apply persisted dark mode immediately to avoid page flash
+        if (localStorage.getItem('edge_theme') === 'dark' || (!localStorage.getItem('edge_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -1038,8 +1046,8 @@ function renderInferenceTable(predictions) {
                 </div>
             </td>
             <td class="px-5 py-3.5"><div class="flex flex-wrap gap-1.5">${indicatorsHtml}</div></td>
-            <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400 font-mono text-xs">${p.probabilities.benign}</td>
-            <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400 font-mono text-xs">${p.probabilities.attack}</td>
+            <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400 font-mono text-xs">${p.probabilities ? p.probabilities.benign : '—'}</td>
+            <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400 font-mono text-xs">${p.probabilities ? p.probabilities.attack : '—'}</td>
         </tr>`;
     }).join('');
 }

@@ -867,7 +867,7 @@
                 
                 // Set Avatar Initials
                 if (sessionAvatar) {
-                    const initials = userDisplay.split('@')[0].slice(0, 2).toUpperCase();
+                    const initials = (userDisplay ? userDisplay.split('@')[0].slice(0, 2) : 'OP').toUpperCase();
                     sessionAvatar.textContent = initials;
                 }
 
