@@ -47,7 +47,7 @@ from pydantic import BaseModel
 from dp.differential_privacy import DPSGD
 
 app = FastAPI(
-    title="SecureFed-NIDS Edge Client",
+    title="FedX-NIDS Edge Client",
     description="Client node for localized training, DP-SGD, inference, and federated model sync with HQ.",
     version="1.0.0",
 )

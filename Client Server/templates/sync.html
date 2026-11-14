@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}HQ Synchronization · SecureFed Client{% endblock %}
-{% block page_heading %}HQ Connection &amp; Model Sync{% endblock %}
+{% block title %}Federated Sync (HQ) · FedX Edge Client{% endblock %}
+{% block page_heading %}Federated Model Synchronization{% endblock %}
 {% block content %}
 <div class="edge-stagger-stack max-w-5xl space-y-6">
 
@@ -12,7 +12,7 @@
             </div>
             <div>
                 <h2 class="font-heading text-[15px] font-bold text-slate-900 dark:text-slate-100 flex flex-wrap items-center gap-2">
-                    <span>Central HQ Synchronization Pipeline</span>
+                    <span>Federated Model Synchronization Pipeline</span>
                     <span id="sync-status-badge" class="font-mono text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 border border-blue-600/20">Checking...</span>
                 </h2>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -187,10 +187,10 @@
                 <span class="edge-terminal-dot dot-yellow"></span>
                 <span class="edge-terminal-dot dot-green"></span>
             </div>
-            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">HQ Synchronization Terminal</span>
+            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">Federated Synchronization Terminal</span>
             <button type="button" onclick="clearSyncTerminal()" class="text-[11px] font-mono text-slate-400 hover:text-white transition-colors">Clear</button>
         </div>
-        <pre id="sync-result" class="p-4 text-xs text-emerald-400 font-mono overflow-auto max-h-64 leading-relaxed">SecureFed Edge Client Sync Module ready. Connect to HQ to synchronize models.</pre>
+        <pre id="sync-result" class="p-4 text-xs text-emerald-400 font-mono overflow-auto max-h-64 leading-relaxed">FedX Edge Client Federated Sync Module ready. Connect to HQ to synchronize models.</pre>
     </div>
 
 </div>
