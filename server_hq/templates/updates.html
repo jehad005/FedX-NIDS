@@ -189,9 +189,8 @@
                                         Deploy the current Global Model directly to registered Client Edge node(s).
                                     </div>
                                 </div>
-                                <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <input type="text" id="updatesEdgePushUrl" class="form-control form-control-sm font-mono" style="width: 230px;" placeholder="Auto (registered or :5000)">
-                                    <button id="btnPushAggregated" type="button" class="btn btn-primary" onclick="pushAggregatedToEdge(this)">
+                                <div>
+                                    <button id="btnPushAggregated" type="button" class="btn btn-primary font-mono fw-semibold d-flex align-items-center gap-1" onclick="pushAggregatedToEdge(this)">
                                         <i class="iconsax me-1" icon-name="send-2"></i> Push to Client Edge
                                     </button>
                                 </div>
@@ -831,8 +830,6 @@
 
         async function pushAggregatedToEdge(btn) {
             const alertBox = document.getElementById('aggPushAlert');
-            const edgeInput = document.getElementById('updatesEdgePushUrl');
-            const edgeUrl = edgeInput ? edgeInput.value.trim() : '';
             const version = currentGlobalVersion || 'latest';
             const origHtml = btn.innerHTML;
 
@@ -846,7 +843,7 @@
                 const resp = await fetch(`/api/dashboard/models/${encodeURIComponent(version)}/push`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ edge_url: edgeUrl })
+                    body: JSON.stringify({})
                 });
                 const data = await resp.json();
                 if (resp.ok && data.status === 'success') {

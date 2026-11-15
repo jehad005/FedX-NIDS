@@ -632,6 +632,13 @@ class Dashboard:
                     disp = (client.get("display_name") or "").strip().rstrip("/")
                     if disp.startswith(("http://", "https://")) and disp not in targets:
                         targets.append(disp)
+                    elif disp and not disp.startswith(("http://", "https://")):
+                        if any(c.isdigit() for c in disp):
+                            host_part = disp.split(":")[0]
+                            port_part = disp.split(":")[1] if ":" in disp else "5000"
+                            formatted = f"http://{host_part}:{port_part}"
+                            if formatted not in targets:
+                                targets.append(formatted)
                 if not targets:
                     targets = ["http://127.0.0.1:5000"]
 
