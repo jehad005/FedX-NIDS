@@ -177,13 +177,13 @@ class Dashboard:
             )
 
         @self.app.get("/api/dashboard/versions")
-        async def get_versions():
+        async def get_versions(kind: Optional[str] = None):
             """API endpoint for model versions."""
-            versions = self.registry.list_versions()
+            versions = self.registry.list_versions(kind=kind)
             return JSONResponse({
                 "status": "success",
                 "versions": versions,
-                "latest": self.registry.latest_version(),
+                "latest": self.registry.latest_version(kind=kind),
                 "last_pushed": self.registry.get_last_pushed_model(),
                 "timestamp": datetime.now().isoformat()
             })

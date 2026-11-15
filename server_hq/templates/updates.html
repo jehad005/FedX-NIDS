@@ -36,7 +36,10 @@
                         <i class="iconsax" icon-name="cloud-add"></i> Model Training
                     </a>
                     <a class="nav-link" href="/models">
-                        <i class="iconsax" icon-name="cpu-charge"></i> Model Versions
+                        <i class="iconsax" icon-name="cpu-charge"></i> DL Models (v1.x)
+                    </a>
+                    <a class="nav-link" href="/fl-models">
+                        <i class="iconsax" icon-name="hierarchy-square-2"></i> Federated Models (v2.x)
                     </a>
                     <a class="nav-link" href="/clients">
                         <i class="iconsax" icon-name="user-2"></i> Clients
@@ -264,6 +267,43 @@
                     </div>
                 </div>
 
+                <!-- Federated Global Models (Rounds Archive · v2.x) -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <i class="iconsax text-primary" icon-name="hierarchy-square-2"></i>
+                            <span class="fw-semibold">Federated Global Models (Rounds Archive · v2.x)</span>
+                        </div>
+                        <a href="/fl-models" class="btn btn-sm btn-outline-primary font-mono d-flex align-items-center gap-1">
+                            <i class="iconsax" icon-name="document-code-1"></i> Open Dedicated FL Models Page &rarr;
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table data-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Version</th>
+                                        <th>Model Name</th>
+                                        <th>Winning FL Method</th>
+                                        <th>Holdout Accuracy</th>
+                                        <th>Created</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="flRoundsTable">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-3 text-muted">
+                                            Loading federated models...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Client Update History -->
                 <div class="card">
                     <div class="card-header">
@@ -351,7 +391,7 @@
             try {
                 const [response, verResp] = await Promise.all([
                     fetch('/api/v1/updates'),
-                    fetch('/api/dashboard/versions').catch(() => null),
+                    fetch('/api/dashboard/versions?kind=fl').catch(() => null),
                 ]);
                 const data = await response.json();
                 const verData = verResp && verResp.ok ? await verResp.json().catch(() => null) : null;
@@ -451,6 +491,31 @@
                                 </tr>
                             `;
                         }).join('');
+                    }
+
+                    // Populate FL Rounds Table (v2.x)
+                    const flTable = document.getElementById('flRoundsTable');
+                    if (flTable && verData && verData.versions) {
+                        const flList = verData.versions.filter(v => String(v.version).startsWith('2.'));
+                        if (flList.length === 0) {
+                            flTable.innerHTML = '<tr><td colspan="7" class="text-center py-3 text-muted">No Federated Global Models (v2.x) created yet.</td></tr>';
+                        } else {
+                            flTable.innerHTML = flList.map(v => `
+                                <tr>
+                                    <td><span class="version-badge fw-bold" style="color: #6366f1;">v${escHtml(v.version)}</span></td>
+                                    <td>${escHtml(v.model_name || 'SecureFed-Global-Ensemble')}</td>
+                                    <td><span class="badge font-mono fw-bold" style="background:#e0e7ff;color:#4338ca;">★ ${escHtml(v.fl_method || 'fedprox')}</span></td>
+                                    <td><span class="badge bg-success font-mono">${v.accuracy ? (v.accuracy * 100).toFixed(2) + '%' : '—'}</span></td>
+                                    <td class="font-mono small">${v.created_at ? escHtml(v.created_at.slice(0, 19)) : 'N/A'}</td>
+                                    <td>${v.is_latest ? '<span class="badge bg-success">Latest Global</span>' : '<span class="badge bg-secondary">Archived</span>'}</td>
+                                    <td>
+                                        <a href="/fl-models" class="btn btn-sm btn-outline-dark font-mono">
+                                            <i class="iconsax" icon-name="document-code-1"></i> View in FL Models
+                                        </a>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }
                     }
                 }
             } catch (error) {

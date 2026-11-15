@@ -1719,7 +1719,7 @@ def run_federated_round(
             "is_winner": True,
         })
 
-    next_ver = registry.next_version()
+    next_ver = registry.next_fl_version(round_num=open_round)
     staging_dir = registry.models_dir / "_staging"
     staging_dir.mkdir(parents=True, exist_ok=True)
     staged_weights = staging_dir / f"fed_round_{next_ver}.pt"

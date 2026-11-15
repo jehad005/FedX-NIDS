@@ -330,12 +330,71 @@ class ModelRegistry:
                 continue
         return None
 
-    def latest_version(self) -> Optional[str]:
+    def latest_version(self, kind: Optional[str] = None) -> Optional[str]:
         with self._connect() as conn:
-            row = conn.execute(
-                "SELECT version FROM model_versions WHERE is_latest = 1 ORDER BY id DESC LIMIT 1"
-            ).fetchone()
+            if kind == "dl":
+                row = conn.execute(
+                    "SELECT version FROM model_versions WHERE version LIKE '1.%' ORDER BY id DESC LIMIT 1"
+                ).fetchone()
+            elif kind == "fl":
+                row = conn.execute(
+                    "SELECT version FROM model_versions WHERE version LIKE '2.%' ORDER BY id DESC LIMIT 1"
+                ).fetchone()
+            else:
+                row = conn.execute(
+                    "SELECT version FROM model_versions WHERE is_latest = 1 ORDER BY id DESC LIMIT 1"
+                ).fetchone()
+                if not row:
+                    row = conn.execute(
+                        "SELECT version FROM model_versions ORDER BY id DESC LIMIT 1"
+                    ).fetchone()
         return row["version"] if row else None
+
+    def latest_fl_version(self) -> Optional[str]:
+        return self.latest_version(kind="fl")
+
+    def latest_dl_version(self) -> Optional[str]:
+        return self.latest_version(kind="dl")
+
+    def next_fl_version(self, round_num: Optional[int] = None) -> str:
+        """Return next v2.0.x version for Federated Learning rounds."""
+        if round_num is not None:
+            v_cand = f"2.0.{int(round_num)}"
+            if not self.get_version(v_cand):
+                return v_cand
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT version FROM model_versions WHERE version LIKE '2.%' ORDER BY id DESC"
+            ).fetchall()
+        if not rows:
+            return "2.0.1"
+        highest_patch = 0
+        for r in rows:
+            parts = str(r["version"]).split(".")
+            if len(parts) >= 3 and parts[0] == "2":
+                try:
+                    highest_patch = max(highest_patch, int(parts[2]))
+                except ValueError:
+                    pass
+        return f"2.0.{highest_patch + 1}"
+
+    def next_dl_version(self) -> str:
+        """Return next v1.0.x version for centralized Deep Learning training."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT version FROM model_versions WHERE version LIKE '1.%' ORDER BY id DESC"
+            ).fetchall()
+        if not rows:
+            return "1.0.0"
+        highest_patch = 0
+        for r in rows:
+            parts = str(r["version"]).split(".")
+            if len(parts) >= 3 and parts[0] == "1":
+                try:
+                    highest_patch = max(highest_patch, int(parts[2]))
+                except ValueError:
+                    pass
+        return f"1.0.{highest_patch + 1}"
 
     def next_version(self, requested: Optional[str] = None) -> str:
         if requested:
@@ -362,11 +421,20 @@ class ModelRegistry:
             ).fetchone()
         return dict(row) if row else None
 
-    def list_versions(self) -> List[Dict[str, Any]]:
+    def list_versions(self, kind: Optional[str] = None) -> List[Dict[str, Any]]:
         with self._connect() as conn:
-            rows = conn.execute(
-                "SELECT * FROM model_versions ORDER BY id DESC"
-            ).fetchall()
+            if kind == "dl":
+                rows = conn.execute(
+                    "SELECT * FROM model_versions WHERE version LIKE '1.%' ORDER BY id DESC"
+                ).fetchall()
+            elif kind == "fl":
+                rows = conn.execute(
+                    "SELECT * FROM model_versions WHERE version LIKE '2.%' ORDER BY id DESC"
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM model_versions ORDER BY id DESC"
+                ).fetchall()
         return [dict(r) for r in rows]
 
     def count_versions(self) -> int:

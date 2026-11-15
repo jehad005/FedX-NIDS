@@ -40,13 +40,20 @@ def setup_dashboard_routes(app, registry):
 
     @app.get("/models", response_class=HTMLResponse)
     async def models_page(request: Request):
-        versions = registry.list_versions()
-        latest = registry.latest_version()
+        versions = registry.list_versions(kind="dl")
+        latest = registry.latest_version(kind="dl")
 
         # Get latest version info
         latest_info = {}
         if latest:
-            if isinstance(latest, dict):
+            rec = registry.get_version(latest)
+            if rec:
+                latest_info = {
+                    "version": rec.get("version", "N/A"),
+                    "model_name": rec.get("model_name", "N/A"),
+                    "accuracy": rec.get("accuracy"),
+                }
+            elif isinstance(latest, dict):
                 latest_info = {
                     "version": latest.get("version", "N/A"),
                     "model_name": latest.get("model_name", "N/A"),
@@ -58,6 +65,42 @@ def setup_dashboard_routes(app, registry):
         return templates.TemplateResponse(
             request,
             "models.html",
+            {
+                "request": request,
+                "versions": _clean_for_json(versions),
+                "latest": _clean_for_json(latest_info),
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+
+    @app.get("/fl-models", response_class=HTMLResponse)
+    async def fl_models_page(request: Request):
+        versions = registry.list_versions(kind="fl")
+        latest = registry.latest_version(kind="fl")
+
+        latest_info = {}
+        if latest:
+            rec = registry.get_version(latest)
+            if rec:
+                latest_info = {
+                    "version": rec.get("version", "N/A"),
+                    "model_name": rec.get("model_name", "N/A"),
+                    "accuracy": rec.get("accuracy"),
+                    "fl_method": rec.get("fl_method", "fedprox"),
+                }
+            elif isinstance(latest, dict):
+                latest_info = {
+                    "version": latest.get("version", "N/A"),
+                    "model_name": latest.get("model_name", "N/A"),
+                    "accuracy": latest.get("accuracy"),
+                    "fl_method": latest.get("fl_method", "fedprox"),
+                }
+            elif isinstance(latest, str):
+                latest_info = {"version": latest}
+
+        return templates.TemplateResponse(
+            request,
+            "fl_models.html",
             {
                 "request": request,
                 "versions": _clean_for_json(versions),
@@ -121,6 +164,9 @@ def setup_dashboard_routes(app, registry):
             updates = []
             stats = {"total_updates": 0, "processed_updates": 0, "pending_updates": 0, "failed_updates": 0}
 
+        latest_fl_ver = registry.latest_version(kind="fl")
+        latest_dl_ver = registry.latest_version(kind="dl")
+
         return templates.TemplateResponse(
             request,
             "updates.html",
@@ -131,7 +177,9 @@ def setup_dashboard_routes(app, registry):
                 "processed_updates": stats["processed_updates"],
                 "pending_updates": stats["pending_updates"],
                 "failed_updates": stats["failed_updates"],
-                "latest_version": registry.latest_version(),
+                "latest_version": latest_fl_ver or registry.latest_version(),
+                "latest_fl_version": latest_fl_ver,
+                "latest_dl_version": latest_dl_ver,
                 "open_round": registry.get_open_round(),
                 "aggregated_folder": str(registry.aggregated_updates_dir),
                 "timestamp": datetime.now().isoformat(),

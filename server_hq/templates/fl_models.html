@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Federated Models (v2.x) - SecureFed-NIDS HQ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/modern_hq.css?v=10">
+    <script src="/static/js/hq_theme.js?v=2"></script>
+    <style>
+        .radar-card-preview {
+            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 70%);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar">
+                <div class="brand-container">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <a href="/" class="brand-title text-decoration-none" title="Go to HQ Dashboard">
+                            <div class="brand-icon"><i class="iconsax" icon-name="shield-tick"></i></div>
+                            <div>
+                                <div>SecureFed</div>
+                                <small style="font-size: 0.68rem; letter-spacing: 0.08em; color: var(--text-muted); font-family: var(--font-mono);">HQ · CONTROL PLANE</small>
+                            </div>
+                        </a>
+                        <button type="button" class="theme-toggle-btn" onclick="toggleHqTheme()" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
+                            <i id="hq-theme-icon" class="iconsax" icon-name="moon"></i>
+                        </button>
+                    </div>
+                </div>
+                <nav class="nav flex-column">
+                    <a class="nav-link" href="/">
+                        <i class="iconsax" icon-name="grid-apps"></i> Dashboard
+                    </a>
+                    <a class="nav-link" href="/training">
+                        <i class="iconsax" icon-name="cloud-add"></i> Model Training
+                    </a>
+                    <a class="nav-link" href="/models">
+                        <i class="iconsax" icon-name="cpu-charge"></i> DL Models (v1.x)
+                    </a>
+                    <a class="nav-link active" href="/fl-models">
+                        <i class="iconsax" icon-name="hierarchy-square-2"></i> Federated Models (v2.x)
+                    </a>
+                    <a class="nav-link" href="/clients">
+                        <i class="iconsax" icon-name="user-2"></i> Clients
+                    </a>
+                    <a class="nav-link" href="/updates">
+                        <i class="iconsax" icon-name="cloud-notif"></i> Updates
+                    </a>
+                    <a class="nav-link" href="/analytics">
+                        <i class="iconsax" icon-name="bar-graph-1"></i> Analytics
+                    </a>
+                    <a class="nav-link" href="/xai">
+                        <i class="iconsax" icon-name="bulb"></i> Explainable AI
+                    </a>
+                </nav>
+                <div class="status-footer mt-auto">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">HQ Engine</span>
+                        <span class="system-status"><span class="system-indicator"></span> Online</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- Header -->
+                <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h1><i class="iconsax me-2 text-primary" icon-name="hierarchy-square-2"></i>Federated Models (Global v2.x)</h1>
+                        <p class="text-muted mb-0">Decentralized multi-round Global Models aggregated from edge client DP updates (v2.0.1, v2.0.2...)</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="/updates" class="btn btn-success btn-sm d-flex align-items-center gap-1">
+                            <i class="iconsax" icon-name="play"></i> Run New FL Round
+                        </a>
+                        <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" onclick="refreshVersions()">
+                            <i class="iconsax" icon-name="refresh"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalVersions">0</div>
+                            <div class="stat-label">Federated Rounds (v2.x)</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="stat-card">
+                            <div class="stat-value text-primary" id="latestVersionCard">—</div>
+                            <div class="stat-label">Active Global Model</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="stat-card">
+                            <div class="stat-value text-success" id="bestAccuracy">0.00%</div>
+                            <div class="stat-label">Best Holdout Accuracy</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="stat-card">
+                            <div class="stat-value text-info font-mono" style="font-size: 1.25rem;" id="winningStrategyCard">FedProx (Auto-Best)</div>
+                            <div class="stat-label">Top FL Algorithm</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick API Endpoints Bar -->
+                <div class="card mb-4 radar-card-preview border">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div>
+                                <div class="fw-bold d-flex align-items-center gap-2">
+                                    <i class="iconsax text-primary" icon-name="global"></i>
+                                    <span>Global FL Edge Distribution</span>
+                                    <span class="badge bg-success font-mono" id="latestApiVerChip">v2.0.2</span>
+                                </div>
+                                <div class="small text-muted mt-1">
+                                    Client edge nodes automatically fetch weights via: <code class="font-mono text-primary" id="apiLatestDownloadText">/api/v1/model/download</code>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a id="swaggerDocsLink" href="/docs" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    <i class="iconsax me-1" icon-name="document-text"></i> Swagger Docs
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Federated Model Versions Table -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span><i class="iconsax me-1 text-primary" icon-name="hierarchy-square-2"></i>Published Federated Global Versions (v2.x)</span>
+                                    <span class="badge bg-primary font-mono" id="versionCount">0</span>
+                                    <span class="badge bg-info d-none font-mono" id="pushedVersionChip"></span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <label for="edgePushUrl" class="small text-muted mb-0 font-mono">Target Edge:</label>
+                                    <input type="text" id="edgePushUrl" class="form-control form-control-sm font-mono" style="width: 240px;" placeholder="Auto (registered or :5000)">
+                                </div>
+                            </div>
+                            <div id="pushAlert" class="alert d-none mx-3 mt-3 mb-0 py-2 small" role="alert"></div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table data-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Version</th>
+                                                <th>Model Name</th>
+                                                <th>Architecture</th>
+                                                <th>Winning FL Method</th>
+                                                <th>Input Dim</th>
+                                                <th>Classes</th>
+                                                <th>Accuracy</th>
+                                                <th>Created</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="versionsTable">
+                                            <tr>
+                                                <td colspan="10" class="text-center py-4 text-muted">
+                                                    Loading federated models...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal fade version-modal" id="packageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <div class="small text-white-50">Federated Model Evaluation Dossier</div>
+                        <h5 class="modal-title">Federated Global Model <span id="packageTitle"></span></h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="packageBody">
+                    <div class="text-center text-muted py-5">Loading federated model dossier…</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Version Confirmation Modal -->
+    <div class="modal fade" id="deleteVersionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title d-flex align-items-center gap-2">
+                        <i class="iconsax text-danger" icon-name="trash"></i>
+                        <span>Delete Federated Version</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">
+                        Are you sure you want to delete <span class="version-badge" id="deleteVersionLabel">v2.0.1</span>?
+                    </p>
+                    <p class="small text-muted mb-0">
+                        This permanently removes this version's weights, multi-algorithm leaderboard, and plots from storage.
+                    </p>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteVersionBtn" onclick="confirmDeleteVersion(this)">
+                        <i class="iconsax me-1" icon-name="trash"></i> Delete Version
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let deleteTargetVersion = null;
+
+        function escHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function getApiOrigin() {
+            return window.location.origin;
+        }
+
+        async function loadVersions() {
+            try {
+                const apiBase = getApiOrigin();
+                document.getElementById('apiLatestDownloadText').textContent = `${apiBase}/api/v1/model/download`;
+                document.getElementById('swaggerDocsLink').href = `${apiBase}/docs`;
+
+                // Fetch strictly FL models (v2.x)
+                const response = await fetch('/api/dashboard/versions?kind=fl');
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    const versions = data.versions || [];
+                    const lastPushed = data.last_pushed || null;
+                    const pushedVer = lastPushed && lastPushed.version ? lastPushed.version : null;
+                    const pushedChip = document.getElementById('pushedVersionChip');
+                    if (pushedChip) {
+                        if (pushedVer && pushedVer.startsWith('2.')) {
+                            const pushedTargets = Array.isArray(lastPushed.targets) && lastPushed.targets.length
+                                ? ` → ${lastPushed.targets.join(', ')}`
+                                : '';
+                            pushedChip.textContent = `Pushed to Edge: v${pushedVer}${pushedTargets}`;
+                            pushedChip.classList.remove('d-none');
+                        } else {
+                            pushedChip.classList.add('d-none');
+                            pushedChip.textContent = '';
+                        }
+                    }
+
+                    const latestVer = typeof data.latest === 'string'
+                        ? data.latest
+                        : (data.latest && data.latest.version ? data.latest.version : (versions[0]?.version || null));
+                    const tbody = document.getElementById('versionsTable');
+                    const countEl = document.getElementById('versionCount');
+
+                    countEl.textContent = versions.length;
+                    document.getElementById('latestApiVerChip').textContent = latestVer ? `v${latestVer}` : 'none';
+
+                    // Update stat cards
+                    document.getElementById('totalVersions').textContent = versions.length;
+                    document.getElementById('latestVersionCard').textContent = latestVer ? `v${latestVer}` : 'N/A';
+
+                    let bestAcc = 0;
+                    versions.forEach(v => {
+                        if (v.accuracy !== null && v.accuracy !== undefined) {
+                            const acc = v.accuracy * 100;
+                            if (acc > bestAcc) bestAcc = acc;
+                        }
+                    });
+                    document.getElementById('bestAccuracy').textContent = bestAcc.toFixed(2) + '%';
+
+                    if (versions.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="10" class="text-center py-4 text-muted">
+                                    No Federated Global Models (v2.x) aggregated yet. Go to <a href="/updates">Updates</a> to aggregate pending updates.
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    let html = '';
+                    const pushTargetsText = lastPushed && Array.isArray(lastPushed.targets) && lastPushed.targets.length
+                        ? lastPushed.targets.join(', ')
+                        : 'Client Edge';
+                    const pushedAtText = lastPushed && lastPushed.pushed_at
+                        ? String(lastPushed.pushed_at).slice(0, 19).replace('T', ' ')
+                        : '';
+                    const pushTooltip = pushedVer
+                        ? `Pushed to ${pushTargetsText}${pushedAtText ? ' at ' + pushedAtText : ''}`
+                        : '';
+
+                    versions.forEach(v => {
+                        const isLatest = latestVer && v.version === latestVer;
+                        const isPushed = Boolean(pushedVer && v.version === pushedVer);
+                        const pushedSideBadge = isPushed
+                            ? `<span class="badge bg-info ms-1" title="${escHtml(pushTooltip)}">✓ Pushed</span>`
+                            : '';
+                        const pushedStatusBadge = isPushed
+                            ? `<span class="badge bg-info ms-1" title="${escHtml(pushTooltip)}">Pushed to Edge</span>`
+                            : '';
+                        const pushBtnClass = isPushed ? 'btn btn-success btn-action' : 'btn btn-primary btn-action';
+                        const pushBtnLabel = isPushed
+                            ? '<i class="iconsax" icon-name="tick-circle"></i> Pushed (Re-push)'
+                            : '<i class="iconsax" icon-name="upload-2"></i> Push to Edge';
+                        html += `
+                            <tr>
+                                <td class="text-nowrap">
+                                    <span class="version-badge fw-bold" style="color: #6366f1;">v${v.version}</span>${pushedSideBadge}
+                                </td>
+                                <td>${v.model_name || 'N/A'}</td>
+                                <td>${v.architecture || 'EnsembleTop2'}</td>
+                                <td><span class="badge bg-indigo-subtle text-indigo font-mono fw-bold" style="background:#e0e7ff;color:#4338ca;">★ ${v.fl_method || 'fedprox'}</span></td>
+                                <td>${v.input_dim !== null && v.input_dim !== undefined ? v.input_dim : '78'}</td>
+                                <td>${v.num_classes !== null && v.num_classes !== undefined ? v.num_classes : '2'}</td>
+                                <td>
+                                    ${v.accuracy !== null && v.accuracy !== undefined ?
+                                        `<span class="badge bg-success font-mono">${(v.accuracy * 100).toFixed(2)}%</span>` :
+                                        '<span class="text-muted">-</span>'}
+                                </td>
+                                <td>${v.created_at ? v.created_at.slice(0, 19) : 'N/A'}</td>
+                                <td class="text-nowrap">
+                                    ${isLatest ?
+                                        '<span class="badge badge-latest">Latest Global</span>' :
+                                        '<span class="badge badge-older">Archived Round</span>'}${pushedStatusBadge}
+                                </td>
+                                <td class="text-nowrap">
+                                    <button type="button" class="${pushBtnClass}" onclick="pushToEdge('${escHtml(v.version)}', this)"${isPushed ? ` title="${escHtml(pushTooltip)}"` : ''}>
+                                        ${pushBtnLabel}
+                                    </button>
+                                    <button type="button" class="btn btn-outline-dark btn-action" onclick="showPackage('${escHtml(v.version)}')">
+                                        <i class="iconsax" icon-name="document-code-1"></i> Details
+                                    </button>
+                                    <a href="/api/v1/model/file/${encodeURIComponent(v.version)}" class="btn btn-outline-primary btn-action" download>
+                                        <i class="iconsax" icon-name="download-1"></i> Download
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger btn-action" onclick="openDeleteModal('${escHtml(v.version)}', ${isLatest ? 'true' : 'false'})">
+                                        <i class="iconsax" icon-name="trash"></i> Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    tbody.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Error loading versions:', error);
+                document.getElementById('versionsTable').innerHTML = `
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-danger">
+                            Failed to load versions: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function refreshVersions() {
+            loadVersions();
+        }
+
+        async function pushToEdge(version, btn) {
+            const alertBox = document.getElementById('pushAlert');
+            const edgeInput = document.getElementById('edgePushUrl');
+            const edgeUrl = edgeInput ? edgeInput.value.trim() : '';
+            const origHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = 'Pushing...';
+            alertBox.className = 'alert alert-info mx-3 mt-3 mb-0 py-2 small';
+            alertBox.textContent = `Pushing Global Model v${version} to Client Edge...`;
+            alertBox.classList.remove('d-none');
+
+            try {
+                const resp = await fetch(`/api/dashboard/models/${encodeURIComponent(version)}/push`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ edge_url: edgeUrl })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.status === 'success') {
+                    const targets = (data.results || []).filter(r => r.status === 'success').map(r => r.edge_url).join(', ');
+                    alertBox.className = 'alert alert-success mx-3 mt-3 mb-0 py-2 small';
+                    alertBox.innerHTML = `<strong>Pushed v${escHtml(version)}:</strong> Deployed directly to <span class="font-mono">${escHtml(targets || 'Client Edge')}</span>.`;
+                    await loadVersions();
+                } else {
+                    throw new Error(data.detail || data.message || 'Push failed');
+                }
+            } catch (err) {
+                alertBox.className = 'alert alert-danger mx-3 mt-3 mb-0 py-2 small';
+                alertBox.textContent = `Push error: ${err.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
+
+        function openDeleteModal(version, isLatest) {
+            deleteTargetVersion = version;
+            document.getElementById('deleteVersionLabel').textContent = 'v' + version;
+            new bootstrap.Modal(document.getElementById('deleteVersionModal')).show();
+        }
+
+        async function confirmDeleteVersion(btn) {
+            if (!deleteTargetVersion) return;
+            const origHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = 'Deleting...';
+            try {
+                const resp = await fetch(`/api/dashboard/models/${encodeURIComponent(deleteTargetVersion)}`, { method: 'DELETE' });
+                const data = await resp.json();
+                if (resp.ok && data.status === 'success') {
+                    bootstrap.Modal.getInstance(document.getElementById('deleteVersionModal')).hide();
+                    await loadVersions();
+                } else {
+                    alert('Could not delete version: ' + (data.detail || data.message || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Delete error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+                deleteTargetVersion = null;
+            }
+        }
+
+        function prettyMetric(val, digits = 4) {
+            if (val === null || val === undefined || isNaN(val)) return '—';
+            return Number(val).toFixed(digits);
+        }
+
+        function percentMetric(val) {
+            if (val === null || val === undefined || isNaN(val)) return '—';
+            return (Number(val) * 100).toFixed(2) + '%';
+        }
+
+        function sectionTitle(title, sub = '') {
+            return `<div class="d-flex justify-content-between align-items-center mt-3 mb-2 pb-1 border-bottom"><h6 class="fw-bold text-primary mb-0 font-mono text-uppercase">${escHtml(title)}</h6>${sub ? `<small class="text-muted">${escHtml(sub)}</small>` : ''}</div>`;
+        }
+
+        function metricTable(metrics, title) {
+            if (!metrics || !Object.keys(metrics).length) return '';
+            let rows = '';
+            for (const [name, row] of Object.entries(metrics)) {
+                const isWinner = row.is_winner;
+                rows += `<tr class="${isWinner ? 'table-success fw-bold' : ''}">
+                    <td>${escHtml(name.toUpperCase())}${isWinner ? ' <span class="badge bg-success ms-1">Winner #1</span>' : ''}</td>
+                    <td>${percentMetric(row.accuracy)}</td>
+                    <td>${percentMetric(row.precision)}</td>
+                    <td>${percentMetric(row.recall)}</td>
+                    <td>${percentMetric(row.f1)}</td>
+                    <td>${percentMetric(row.mcc)}</td>
+                    <td>${percentMetric(row.specificity)}</td>
+                    <td>${percentMetric(row.auc)}</td>
+                    <td>${row.training_time_seconds !== undefined ? `${row.training_time_seconds}s` : '—'}</td>
+                    <td>${row.inference_time_per_sample_ms !== undefined ? `${row.inference_time_per_sample_ms}ms` : '—'}</td>
+                </tr>`;
+            }
+            return `${sectionTitle(title)}
+            <div class="table-responsive mb-3">
+                <table class="table table-sm table-striped table-hover small mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Model / FL Method</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>MCC</th><th>Specificity</th><th>AUC</th><th>Train</th><th>Infer</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
+        }
+
+        function kfoldTable(kfold) {
+            if (!kfold || !Object.keys(kfold).length) return '';
+            let rows = '';
+            for (const [name, row] of Object.entries(kfold)) {
+                const stdAcc = row.std_accuracy !== undefined ? ` ± ${(row.std_accuracy * 100).toFixed(2)}%` : '';
+                rows += `<tr>
+                    <td>${escHtml(name.toUpperCase())}</td>
+                    <td>${percentMetric(row.mean_accuracy)}${stdAcc}</td>
+                    <td>${prettyMetric(row.mean_precision)}</td>
+                    <td>${prettyMetric(row.mean_recall)}</td>
+                    <td>${prettyMetric(row.mean_f1)}</td>
+                    <td>${prettyMetric(row.mean_mcc)}</td>
+                    <td>${prettyMetric(row.mean_specificity)}</td>
+                    <td>${prettyMetric(row.mean_auc)}</td>
+                    <td>${row.mean_train_time !== undefined ? `${prettyMetric(row.mean_train_time, 2)}s` : '—'}</td>
+                    <td>${row.mean_infer_time !== undefined ? `${prettyMetric(row.mean_infer_time, 3)}ms` : '—'}</td>
+                </tr>`;
+            }
+            return `${sectionTitle('5-Fold Cross Validation · Mean ± Standard Deviation')}
+            <div class="table-responsive mb-3">
+                <table class="table table-sm table-striped table-hover small mb-0">
+                    <thead class="table-dark">
+                        <tr><th>Model / FL Method</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>MCC</th><th>Specificity</th><th>AUC</th><th>Train</th><th>Infer</th></tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
+        }
+
+        function statisticalTable(stats) {
+            if (!stats || !Object.keys(stats).length) return '';
+            let rows = '';
+            for (const [comp, row] of Object.entries(stats)) {
+                const t = row.paired_t_test || {};
+                const m = row.mcnemar || {};
+                const conclusion = t.conclusion || m.conclusion || 'No significant difference';
+                rows += `<tr>
+                    <td><strong>${escHtml(comp)}</strong></td>
+                    <td>${t.t_statistic !== undefined ? `${t.t_statistic} (p=${t.p_value})` : '—'}</td>
+                    <td>${m.chi2_statistic !== undefined ? `${m.chi2_statistic} (p=${m.p_value})` : '—'}</td>
+                    <td><span class="badge ${conclusion.includes('significant') && !conclusion.includes('No') ? 'bg-success' : 'bg-secondary'}">${escHtml(conclusion)}</span></td>
+                </tr>`;
+            }
+            return `${sectionTitle('Statistical Significance Tests')}
+            <div class="table-responsive mb-3">
+                <table class="table table-sm table-striped table-hover small mb-0">
+                    <thead class="table-dark"><tr><th>Comparison</th><th>Paired t-test (t / p)</th><th>McNemar (χ² / p)</th><th>Conclusion</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
+        }
+
+        function genericPlotGallery(plots) {
+            if (!plots || typeof plots !== 'object') return '';
+            let cards = '';
+            const allPlots = [];
+            function collect(val, prefix = '') {
+                if (!val) return;
+                if (typeof val === 'string' && val.endsWith('.png')) {
+                    allPlots.push({ label: prefix, url: val });
+                } else if (typeof val === 'object') {
+                    for (const [k, v] of Object.entries(val)) {
+                        collect(v, prefix ? `${prefix} · ${k}` : k);
+                    }
+                }
+            }
+            collect(plots);
+            for (const p of allPlots) {
+                cards += `<div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 shadow-sm border">
+                        <div class="card-header py-1 px-2 small bg-light font-mono text-truncate" title="${escHtml(p.label)}">${escHtml(p.label)}</div>
+                        <div class="card-body p-1 text-center d-flex align-items-center justify-content-center" style="min-height: 220px;">
+                            <img src="${p.url}" class="img-fluid rounded" alt="${escHtml(p.label)}" loading="lazy" style="max-height: 260px; object-fit: contain;">
+                        </div>
+                    </div>
+                </div>`;
+            }
+            return cards;
+        }
+
+        function renderVersionDossier(data) {
+            const ver = data.record?.version || 'N/A';
+            const meta = data.meta || {};
+            const metrics = meta.model_metrics || meta.candidate_test_metrics || {};
+            const kfold = meta.kfold_results || {};
+            const statistical = meta.statistical_results || {};
+            const ensemble = meta.ensemble_metrics || {};
+            const visualization = data.visualization || meta.plot_manifest || {};
+            const apiBase = getApiOrigin();
+
+            let html = `
+            <div class="p-3 mb-3 rounded border bg-light small">
+                <div class="fw-bold text-dark mb-2"><i class="iconsax me-1" icon-name="link-2"></i>API Endpoints for Version v${escHtml(ver)}</div>
+                <div class="mb-1"><strong>Model Download (Edge Sync):</strong> <code class="text-primary">${escHtml(apiBase)}/api/v1/model/download/${escHtml(ver)}</code></div>
+                <div class="mb-1"><strong>Feature Schema Metadata:</strong> <code class="text-success">${escHtml(apiBase)}/api/v1/model/metadata/${escHtml(ver)}</code></div>
+                <div><strong>Direct File (.pt) Download:</strong> <code class="text-dark">${escHtml(apiBase)}/api/v1/model/file/${escHtml(ver)}</code></div>
+            </div>`;
+
+            html += metricTable(metrics, 'Evaluation metrics and timing across all 9 FL algorithms');
+            html += kfoldTable(kfold);
+            html += statisticalTable(statistical);
+
+            if (Object.keys(ensemble).length) {
+                html += `${sectionTitle('Crowned Global Model Winner Evaluation')}
+                <div class="alert alert-success py-2 small">
+                    Winner: <strong>${escHtml(meta.winning_method || 'FEDPROX').toUpperCase()}</strong> · Accuracy <strong>${percentMetric(ensemble.accuracy)}</strong> · Precision ${prettyMetric(ensemble.precision)} · Recall ${prettyMetric(ensemble.recall)} · F1 ${prettyMetric(ensemble.f1)} · MCC ${prettyMetric(ensemble.mcc)} · Specificity ${prettyMetric(ensemble.specificity)} · AUC ${prettyMetric(ensemble.auc)} · Inference ${prettyMetric(ensemble.inference_time_per_sample_ms, 3)}ms/sample
+                </div>`;
+            }
+
+            const plotHtml = genericPlotGallery(visualization);
+            if (plotHtml) {
+                html += `${sectionTitle('Federated Multi-Algorithm Visualizations', 'Comparison bar charts, radar chart, confusion matrices, and accuracy/loss curves.')}<div class="row">${plotHtml}</div>`;
+            }
+
+            return html;
+        }
+
+        async function showPackage(version) {
+            const body = document.getElementById('packageBody');
+            document.getElementById('packageTitle').textContent = 'v' + version;
+            body.innerHTML = '<div class="text-center text-muted py-5">Loading federated model dossier…</div>';
+            new bootstrap.Modal(document.getElementById('packageModal')).show();
+            try {
+                const response = await fetch('/api/dashboard/versions/' + encodeURIComponent(version) + '/package');
+                const data = await response.json();
+                if (!response.ok) throw Error(data.detail || 'Could not load package');
+                body.innerHTML = renderVersionDossier(data);
+            } catch (error) {
+                body.innerHTML = `<div class="alert alert-danger">${escHtml(error.message)}</div>`;
+            }
+        }
+
+        // Initial load
+        loadVersions();
+    </script>
+</body>
+</html>
