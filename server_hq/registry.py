@@ -55,10 +55,12 @@ class ModelRegistry:
         self.models_dir = self.store_dir / "models"
         self.updates_dir = self.store_dir / "updates"
         self.aggregated_updates_dir = self.store_dir / "aggregated_updates"
+        self.training_logs_dir = self.store_dir / "training_logs"
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.models_dir.mkdir(parents=True, exist_ok=True)
         self.updates_dir.mkdir(parents=True, exist_ok=True)
         self.aggregated_updates_dir.mkdir(parents=True, exist_ok=True)
+        self.training_logs_dir.mkdir(parents=True, exist_ok=True)
         self._init_schema()
 
     @contextmanager

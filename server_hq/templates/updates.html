@@ -156,24 +156,6 @@
                             </div>
                         </div>
 
-                        <!-- Dynamic Explanatory Banner -->
-                        <div class="p-2.5 rounded-2 mt-3 border d-flex align-items-center justify-content-between flex-wrap gap-2 small font-mono" id="aggStrategyBanner" style="background: var(--inset-bg); border-color: var(--border-subtle) !important;">
-                            <div id="aggStrategyNote">
-                                <i class="iconsax me-1 text-success" icon-name="crown-1"></i>
-                                <strong>All Models Mode:</strong> All 9 FL &amp; Byzantine algorithms will be evaluated in parallel on holdout data. The best performer is crowned Winner #1, promoted to Global Model, and a 2-panel comparison chart is generated.
-                            </div>
-                            <div class="d-none d-md-flex align-items-center gap-1 text-muted" id="aggAlgoBadges">
-                                <span class="badge bg-secondary-subtle text-secondary border">FedAvg</span>
-                                <span class="badge bg-secondary-subtle text-secondary border">FedProx</span>
-                                <span class="badge bg-secondary-subtle text-secondary border">SCAFFOLD</span>
-                                <span class="badge bg-secondary-subtle text-secondary border">FedNova</span>
-                                <span class="badge bg-secondary-subtle text-secondary border">MOON</span>
-                                <span class="badge bg-secondary-subtle text-secondary border">Trimmed Mean</span>
-                                <span class="badge bg-secondary-subtle text-secondary border">Median</span>
-                                <span class="badge bg-secondary-subtle text-secondary border">Krum</span>
-                                <span class="badge bg-secondary-subtle text-secondary border">Multi-Krum</span>
-                            </div>
-                        </div>
                         <div class="form-text mt-2 small">
                             <i class="iconsax me-1 text-primary" icon-name="info-circle"></i>
                             <strong>Cumulative FL:</strong> Prior rounds are already embedded in <code id="aggCumulativeVer">v{{ latest_version or '—' }}</code>; aggregating merges only new pending DP deltas for the open round (no double-counting).
@@ -481,9 +463,7 @@
         function onAggMethodChange() {
             const sel = document.getElementById('aggMethod');
             const badge = document.getElementById('aggStrategyBadge');
-            const note = document.getElementById('aggStrategyNote');
             const btnText = document.getElementById('btnAggText');
-            const badgesBox = document.getElementById('aggAlgoBadges');
             const val = sel ? sel.value : 'auto_best';
 
             if (val === 'auto_best') {
@@ -491,22 +471,14 @@
                     badge.className = 'badge bg-success font-mono small';
                     badge.textContent = 'Auto: All (9) Evaluated';
                 }
-                if (note) {
-                    note.innerHTML = '<i class="iconsax me-1 text-success" icon-name="crown-1"></i> <strong>All Models Mode:</strong> All 9 FL &amp; Byzantine algorithms will run in parallel on holdout data. The best model will be selected, promoted to Global Model, and a 2-panel comparison chart will be generated.';
-                }
                 if (btnText) btnText.textContent = 'Aggregate All & Pick Best';
-                if (badgesBox) badgesBox.classList.remove('d-none');
             } else {
                 const text = sel.options[sel.selectedIndex].text.split('(')[0].trim();
                 if (badge) {
                     badge.className = 'badge bg-primary font-mono small';
                     badge.textContent = `Manual: ${text}`;
                 }
-                if (note) {
-                    note.innerHTML = `<i class="iconsax me-1 text-primary" icon-name="info-circle"></i> <strong>Manual Mode:</strong> Model will be trained/aggregated strictly using <strong>${text}</strong> only without running competing algorithms.`;
-                }
                 if (btnText) btnText.textContent = `Aggregate with ${text} Only`;
-                if (badgesBox) badgesBox.classList.add('d-none');
             }
         }
 
