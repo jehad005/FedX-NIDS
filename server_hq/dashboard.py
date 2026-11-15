@@ -219,10 +219,11 @@ class Dashboard:
             )
 
         @self.app.get("/logout")
+        @self.app.post("/logout")
         async def logout_page():
             """Log out active admin session and redirect to /login."""
             resp = RedirectResponse(url="/login?logged_out=1", status_code=303)
-            resp.delete_cookie(SESSION_COOKIE_NAME)
+            resp.delete_cookie(SESSION_COOKIE_NAME, path="/")
             return resp
 
         @self.app.post("/api/dashboard/auth/login")
@@ -250,6 +251,7 @@ class Dashboard:
                     key=SESSION_COOKIE_NAME,
                     value=token,
                     max_age=86400,
+                    path="/",
                     httponly=True,
                     samesite="lax",
                 )
