@@ -1931,8 +1931,8 @@ def run_federated_round(
         logger.warning(f"Could not generate FL round visualizations: {plot_err}")
 
     meta_info = {
-        "model_name": base_meta.get("model_name", record.get("model_name", "SecureFed-Global-Ensemble")),
-        "architecture": eff_arch,
+        "model_name": "FL Global Model",
+        "architecture": "Top Fadarate Learning",
         "fl_method": winning_method,
         "aggregation_method": winning_method,
         "method": winning_method,

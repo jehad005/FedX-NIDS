@@ -336,8 +336,8 @@
                                 <td class="text-nowrap">
                                     <span class="version-badge fw-bold" style="color: #6366f1;">v${v.version}</span>${pushedSideBadge}
                                 </td>
-                                <td>${v.model_name || 'N/A'}</td>
-                                <td>${v.architecture || 'EnsembleTop2'}</td>
+                                <td>${v.model_name || 'FL Global Model'}</td>
+                                <td>${v.architecture || 'Top Fadarate Learning'}</td>
                                 <td><span class="badge bg-indigo-subtle text-indigo font-mono fw-bold" style="background:#e0e7ff;color:#4338ca;">★ ${v.fl_method || 'fedprox'}</span></td>
                                 <td>${v.input_dim !== null && v.input_dim !== undefined ? v.input_dim : '78'}</td>
                                 <td>${v.num_classes !== null && v.num_classes !== undefined ? v.num_classes : '2'}</td>
@@ -589,7 +589,16 @@
 
             let html = `
             <div class="p-3 mb-3 rounded border bg-light small">
-                <div class="fw-bold text-dark mb-2"><i class="iconsax me-1" icon-name="link-2"></i>API Endpoints for Version v${escHtml(ver)}</div>
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                    <div>
+                        <span class="fw-bold text-dark fs-6">${escHtml(meta.model_name || data.record?.model_name || 'FL Global Model')} (v${escHtml(ver)})</span>
+                        <span class="badge bg-primary ms-2">${escHtml(meta.architecture || data.record?.architecture || 'Top Fadarate Learning')}</span>
+                    </div>
+                    <div>
+                        <span class="badge bg-indigo-subtle text-indigo font-mono fw-bold" style="background:#e0e7ff;color:#4338ca;">★ Winner: ${escHtml(meta.winning_method || data.record?.fl_method || 'fedprox').toUpperCase()}</span>
+                    </div>
+                </div>
+                <div class="fw-bold text-muted mb-2"><i class="iconsax me-1" icon-name="link-2"></i>API Endpoints for Version v${escHtml(ver)}</div>
                 <div class="mb-1"><strong>Model Download (Edge Sync):</strong> <code class="text-primary">${escHtml(apiBase)}/api/v1/model/download/${escHtml(ver)}</code></div>
                 <div class="mb-1"><strong>Feature Schema Metadata:</strong> <code class="text-success">${escHtml(apiBase)}/api/v1/model/metadata/${escHtml(ver)}</code></div>
                 <div><strong>Direct File (.pt) Download:</strong> <code class="text-dark">${escHtml(apiBase)}/api/v1/model/file/${escHtml(ver)}</code></div>

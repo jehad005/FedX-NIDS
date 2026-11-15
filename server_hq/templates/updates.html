@@ -503,7 +503,7 @@
                             flTable.innerHTML = flList.map(v => `
                                 <tr>
                                     <td><span class="version-badge fw-bold" style="color: #6366f1;">v${escHtml(v.version)}</span></td>
-                                    <td>${escHtml(v.model_name || 'SecureFed-Global-Ensemble')}</td>
+                                    <td>${escHtml(v.model_name || 'FL Global Model')}</td>
                                     <td><span class="badge font-mono fw-bold" style="background:#e0e7ff;color:#4338ca;">★ ${escHtml(v.fl_method || 'fedprox')}</span></td>
                                     <td><span class="badge bg-success font-mono">${v.accuracy ? (v.accuracy * 100).toFixed(2) + '%' : '—'}</span></td>
                                     <td class="font-mono small">${v.created_at ? escHtml(v.created_at.slice(0, 19)) : 'N/A'}</td>
