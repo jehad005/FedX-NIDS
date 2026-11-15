@@ -12,7 +12,6 @@ This will start:
     - Dashboard on http://localhost:8001
 """
 
-import os
 import sys
 import subprocess
 import time

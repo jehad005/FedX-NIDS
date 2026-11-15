@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 

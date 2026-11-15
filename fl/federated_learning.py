@@ -7,7 +7,6 @@ checkpoint, then the caller picks the best by validation accuracy.
 """
 
 import copy
-from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np

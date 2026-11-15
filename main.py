@@ -23,7 +23,7 @@ src_dir = os.path.join(os.path.dirname(__file__), "src")
 if os.path.isdir(src_dir): sys.path.insert(0, src_dir)
 
 from models.architectures import ModelFactory
-from models.training import Trainer, train_all_models, train_single_model
+from models.training import train_single_model
 from models.ensemble import EnsembleTrainer, compare_with_without_ensemble
 from models.evaluation import run_kfold_cv, paired_t_test, mcnemar_test, plot_and_save_confusion_matrix
 from fl.federated_learning import (
@@ -31,11 +31,10 @@ from fl.federated_learning import (
     partition_clients_data,
     print_client_split_summary,
     run_all_fl_methods,
-    run_federated_learning,
 )
 from dp.differential_privacy import DPTrainer
 from xai.explainability import SHAPExplainer, perturbation_test
-from config import DATASET_CONFIG, TRAINING_CONFIG, FL_CONFIG, DP_CONFIG, ENSEMBLE_CONFIG
+from config import DATASET_CONFIG, FL_CONFIG, DP_CONFIG
 
 def select_dataset_interactive():
     data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")

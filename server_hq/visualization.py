@@ -3,12 +3,10 @@ Visualization module for SecureFed-NIDS training results.
 Generates comprehensive plots for model training, comparison, and evaluation.
 """
 
-import os
 from pathlib import Path
 from datetime import datetime
 import json
-from typing import Dict, Any, List, Optional
-from collections import defaultdict
+from typing import Dict, Any, Optional
 
 # Plotting libraries are optional — the dashboard must start even without them.
 # If any are missing, plot generation will raise a clear error which the

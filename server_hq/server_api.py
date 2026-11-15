@@ -28,7 +28,6 @@ from fastapi.responses import FileResponse
 from config import API_CONFIG
 from server_hq.central_aggregator import (
     ALL_AGGREGATION_METHODS,
-    AUTO_SELECTION_METHODS,
     MAX_CLIPPING_NORM,
     MIN_CLIPPING_NORM,
     MIN_NOISE_MULTIPLIER,

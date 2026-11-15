@@ -15,7 +15,6 @@ import json
 import sqlite3
 import asyncio
 import os
-import shutil
 import sys
 import threading
 import uuid
@@ -27,8 +26,7 @@ try:
 except ImportError:  # Dashboard statistics do not require NumPy at runtime.
     np = None
 from server_hq.visualization import (
-    create_training_plots, create_roc_curve_plot, save_visualization_metadata,
-    create_kfold_results_plot, create_statistical_tests_plot,
+    create_training_plots,
     create_version_detail_plots,
 )
 
@@ -977,7 +975,7 @@ class Dashboard:
             import torch
             from main import load_and_preprocess_dataset
             from models.architectures import ModelFactory
-            from models.training import Trainer, train_single_model
+            from models.training import train_single_model
             from models.ensemble import EnsembleTrainer
 
             X_train, y_train, X_val, y_val, X_test, y_test, feature_names = \

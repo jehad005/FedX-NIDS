@@ -10,7 +10,7 @@ import torch.nn as nn
 import time
 import numpy as np
 from typing import Dict, Any, Optional, Tuple, List
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, matthews_corrcoef, roc_auc_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 from config import ENSEMBLE_CONFIG
 from models.evaluation import calculate_metrics

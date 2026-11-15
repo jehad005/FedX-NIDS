@@ -6,8 +6,6 @@ Implements 6 DL models: MLP, CNN, LSTM, BiLSTM, GRU, Transformer.
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing import Dict, Any, Optional, Tuple
 import math
 
 from config import MODEL_CONFIG
