@@ -11,7 +11,6 @@ from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from datetime import datetime
 from typing import Any
-from server_hq.auth import SESSION_COOKIE_NAME
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -38,12 +37,6 @@ def _clean_for_json(obj: Any) -> Any:
 def setup_dashboard_routes(app, registry):
     """Setup separate page routes for the dashboard."""
     templates = Jinja2Templates(directory=str(ROOT / "server_hq" / "templates"))
-
-    @app.get("/logout")
-    async def logout_page_handler():
-        resp = RedirectResponse(url="/login?logged_out=1", status_code=303)
-        resp.delete_cookie(SESSION_COOKIE_NAME, path="/")
-        return resp
 
     @app.get("/models", response_class=HTMLResponse)
     async def models_page(request: Request):
