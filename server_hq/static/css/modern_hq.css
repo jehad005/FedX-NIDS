@@ -106,9 +106,9 @@ html.dark {
     --accent-danger: #ef4444;
     --accent-info: #38bdf8;
 
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
 
     --table-head-bg: rgba(15, 21, 33, 0.70);
     --table-hover-bg: rgba(59, 130, 246, 0.09);
@@ -1392,7 +1392,37 @@ html.dark .version-modal .btn-close {
 }
 
 html.dark .text-muted { color: var(--text-muted) !important; }
+html.dark .text-secondary { color: var(--text-secondary) !important; }
 html.dark .text-dark { color: var(--text-primary) !important; }
+html.dark small.text-muted, html.dark .small.text-muted { color: var(--text-muted) !important; }
+html.dark label, html.dark .form-label { color: var(--text-primary) !important; }
+
+/* Enhanced Form Text & Helper Notes in Dark Mode */
+.form-text,
+.cumulative-fl-tip {
+    color: var(--text-secondary) !important;
+}
+
+html.dark .form-text,
+html.dark .cumulative-fl-tip {
+    color: #cbd5e1 !important;
+}
+
+html.dark .form-text strong,
+html.dark .form-text b,
+html.dark .cumulative-fl-tip strong,
+html.dark .cumulative-fl-tip b {
+    color: #f8fafc !important;
+}
+
+html.dark .form-text code,
+html.dark .cumulative-fl-tip code {
+    color: #f472b6 !important;
+    background: rgba(244, 114, 182, 0.14) !important;
+    border: 1px solid rgba(244, 114, 182, 0.28) !important;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
 html.dark .bg-light, html.dark .bg-white { background-color: var(--inset-bg) !important; color: var(--text-primary) !important; }
 html.dark .table { color: var(--text-primary) !important; --bs-table-bg: transparent; --bs-table-color: var(--text-primary); --bs-table-border-color: var(--border-subtle); }
 html.dark .modal-content { background-color: var(--card-bg) !important; color: var(--text-primary) !important; border: 1px solid var(--card-border) !important; }
