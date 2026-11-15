@@ -64,6 +64,9 @@
             line-height: 1;
             font-style: normal;
         }
+        [icon-name="logout"]:before { content: '\e829'; }
+        [icon-name="logout-1"]:before { content: '\e829'; }
+        [icon-name="logout-2"]:before { content: '\eb11'; }
 
         :root {
             --edge-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
@@ -571,7 +574,9 @@
                     </div>
                 </a>
                 <button type="button" onclick="globalLogout()" class="edge-btn w-8 h-8 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/25 flex items-center justify-center shrink-0 transition-all shadow-xs cursor-pointer" title="Sign Out / Logout">
-                    <i class="iconsax text-sm" icon-name="logout"></i>
+                    <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
                 </button>
             </div>
 
@@ -654,7 +659,9 @@
 
                     <!-- Clean Quick Logout Button -->
                     <button type="button" id="header-logout-btn" onclick="globalLogout()" class="hidden w-8 h-8 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/25 flex items-center justify-center transition-all shadow-xs cursor-pointer" title="Sign Out of Session">
-                        <i class="iconsax text-sm" icon-name="logout"></i>
+                        <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
                     </button>
                 </div>
             </div>
