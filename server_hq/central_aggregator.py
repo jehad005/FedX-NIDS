@@ -38,6 +38,7 @@ logger = logging.getLogger("securefed.aggregator")
 SUPPORTED_FL_METHODS = ("fedavg", "fedprox", "scaffold", "fednova", "moon")
 BYZANTINE_METHODS = ("trimmed_mean", "median", "krum", "multi_krum")
 ALL_AGGREGATION_METHODS = SUPPORTED_FL_METHODS + BYZANTINE_METHODS
+AUTO_SELECTION_METHODS = ("auto_best", "auto", "best", "all_best", "all", "auto-best", "autobest")
 
 MIN_CLIPPING_NORM = float(DP_CONFIG.get("min_clipping_norm", 0.1))
 MAX_CLIPPING_NORM = float(DP_CONFIG.get("max_clipping_norm", 10.0))
@@ -1232,11 +1233,15 @@ def run_federated_round(
     run the requested FL aggregation method, update the ensemble nn.Module,
     publish a new version with full metadata, archive merged updates, and advance round.
     """
-    method_norm = str(method or "fedavg").lower().strip().replace("-", "_").replace(" ", "_")
-    valid_aliases = set(ALL_AGGREGATION_METHODS) | {"average", "avg", "trimmedmean", "tm", "coord_median", "coordinate_median", "multikrum"}
+    method_norm = str(method or "auto_best").lower().strip().replace("-", "_").replace(" ", "_")
+    valid_aliases = (
+        set(ALL_AGGREGATION_METHODS)
+        | set(AUTO_SELECTION_METHODS)
+        | {"average", "avg", "trimmedmean", "tm", "coord_median", "coordinate_median", "multikrum", "autobest", "auto-best"}
+    )
     if method_norm not in valid_aliases:
         raise ValueError(
-            f"Unsupported aggregation method '{method}'. Choose from: {', '.join(ALL_AGGREGATION_METHODS)}."
+            f"Unsupported aggregation method '{method}'. Choose from: {', '.join(ALL_AGGREGATION_METHODS)} or auto_best."
         )
 
     record, base_raw, base_state, open_round, validated_entries, rejected_notes = _collect_validated_round_updates(
@@ -1276,44 +1281,238 @@ def run_federated_round(
     if moon_temps and "moon_temperature" not in agg_kwargs:
         agg_kwargs["moon_temperature"] = float(np.mean(moon_temps))
 
-    if method_norm == "scaffold":
-        srv_ctrl, cli_ctrls = _load_scaffold_controls(registry, client_ids)
-        agg_kwargs.update({
-            "client_ids": client_ids,
-            "local_steps_list": local_steps_list,
-            "learning_rates": learning_rates,
-            "server_control": srv_ctrl,
-            "client_controls": cli_ctrls,
-            "control_deltas": control_deltas,
-            "control_fulls": control_fulls,
-            "client_corrected_flags": client_corrected_flags,
-            "total_registered_clients": max(len(registry.list_clients()), len(client_ids)),
-        })
-    elif method_norm == "fednova":
-        agg_kwargs["local_steps_list"] = local_steps_list
+    # Preserve feature schema & scaler stats directly from base version's meta.json
+    base_meta = {}
+    try:
+        base_meta_path = registry.version_dir(base_ver) / "meta.json"
+        if base_meta_path.exists():
+            base_meta = json.loads(base_meta_path.read_text(encoding="utf-8"))
+    except Exception:
+        pass
 
-    aggregator = CentralAggregator()
-    aggregated_delta, method_info = aggregator.aggregate_with_metadata(
-        updates=delta_updates,
-        sample_counts=sample_counts,
-        method=method_norm,
-        **agg_kwargs,
+    base_features = base_meta.get("feature_names") or record.get("feature_names") or []
+    if not base_features:
+        try:
+            baseline_meta_path = registry.models_dir / "v1.0.4" / "meta.json"
+            if baseline_meta_path.exists():
+                base_features = json.loads(baseline_meta_path.read_text()).get("feature_names", [])
+        except Exception:
+            pass
+
+    eff_input_dim = int(base_meta.get("input_dim") or record.get("input_dim") or len(base_features) or 78)
+    eff_num_classes = int(base_meta.get("num_classes") or record.get("num_classes") or 2)
+    eff_arch = base_meta.get("architecture", record.get("architecture", "EnsembleTop2"))
+    base_accuracy = float(record["accuracy"]) if record.get("accuracy") is not None else None
+
+    # Load holdout evaluation split once (server-side only, cached for high speed)
+    X_eval, y_eval, eval_source = _resolve_eval_holdout(
+        registry=registry,
+        record=record,
+        base_meta=base_meta,
+        input_dim=eff_input_dim,
+        num_classes=eff_num_classes,
+        feature_names=base_features,
+        eval_data=kwargs.get("eval_data"),
     )
 
-    # Persist updated SCAFFOLD control variates cleanly inside registry FL state
-    if method_norm == "scaffold":
-        upd_srv = method_info.pop("_updated_server_control", None)
-        upd_cli = method_info.pop("_updated_client_controls", None)
-        if upd_srv is not None and upd_cli is not None:
-            method_info["control_variate_path"] = _save_scaffold_controls(registry, upd_srv, upd_cli)
+    aggregator = CentralAggregator()
+    srv_ctrl, cli_ctrls = _load_scaffold_controls(registry, client_ids)
+    total_registered = max(len(registry.list_clients()), len(client_ids))
 
-    # Apply aggregated delta directly onto current global ensemble nn.Module state
-    new_state_dict: Dict[str, torch.Tensor] = {}
-    for k, v in base_state.items():
-        if k in aggregated_delta and v.is_floating_point():
-            new_state_dict[k] = v.detach().cpu().to(torch.float32) + aggregated_delta[k].detach().cpu().to(torch.float32)
-        else:
-            new_state_dict[k] = v.detach().cpu().clone()
+    is_auto_best = method_norm in AUTO_SELECTION_METHODS
+    leaderboard_summary: List[Dict[str, Any]] = []
+    winning_method = method_norm
+    selected_strategy = "auto_best" if is_auto_best else "manual"
+    eval_metrics: Dict[str, Any] = {}
+
+    if is_auto_best:
+        candidate_methods = kwargs.get("candidate_methods") or list(ALL_AGGREGATION_METHODS)
+        candidate_records = []
+
+        for cand_m in candidate_methods:
+            cand_norm = str(cand_m).lower().strip().replace("-", "_").replace(" ", "_")
+            c_kwargs = dict(agg_kwargs)
+            if cand_norm == "scaffold":
+                c_kwargs.update({
+                    "client_ids": client_ids,
+                    "local_steps_list": local_steps_list,
+                    "learning_rates": learning_rates,
+                    "server_control": copy.deepcopy(srv_ctrl),
+                    "client_controls": copy.deepcopy(cli_ctrls),
+                    "control_deltas": control_deltas,
+                    "control_fulls": control_fulls,
+                    "client_corrected_flags": client_corrected_flags,
+                    "total_registered_clients": total_registered,
+                })
+            elif cand_norm == "fednova":
+                c_kwargs["local_steps_list"] = local_steps_list
+
+            try:
+                c_delta, c_info = aggregator.aggregate_with_metadata(
+                    updates=delta_updates,
+                    sample_counts=sample_counts,
+                    method=cand_norm,
+                    **c_kwargs,
+                )
+                c_srv = c_info.pop("_updated_server_control", None)
+                c_cli = c_info.pop("_updated_client_controls", None)
+
+                c_state: Dict[str, torch.Tensor] = {}
+                for k, v in base_state.items():
+                    if k in c_delta and v.is_floating_point():
+                        c_state[k] = v.detach().cpu().to(torch.float32) + c_delta[k].detach().cpu().to(torch.float32)
+                    else:
+                        c_state[k] = v.detach().cpu().clone()
+
+                flat_d = _flatten_tensors(c_delta)
+                delta_l2 = float(torch.linalg.norm(flat_d)) if flat_d.numel() else 0.0
+
+                c_eval: Dict[str, Any] = {}
+                c_acc = base_accuracy if base_accuracy is not None else 0.0
+                c_f1 = 0.0
+                c_auc = 0.0
+
+                if X_eval is not None and y_eval is not None:
+                    eval_mod = _build_eval_module(
+                        base_raw=base_raw,
+                        state_dict=c_state,
+                        input_dim=eff_input_dim,
+                        num_classes=eff_num_classes,
+                        arch_hint=eff_arch,
+                    )
+                    if eval_mod is not None:
+                        eval_slice = min(10000, len(X_eval))
+                        c_eval = evaluate_model_on_holdout(
+                            eval_mod,
+                            X_eval[:eval_slice],
+                            y_eval[:eval_slice],
+                            batch_size=2048,
+                        )
+                        c_acc = float(c_eval.get("accuracy", 0.0))
+                        c_f1 = float(c_eval.get("f1", 0.0))
+                        c_auc = float(c_eval.get("auc", 0.0))
+
+                candidate_records.append({
+                    "method": cand_norm,
+                    "algorithm": c_info.get("algorithm", cand_norm),
+                    "accuracy": c_acc,
+                    "f1": c_f1,
+                    "auc": c_auc,
+                    "delta_l2_norm": round(delta_l2, 6),
+                    "metrics": c_eval,
+                    "aggregated_delta": c_delta,
+                    "method_info": c_info,
+                    "new_state_dict": c_state,
+                    "_scaffold_srv": c_srv,
+                    "_scaffold_cli": c_cli,
+                })
+            except Exception as c_err:
+                logger.warning(f"Candidate algorithm '{cand_m}' failed: {c_err}")
+
+        if not candidate_records:
+            raise ValueError("All candidate aggregation algorithms failed.")
+
+        l2_norms = [c["delta_l2_norm"] for c in candidate_records if c.get("delta_l2_norm") is not None]
+        median_l2 = float(np.median(l2_norms)) if l2_norms else 0.0
+
+        candidate_records.sort(
+            key=lambda c: (
+                round(c.get("accuracy", 0.0), 6),
+                round(c.get("f1", 0.0), 6),
+                round(c.get("auc", 0.0), 6),
+                -abs(c.get("delta_l2_norm", 0.0) - median_l2),
+            ),
+            reverse=True,
+        )
+
+        winner = candidate_records[0]
+        winning_method = winner["method"]
+        method_norm = winning_method
+        aggregated_delta = winner["aggregated_delta"]
+        method_info = winner["method_info"]
+        new_state_dict = winner["new_state_dict"]
+        eval_metrics = winner["metrics"]
+
+        if winning_method == "scaffold" and winner.get("_scaffold_srv") is not None and winner.get("_scaffold_cli") is not None:
+            method_info["control_variate_path"] = _save_scaffold_controls(
+                registry, winner["_scaffold_srv"], winner["_scaffold_cli"]
+            )
+
+        for rank_i, c in enumerate(candidate_records, start=1):
+            leaderboard_summary.append({
+                "rank": rank_i,
+                "method": c["method"],
+                "algorithm": c["algorithm"],
+                "accuracy": round(c.get("accuracy", 0.0), 6),
+                "f1": round(c.get("f1", 0.0), 6),
+                "auc": round(c.get("auc", 0.0), 6),
+                "delta_l2_norm": c.get("delta_l2_norm"),
+                "is_winner": (rank_i == 1),
+            })
+    else:
+        # Single explicit method execution
+        if method_norm == "scaffold":
+            agg_kwargs.update({
+                "client_ids": client_ids,
+                "local_steps_list": local_steps_list,
+                "learning_rates": learning_rates,
+                "server_control": srv_ctrl,
+                "client_controls": cli_ctrls,
+                "control_deltas": control_deltas,
+                "control_fulls": control_fulls,
+                "client_corrected_flags": client_corrected_flags,
+                "total_registered_clients": total_registered,
+            })
+        elif method_norm == "fednova":
+            agg_kwargs["local_steps_list"] = local_steps_list
+
+        aggregated_delta, method_info = aggregator.aggregate_with_metadata(
+            updates=delta_updates,
+            sample_counts=sample_counts,
+            method=method_norm,
+            **agg_kwargs,
+        )
+
+        if method_norm == "scaffold":
+            upd_srv = method_info.pop("_updated_server_control", None)
+            upd_cli = method_info.pop("_updated_client_controls", None)
+            if upd_srv is not None and upd_cli is not None:
+                method_info["control_variate_path"] = _save_scaffold_controls(registry, upd_srv, upd_cli)
+
+        new_state_dict = {}
+        for k, v in base_state.items():
+            if k in aggregated_delta and v.is_floating_point():
+                new_state_dict[k] = v.detach().cpu().to(torch.float32) + aggregated_delta[k].detach().cpu().to(torch.float32)
+            else:
+                new_state_dict[k] = v.detach().cpu().clone()
+
+        flat_d = _flatten_tensors(aggregated_delta)
+        delta_l2 = float(torch.linalg.norm(flat_d)) if flat_d.numel() else 0.0
+
+        if X_eval is not None and y_eval is not None:
+            eval_module = _build_eval_module(
+                base_raw=base_raw,
+                state_dict=new_state_dict,
+                input_dim=eff_input_dim,
+                num_classes=eff_num_classes,
+                arch_hint=eff_arch,
+            )
+            if eval_module is not None:
+                try:
+                    eval_metrics = evaluate_model_on_holdout(eval_module, X_eval, y_eval)
+                except Exception as eval_exc:
+                    logger.warning(f"Evaluation failed: {eval_exc}")
+
+        leaderboard_summary.append({
+            "rank": 1,
+            "method": method_norm,
+            "algorithm": method_info.get("algorithm", method_norm),
+            "accuracy": round(float(eval_metrics.get("accuracy", base_accuracy or 0.0)), 6),
+            "f1": round(float(eval_metrics.get("f1", 0.0)), 6),
+            "auc": round(float(eval_metrics.get("auc", 0.0)), 6),
+            "delta_l2_norm": round(delta_l2, 6),
+            "is_winner": True,
+        })
 
     next_ver = registry.next_version()
     staging_dir = registry.models_dir / "_staging"
@@ -1334,31 +1533,6 @@ def run_federated_round(
     else:
         torch.save(new_state_dict, staged_weights)
 
-    # Preserve feature schema & scaler stats directly from base version's meta.json
-    base_meta = {}
-    try:
-        base_meta_path = registry.version_dir(base_ver) / "meta.json"
-        if base_meta_path.exists():
-            base_meta = json.loads(base_meta_path.read_text(encoding="utf-8"))
-    except Exception:
-        pass
-
-    base_features = base_meta.get("feature_names") or record.get("feature_names") or []
-    if not base_features:
-        try:
-            baseline_meta_path = registry.models_dir / "v1.0.4" / "meta.json"
-            if baseline_meta_path.exists():
-                base_features = json.loads(baseline_meta_path.read_text()).get("feature_names", [])
-        except Exception:
-            pass
-
-    eff_input_dim = int(base_meta.get("input_dim") or record.get("input_dim") or len(base_features) or 83)
-    eff_num_classes = int(base_meta.get("num_classes") or record.get("num_classes") or 2)
-    eff_arch = base_meta.get("architecture", record.get("architecture", "EnsembleTop2"))
-
-    # Evaluate the newly aggregated global model immediately on HQ's server holdout split
-    base_accuracy = float(record["accuracy"]) if record.get("accuracy") is not None else None
-    eval_metrics: Dict[str, Any] = {}
     eval_summary: Dict[str, Any] = {
         "evaluated": False,
         "dataset": None,
@@ -1367,52 +1541,28 @@ def run_federated_round(
         "accuracy_delta": None,
     }
 
-    eval_module = _build_eval_module(
-        base_raw=base_raw,
-        state_dict=new_state_dict,
-        input_dim=eff_input_dim,
-        num_classes=eff_num_classes,
-        arch_hint=eff_arch,
-    )
-    if eval_module is not None:
-        X_eval, y_eval, eval_source = _resolve_eval_holdout(
-            registry=registry,
-            record=record,
-            base_meta=base_meta,
-            input_dim=eff_input_dim,
-            num_classes=eff_num_classes,
-            feature_names=base_features,
-            eval_data=kwargs.get("eval_data"),
-        )
-        if X_eval is not None and y_eval is not None:
-            try:
-                eval_metrics = evaluate_model_on_holdout(eval_module, X_eval, y_eval)
-                new_acc = float(eval_metrics["accuracy"])
-                acc_delta = round(new_acc - base_accuracy, 6) if base_accuracy is not None else None
-                eval_summary = {
-                    "evaluated": True,
-                    "dataset": eval_source,
-                    "eval_samples": eval_metrics["eval_samples"],
-                    "eval_time_seconds": eval_metrics["eval_time_seconds"],
-                    "inference_time_per_sample_ms": eval_metrics["inference_time_per_sample_ms"],
-                    "accuracy": new_acc,
-                    "precision": float(eval_metrics["precision"]),
-                    "recall": float(eval_metrics["recall"]),
-                    "f1": float(eval_metrics["f1"]),
-                    "mcc": float(eval_metrics["mcc"]),
-                    "specificity": float(eval_metrics["specificity"]),
-                    "auc": float(eval_metrics["auc"]),
-                    "confusion_matrix": eval_metrics["confusion_matrix"],
-                    "base_accuracy": base_accuracy,
-                    "accuracy_delta": acc_delta,
-                }
-            except Exception as eval_exc:
-                logger.warning(f"Post-aggregation evaluation failed gracefully: {eval_exc}")
-                eval_summary["reason"] = str(eval_exc)
-        else:
-            eval_summary["reason"] = "No matching HQ holdout dataset available."
+    if eval_metrics:
+        new_acc = float(eval_metrics["accuracy"])
+        acc_delta = round(new_acc - base_accuracy, 6) if base_accuracy is not None else None
+        eval_summary = {
+            "evaluated": True,
+            "dataset": eval_source,
+            "eval_samples": eval_metrics.get("eval_samples", len(X_eval) if X_eval is not None else 0),
+            "eval_time_seconds": eval_metrics.get("eval_time_seconds", 0.0),
+            "inference_time_per_sample_ms": eval_metrics.get("inference_time_per_sample_ms", 0.0),
+            "accuracy": new_acc,
+            "precision": float(eval_metrics.get("precision", 0.0)),
+            "recall": float(eval_metrics.get("recall", 0.0)),
+            "f1": float(eval_metrics.get("f1", 0.0)),
+            "mcc": float(eval_metrics.get("mcc", 0.0)),
+            "specificity": float(eval_metrics.get("specificity", 0.0)),
+            "auc": float(eval_metrics.get("auc", 0.0)),
+            "confusion_matrix": eval_metrics.get("confusion_matrix", []),
+            "base_accuracy": base_accuracy,
+            "accuracy_delta": acc_delta,
+        }
     else:
-        eval_summary["reason"] = "Aggregated artifact is raw tensors without an nn.Module architecture."
+        eval_summary["reason"] = "Evaluation dataset or architecture unavailable."
 
     eff_accuracy = eval_summary["accuracy"] if eval_summary.get("evaluated") else (base_accuracy if base_accuracy is not None else 0.0)
 
@@ -1435,9 +1585,12 @@ def run_federated_round(
     meta_info = {
         "model_name": base_meta.get("model_name", record.get("model_name", "SecureFed-Global-Ensemble")),
         "architecture": eff_arch,
-        "fl_method": method_norm,
-        "aggregation_method": method_norm,
-        "method": method_norm,
+        "fl_method": winning_method,
+        "aggregation_method": winning_method,
+        "method": winning_method,
+        "selection_strategy": selected_strategy,
+        "winning_method": winning_method,
+        "leaderboard": leaderboard_summary,
         "round": open_round,
         "next_open_round": open_round + 1,
         "timestamp": now,
@@ -1470,13 +1623,20 @@ def run_federated_round(
     }
 
     eval_note_suffix = (
-        f" | eval acc={eff_accuracy * 100:.2f}%, F1={eval_summary['f1']:.4f}, AUC={eval_summary['auc']:.4f}"
+        f" | eval acc={eff_accuracy * 100:.2f}%, F1={eval_summary.get('f1', 0.0):.4f}, AUC={eval_summary.get('auc', 0.0):.4f}"
         if eval_summary.get("evaluated") else ""
     )
-    round_notes = notes or (
-        f"Federated Round {open_round} ({method_norm.upper()} -> v{next_ver}): "
-        f"merged {len(validated_entries)} DP updates ({total_samples} samples){eval_note_suffix}."
-    )
+    if is_auto_best:
+        round_notes = notes or (
+            f"Federated Round {open_round} (AUTO-BEST -> v{next_ver}): "
+            f"evaluated {len(leaderboard_summary)} algorithms on holdout; selected {winning_method.upper()} "
+            f"({len(validated_entries)} updates, {total_samples} samples){eval_note_suffix}."
+        )
+    else:
+        round_notes = notes or (
+            f"Federated Round {open_round} ({method_norm.upper()} -> v{next_ver}): "
+            f"merged {len(validated_entries)} DP updates ({total_samples} samples){eval_note_suffix}."
+        )
     published = registry.publish(
         weights_src=staged_weights,
         package_src=None,
@@ -1521,7 +1681,11 @@ def run_federated_round(
         "base_version": base_ver,
         "round": open_round,
         "next_open_round": next_open_round,
-        "method": method_norm,
+        "method": winning_method,
+        "winning_method": winning_method,
+        "selection_strategy": selected_strategy,
+        "leaderboard": leaderboard_summary,
+        "candidate_count": len(leaderboard_summary),
         "method_details": method_info,
         "num_updates_merged": len(validated_entries),
         "samples": total_samples,
@@ -1553,17 +1717,17 @@ def compare_aggregation_methods(
     base_version: str = "latest",
     min_updates: int = 1,
 ) -> Dict[str, Any]:
-    """Run all five FL methods non-destructively on the same collected round deltas.
+    """Run all FL and Byzantine methods non-destructively on the same collected round deltas.
 
-    Useful for verifying/comparing FedAvg, FedProx, SCAFFOLD, FedNova, and MOON
-    side-by-side without consuming pending updates or altering HQ registry state.
+    Useful for evaluating FedAvg, FedProx, SCAFFOLD, FedNova, MOON, Trimmed Mean,
+    Median, Krum, and Multi-Krum side-by-side with holdout accuracy before committing.
     """
-    target_methods = [m.lower().strip() for m in (methods or list(SUPPORTED_FL_METHODS))]
+    target_methods = [m.lower().strip() for m in (methods or list(ALL_AGGREGATION_METHODS))]
     for m in target_methods:
         if m not in ALL_AGGREGATION_METHODS:
             raise ValueError(f"Unsupported aggregation method '{m}'.")
 
-    record, _, _, open_round, validated_entries, rejected_notes = _collect_validated_round_updates(
+    record, base_raw, base_state, open_round, validated_entries, rejected_notes = _collect_validated_round_updates(
         registry=registry,
         base_version=base_version,
     )
@@ -1583,6 +1747,29 @@ def compare_aggregation_methods(
     c_flags = [e["scaffold_client_corrected"] for e in validated_entries]
     srv_ctrl, cli_ctrls = _load_scaffold_controls(registry, c_ids)
     total_clients = max(len(registry.list_clients()), len(c_ids))
+
+    # Resolve holdout evaluation split once if available
+    base_meta = {}
+    try:
+        base_meta_path = registry.version_dir(base_ver) / "meta.json"
+        if base_meta_path.exists():
+            base_meta = json.loads(base_meta_path.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    base_features = base_meta.get("feature_names") or record.get("feature_names") or []
+    eff_input_dim = int(base_meta.get("input_dim") or record.get("input_dim") or len(base_features) or 78)
+    eff_num_classes = int(base_meta.get("num_classes") or record.get("num_classes") or 2)
+    eff_arch = base_meta.get("architecture", record.get("architecture", "EnsembleTop2"))
+    base_accuracy = float(record["accuracy"]) if record.get("accuracy") is not None else None
+
+    X_eval, y_eval, _ = _resolve_eval_holdout(
+        registry=registry,
+        record=record,
+        base_meta=base_meta,
+        input_dim=eff_input_dim,
+        num_classes=eff_num_classes,
+        feature_names=base_features,
+    )
 
     aggregator = CentralAggregator()
     summaries: Dict[str, Any] = {}
@@ -1617,11 +1804,49 @@ def compare_aggregation_methods(
             if (fedavg_vec is not None and l2 > 0 and float(torch.linalg.norm(fedavg_vec)) > 0)
             else (1.0 if m == "fedavg" else None)
         )
+
+        acc_score = base_accuracy
+        f1_score = None
+        auc_score = None
+        if X_eval is not None and y_eval is not None:
+            cand_state = {
+                k: (v.detach().cpu().to(torch.float32) + agg_delta[k].detach().cpu().to(torch.float32))
+                if (k in agg_delta and v.is_floating_point()) else v.detach().cpu().clone()
+                for k, v in base_state.items()
+            }
+            eval_mod = _build_eval_module(base_raw, cand_state, eff_input_dim, eff_num_classes, eff_arch)
+            if eval_mod is not None:
+                try:
+                    slice_len = min(5000, len(X_eval))
+                    ev = evaluate_model_on_holdout(eval_mod, X_eval[:slice_len], y_eval[:slice_len], batch_size=2048)
+                    acc_score = float(ev.get("accuracy", acc_score or 0.0))
+                    f1_score = float(ev.get("f1", 0.0))
+                    auc_score = float(ev.get("auc", 0.0))
+                except Exception as eval_err:
+                    logger.warning(f"Compare evaluation failed for {m}: {eval_err}")
+
         summaries[m] = {
+            "algorithm": m_info.get("algorithm", m),
             "delta_l2_norm": round(l2, 6),
             "cosine_vs_fedavg": round(cos_vs_fedavg, 6) if cos_vs_fedavg is not None else None,
+            "accuracy": round(acc_score, 6) if acc_score is not None else None,
+            "f1": round(f1_score, 6) if f1_score is not None else None,
+            "auc": round(auc_score, 6) if auc_score is not None else None,
             "details": m_info,
         }
+
+    # Identify predicted best method
+    sorted_methods = sorted(
+        summaries.items(),
+        key=lambda item: (
+            item[1].get("accuracy") or 0.0,
+            item[1].get("f1") or 0.0,
+            item[1].get("auc") or 0.0,
+            -(item[1].get("delta_l2_norm") or 0.0),
+        ),
+        reverse=True,
+    )
+    predicted_winner = sorted_methods[0][0] if sorted_methods else "fedavg"
 
     return {
         "status": "success",
@@ -1630,5 +1855,6 @@ def compare_aggregation_methods(
         "clients": c_ids,
         "total_samples": int(sum(counts)),
         "rejected_count": len(rejected_notes),
+        "predicted_winner": predicted_winner,
         "methods_compared": summaries,
     }

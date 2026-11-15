@@ -114,14 +114,20 @@
                             <div class="col-md-3">
                                 <label class="form-label fw-semibold">Aggregation Method</label>
                                 <select id="aggMethod" class="form-select">
-                                    <option value="fedavg" selected>FedAvg (Sample-Weighted Average)</option>
-                                    <option value="fedprox">FedProx (Client Proximal Term + Avg)</option>
-                                    <option value="scaffold">SCAFFOLD (Control Variates Drift Fix)</option>
-                                    <option value="fednova">FedNova (Normalized Local Steps)</option>
-                                    <option value="moon">MOON (Contrastive Local Loss + Avg)</option>
-                                    <option value="trimmed_mean">Trimmed Mean (Byzantine Defense)</option>
-                                    <option value="median">Coordinate Median (Adversarial Robust)</option>
-                                    <option value="krum">Krum (Geometric Distance Defense)</option>
+                                    <option value="auto_best" selected>★ Auto-Select Best (Evaluate All 9 &amp; Promote Winner)</option>
+                                    <optgroup label="Core Federated Learning Algorithms">
+                                        <option value="fedavg">FedAvg (Sample-Weighted Average)</option>
+                                        <option value="fedprox">FedProx (Client Proximal Regularization)</option>
+                                        <option value="scaffold">SCAFFOLD (Control Variates Drift Fix)</option>
+                                        <option value="fednova">FedNova (Step-Normalized Averaging)</option>
+                                        <option value="moon">MOON (Model-Contrastive Alignment)</option>
+                                    </optgroup>
+                                    <optgroup label="Byzantine-Resilient &amp; Defense Algorithms">
+                                        <option value="trimmed_mean">Trimmed Mean (Coordinate-Wise Trimming)</option>
+                                        <option value="median">Coordinate Median (Adversarial Robust)</option>
+                                        <option value="krum">Krum (Geometric Distance Defense)</option>
+                                        <option value="multi_krum">Multi-Krum (Multi-Vector Distance Defense)</option>
+                                    </optgroup>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -138,8 +144,8 @@
                                 <input type="text" id="aggNotes" class="form-control" placeholder="e.g. Round notes">
                             </div>
                             <div class="col-md-4 d-flex gap-2">
-                                <button id="btnCompare" type="button" class="btn btn-outline-primary flex-fill" onclick="compareMethods()" title="Preview FedAvg, FedProx, SCAFFOLD, FedNova, MOON on pending deltas">
-                                    <i class="iconsax me-1" icon-name="chart-21"></i> Compare 5
+                                <button id="btnCompare" type="button" class="btn btn-outline-primary flex-fill" onclick="compareMethods()" title="Preview and evaluate all 9 FL &amp; Byzantine methods on pending deltas">
+                                    <i class="iconsax me-1" icon-name="chart-21"></i> Compare All (9)
                                 </button>
                                 <button id="btnAggregate" class="btn btn-success flex-fill fw-bold" onclick="runFederatedAggregation()">
                                     <i class="iconsax me-1" icon-name="play"></i> Aggregate Now
@@ -468,7 +474,7 @@
             const baseVersion = document.getElementById('aggBaseVersion').value.trim() || 'latest';
             const origHtml = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Comparing...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Comparing 9...';
             box.classList.add('d-none');
 
             try {
@@ -480,34 +486,52 @@
                 const data = await resp.json();
                 if (resp.ok && data.status === 'success') {
                     const methods = data.methods_compared || {};
+                    const winnerMethod = data.predicted_winner;
                     const rowsHtml = Object.entries(methods).map(([m, info]) => {
+                        const isTop = (m === winnerMethod);
                         const details = info.details || {};
                         const summary = details.server_aggregation || details.formula ||
                             (details.server_control_norm !== undefined ? `Server control norm=${details.server_control_norm}, drift_fix=${details.drift_correction_norm}` : details.weighting || '—');
+                        const accStr = info.accuracy !== null && info.accuracy !== undefined ? `${(Number(info.accuracy) * 100).toFixed(2)}%` : '—';
+                        const f1Str = info.f1 !== null && info.f1 !== undefined ? Number(info.f1).toFixed(4) : '—';
+                        const aucStr = info.auc !== null && info.auc !== undefined ? Number(info.auc).toFixed(4) : '—';
+                        const badge = isTop ? '<span class="badge bg-success ms-1"><i class="iconsax me-1" icon-name="crown"></i>Top Pick</span>' : '';
+                        const rowCls = isTop ? 'table-success' : '';
                         return `
-                            <tr>
-                                <td class="font-mono fw-bold text-uppercase">${escHtml(m)}</td>
-                                <td class="font-mono">${info.delta_l2_norm}</td>
+                            <tr class="${rowCls}">
+                                <td class="font-mono fw-bold">${escHtml(info.algorithm || m.toUpperCase())} ${badge}</td>
+                                <td class="font-mono fw-semibold">${accStr}</td>
+                                <td class="font-mono">${f1Str}</td>
+                                <td class="font-mono">${aucStr}</td>
+                                <td class="font-mono">${info.delta_l2_norm ?? '—'}</td>
                                 <td class="font-mono">${info.cosine_vs_fedavg ?? '—'}</td>
                                 <td class="small text-muted">${escHtml(summary)}</td>
                             </tr>
                         `;
                     }).join('');
                     box.innerHTML = `
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <strong class="small font-mono">5-Method Dry-Run Comparison &middot; Round #${data.round} &middot; Base v${escHtml(data.base_version)} &middot; ${data.total_samples} samples</strong>
-                            <span class="badge bg-info font-mono">${(data.clients || []).length} clients</span>
+                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                            <strong class="small font-mono"><i class="iconsax text-primary me-1" icon-name="ranking"></i> Multi-Algorithm Dry-Run Evaluation &middot; Round #${data.round} &middot; Base v${escHtml(data.base_version)} &middot; ${data.total_samples} samples</strong>
+                            <span class="badge bg-primary font-mono">${(data.clients || []).length} clients &middot; Top: ${escHtml((winnerMethod || '').toUpperCase())}</span>
                         </div>
                         <div class="table-responsive">
-                            <table class="table table-sm mb-0 data-table-detail">
+                            <table class="table table-sm mb-0 data-table-detail align-middle">
                                 <thead>
-                                    <tr><th>Method</th><th>Aggregated Δ L2 Norm</th><th>Cosine vs FedAvg</th><th>Notes / State</th></tr>
+                                    <tr>
+                                        <th>Algorithm</th>
+                                        <th>Holdout Accuracy</th>
+                                        <th>F1 Score</th>
+                                        <th>AUC</th>
+                                        <th>Δ L2 Norm</th>
+                                        <th>Cosine vs FedAvg</th>
+                                        <th>Algorithm Objective / State</th>
+                                    </tr>
                                 </thead>
                                 <tbody>${rowsHtml}</tbody>
                             </table>
                         </div>`;
                     box.classList.remove('d-none');
-                    log(`Compared all 5 FL methods on Round #${data.round} pending deltas (${data.total_samples} samples).`);
+                    log(`Evaluated and compared all 9 algorithms on Round #${data.round} pending deltas (Top pick: ${(winnerMethod || '').toUpperCase()}).`);
                 } else {
                     alertBox.className = 'alert alert-danger mt-3 mb-0';
                     alertBox.textContent = data.detail || data.message || 'Could not compare methods.';
@@ -533,13 +557,15 @@
             const notes = document.getElementById('aggNotes').value.trim();
 
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Aggregating...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Evaluating &amp; Aggregating...';
             alertBox.className = 'alert alert-info mt-3 mb-0';
-            alertBox.textContent = `Merging validated DP client updates via ${method.toUpperCase()}...`;
+            alertBox.textContent = method === 'auto_best' 
+                ? 'Evaluating all 9 aggregation algorithms on holdout data and selecting the top performer...'
+                : `Merging validated DP client updates via ${method.toUpperCase()}...`;
             alertBox.classList.remove('d-none');
             if (pushAlert) pushAlert.classList.add('d-none');
             if (compareBox) compareBox.classList.add('d-none');
-            log(`Starting Round federated aggregation using ${method.toUpperCase()} (base=${baseVersion})...`);
+            log(`Starting Round federated aggregation (strategy=${method.toUpperCase()}, base=${baseVersion})...`);
 
             try {
                 const response = await fetch('/api/v1/model/aggregate', {
@@ -583,14 +609,71 @@
                         </div>`;
                         evalLogText = ` | Real Eval Accuracy=${accPct}%, F1=${f1Val}, AUC=${aucVal} (${ev.eval_samples || 0} samples)`;
                     }
+
+                    // Render Leaderboard Table if Auto-Best or multi-candidate was run
+                    let leaderboardHtml = '';
+                    if (Array.isArray(data.leaderboard) && data.leaderboard.length > 1) {
+                        const lbRows = data.leaderboard.map(row => {
+                            const isWin = row.is_winner;
+                            const accStr = (Number(row.accuracy || 0) * 100).toFixed(2);
+                            const rowCls = isWin ? 'table-success' : '';
+                            const rankBadge = isWin 
+                                ? '<span class="badge bg-success font-mono"><i class="iconsax me-1" icon-name="crown"></i> Winner #1</span>' 
+                                : `<span class="badge bg-secondary font-mono">#${row.rank}</span>`;
+                            const statusBadge = isWin
+                                ? `<span class="badge bg-success">Promoted to v${escHtml(data.new_version)}</span>`
+                                : '<span class="text-muted small">Evaluated</span>';
+                            return `
+                                <tr class="${rowCls}">
+                                    <td>${rankBadge}</td>
+                                    <td class="font-mono fw-bold">${escHtml(row.algorithm || row.method)}</td>
+                                    <td class="font-mono fw-semibold">${accStr}%</td>
+                                    <td class="font-mono">${Number(row.f1 || 0).toFixed(4)}</td>
+                                    <td class="font-mono">${Number(row.auc || 0).toFixed(4)}</td>
+                                    <td class="font-mono text-muted small">${row.delta_l2_norm ?? '—'}</td>
+                                    <td>${statusBadge}</td>
+                                </tr>
+                            `;
+                        }).join('');
+
+                        leaderboardHtml = `
+                            <div class="mt-3 p-3 rounded-3 border" style="background: var(--inset-bg); border-color: var(--border-subtle) !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                    <strong class="small font-mono text-uppercase"><i class="iconsax text-warning me-1" icon-name="cup"></i> Multi-Algorithm Competition Leaderboard (${data.leaderboard.length} Algorithms Evaluated)</strong>
+                                    <span class="badge bg-success font-mono">Top Performer: ${escHtml((data.winning_method || data.method).toUpperCase())}</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0 data-table-detail align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Rank</th>
+                                                <th>Algorithm</th>
+                                                <th>Holdout Accuracy</th>
+                                                <th>F1 Score</th>
+                                                <th>AUC</th>
+                                                <th>Δ L2 Norm</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>${lbRows}</tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                    }
+
                     alertBox.className = 'alert alert-success mt-3 mb-0';
-                    alertBox.innerHTML = `<strong>Success!</strong> Round #${data.round} &rarr; Global Model <strong>v${escHtml(data.new_version)}</strong> created via <strong>${escHtml(data.method.toUpperCase())}</strong>${escHtml(extraInfo)} (${data.num_updates_merged} client(s), ${data.total_samples} samples). Next open round: <strong>#${data.next_open_round}</strong>. Archived in <code>${escHtml(archivedLoc)}</code>.${evalHtml}`;
+                    const winMsg = data.selection_strategy === 'auto_best' 
+                        ? `<strong>Auto-Select Best Completed!</strong> Evaluated competing algorithms on holdout data and selected <strong>${escHtml((data.winning_method || data.method).toUpperCase())}</strong> as the winner.` 
+                        : `<strong>Success!</strong>`;
+                    alertBox.innerHTML = `${winMsg} Round #${data.round} &rarr; Global Model <strong>v${escHtml(data.new_version)}</strong> created via <strong>${escHtml((data.winning_method || data.method).toUpperCase())}</strong>${escHtml(extraInfo)} (${data.num_updates_merged} client(s), ${data.total_samples} samples). Next open round: <strong>#${data.next_open_round}</strong>. Archived in <code>${escHtml(archivedLoc)}</code>.${evalHtml}${leaderboardHtml}`;
+                    
                     showGlobalPushReady(
                         data.new_version,
-                        `Round #${data.round} (${data.method.toUpperCase()}): merged ${(data.clients || []).join(', ')} (${data.total_samples} samples) into v${data.new_version}.${ev.evaluated ? ` Verified Accuracy ${(Number(data.accuracy ?? 0) * 100).toFixed(2)}% | F1 ${Number(data.f1 ?? 0).toFixed(4)} | AUC ${Number(data.auc ?? 0).toFixed(4)}.` : ''}`,
+                        `Round #${data.round} (${(data.winning_method || data.method).toUpperCase()}): merged ${(data.clients || []).join(', ')} (${data.total_samples} samples) into v${data.new_version}.${ev.evaluated ? ` Verified Accuracy ${(Number(data.accuracy ?? 0) * 100).toFixed(2)}% | F1 ${Number(data.f1 ?? 0).toFixed(4)} | AUC ${Number(data.auc ?? 0).toFixed(4)}.` : ''}`,
                         true
                     );
-                    log(`Aggregation successful! Round #${data.round} -> v${data.new_version} (${data.method.toUpperCase()}${extraInfo}); archived in ${archivedLoc}${evalLogText}.`);
+                    log(`Aggregation successful! Round #${data.round} -> v${data.new_version} (Promoted ${((data.winning_method || data.method)).toUpperCase()}${extraInfo}); archived in ${archivedLoc}${evalLogText}.`);
                     await loadUpdates();
                 } else {
                     alertBox.className = 'alert alert-danger mt-3 mb-0';

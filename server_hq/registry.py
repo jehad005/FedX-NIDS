@@ -308,6 +308,11 @@ class ModelRegistry:
         generic = self.eval_holdout_path(input_dim, None)
         if generic not in candidates:
             candidates.append(generic)
+        holdouts_dir = self.fl_state_dir() / "eval_holdouts"
+        if holdouts_dir.exists():
+            for extra_path in sorted(holdouts_dir.glob(f"holdout_d{int(input_dim)}_*.npz")):
+                if extra_path not in candidates:
+                    candidates.append(extra_path)
         for path in candidates:
             if not path.exists():
                 continue

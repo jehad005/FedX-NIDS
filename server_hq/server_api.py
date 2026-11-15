@@ -27,6 +27,8 @@ from fastapi.responses import FileResponse
 
 from config import API_CONFIG
 from server_hq.central_aggregator import (
+    ALL_AGGREGATION_METHODS,
+    AUTO_SELECTION_METHODS,
     MAX_CLIPPING_NORM,
     MIN_CLIPPING_NORM,
     MIN_NOISE_MULTIPLIER,
@@ -428,13 +430,13 @@ async def _parse_agg_request(request: Request) -> dict:
 
 @app.post("/api/v1/model/aggregate")
 async def trigger_aggregation(request: Request):
-    """Aggregate validated pending DP deltas using FedAvg, FedProx, SCAFFOLD, FedNova, or MOON."""
+    """Aggregate validated pending DP deltas using Auto-Select Best or a specified FL/Byzantine algorithm."""
     body = await _parse_agg_request(request)
     try:
         result = run_federated_round(
             registry=registry,
             base_version=str(body.get("base_version", "latest")),
-            method=str(body.get("method", "fedavg")),
+            method=str(body.get("method", "auto_best")),
             notes=str(body.get("notes", "")),
             min_updates=int(body.get("min_updates", 1)),
         )
@@ -447,7 +449,7 @@ async def trigger_aggregation(request: Request):
 
 @app.post("/api/v1/model/aggregate/compare")
 async def compare_aggregation_methods_endpoint(request: Request):
-    """Evaluate all 5 FL methods (FedAvg, FedProx, SCAFFOLD, FedNova, MOON) on the same pending deltas."""
+    """Evaluate all 9 FL and Byzantine methods on the same pending deltas."""
     body = await _parse_agg_request(request)
     try:
         methods = body.get("methods")
@@ -455,7 +457,7 @@ async def compare_aggregation_methods_endpoint(request: Request):
             methods = [m.strip() for m in methods.split(",") if m.strip()]
         return compare_aggregation_methods(
             registry=registry,
-            methods=methods,
+            methods=methods or list(ALL_AGGREGATION_METHODS),
             base_version=str(body.get("base_version", "latest")),
             min_updates=int(body.get("min_updates", 1)),
         )
