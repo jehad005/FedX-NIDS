@@ -111,18 +111,21 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-3 align-items-end">
-                            <div class="col-md-3">
-                                <label class="form-label fw-semibold">Aggregation Method</label>
-                                <select id="aggMethod" class="form-select">
-                                    <option value="auto_best" selected>★ Auto-Select Best (Evaluate All 9 &amp; Promote Winner)</option>
-                                    <optgroup label="Core Federated Learning Algorithms">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold d-flex justify-content-between align-items-center">
+                                    <span>Model Selection / Strategy</span>
+                                    <span class="badge bg-success font-mono small" id="aggStrategyBadge">Auto: All (9) Evaluated</span>
+                                </label>
+                                <select id="aggMethod" class="form-select font-mono" onchange="onAggMethodChange()">
+                                    <option value="auto_best" selected>★ All Models (Evaluate All 9 &amp; Select Best)</option>
+                                    <optgroup label="Core Federated Learning Algorithms (Manual)">
                                         <option value="fedavg">FedAvg (Sample-Weighted Average)</option>
                                         <option value="fedprox">FedProx (Client Proximal Regularization)</option>
                                         <option value="scaffold">SCAFFOLD (Control Variates Drift Fix)</option>
                                         <option value="fednova">FedNova (Step-Normalized Averaging)</option>
                                         <option value="moon">MOON (Model-Contrastive Alignment)</option>
                                     </optgroup>
-                                    <optgroup label="Byzantine-Resilient &amp; Defense Algorithms">
+                                    <optgroup label="Byzantine-Resilient &amp; Defense Algorithms (Manual)">
                                         <option value="trimmed_mean">Trimmed Mean (Coordinate-Wise Trimming)</option>
                                         <option value="median">Coordinate Median (Adversarial Robust)</option>
                                         <option value="krum">Krum (Geometric Distance Defense)</option>
@@ -131,7 +134,7 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label fw-semibold">Base Version</label>
+                                <label class="form-label fw-semibold">Base Model Version</label>
                                 <select id="aggBaseVersion" class="form-select font-mono" title="Global model version to apply pending Round deltas onto">
                                     <option value="latest" selected>Latest (v{{ latest_version or '—' }} &middot; Round #{{ open_round or 1 }})</option>
                                     {% if latest_version %}
@@ -143,13 +146,32 @@
                                 <label class="form-label fw-semibold">Round Notes</label>
                                 <input type="text" id="aggNotes" class="form-control" placeholder="e.g. Round notes">
                             </div>
-                            <div class="col-md-4 d-flex gap-2">
-                                <button id="btnCompare" type="button" class="btn btn-outline-primary flex-fill" onclick="compareMethods()" title="Preview and evaluate all 9 FL &amp; Byzantine methods on pending deltas">
-                                    <i class="iconsax me-1" icon-name="bar-graph-1"></i> Compare All (9)
+                            <div class="col-md-3 d-flex gap-2">
+                                <button id="btnCompare" type="button" class="btn btn-outline-primary" onclick="compareMethods()" title="Preview all 9 FL methods on pending deltas without committing">
+                                    <i class="iconsax me-1" icon-name="bar-graph-1"></i> Preview All
                                 </button>
                                 <button id="btnAggregate" class="btn btn-success flex-fill fw-bold" onclick="runFederatedAggregation()">
-                                    <i class="iconsax me-1" icon-name="play"></i> Aggregate Now
+                                    <i class="iconsax me-1" icon-name="play"></i> <span id="btnAggText">Aggregate All &amp; Pick Best</span>
                                 </button>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Explanatory Banner -->
+                        <div class="p-2.5 rounded-2 mt-3 border d-flex align-items-center justify-content-between flex-wrap gap-2 small font-mono" id="aggStrategyBanner" style="background: var(--inset-bg); border-color: var(--border-subtle) !important;">
+                            <div id="aggStrategyNote">
+                                <i class="iconsax me-1 text-success" icon-name="crown-1"></i>
+                                <strong>All Models Mode:</strong> All 9 FL &amp; Byzantine algorithms will be evaluated in parallel on holdout data. The best performer is crowned Winner #1, promoted to Global Model, and a 2-panel comparison chart is generated.
+                            </div>
+                            <div class="d-none d-md-flex align-items-center gap-1 text-muted" id="aggAlgoBadges">
+                                <span class="badge bg-secondary-subtle text-secondary border">FedAvg</span>
+                                <span class="badge bg-secondary-subtle text-secondary border">FedProx</span>
+                                <span class="badge bg-secondary-subtle text-secondary border">SCAFFOLD</span>
+                                <span class="badge bg-secondary-subtle text-secondary border">FedNova</span>
+                                <span class="badge bg-secondary-subtle text-secondary border">MOON</span>
+                                <span class="badge bg-secondary-subtle text-secondary border">Trimmed Mean</span>
+                                <span class="badge bg-secondary-subtle text-secondary border">Median</span>
+                                <span class="badge bg-secondary-subtle text-secondary border">Krum</span>
+                                <span class="badge bg-secondary-subtle text-secondary border">Multi-Krum</span>
                             </div>
                         </div>
                         <div class="form-text mt-2 small">
@@ -456,6 +478,38 @@
             }
         }
 
+        function onAggMethodChange() {
+            const sel = document.getElementById('aggMethod');
+            const badge = document.getElementById('aggStrategyBadge');
+            const note = document.getElementById('aggStrategyNote');
+            const btnText = document.getElementById('btnAggText');
+            const badgesBox = document.getElementById('aggAlgoBadges');
+            const val = sel ? sel.value : 'auto_best';
+
+            if (val === 'auto_best') {
+                if (badge) {
+                    badge.className = 'badge bg-success font-mono small';
+                    badge.textContent = 'Auto: All (9) Evaluated';
+                }
+                if (note) {
+                    note.innerHTML = '<i class="iconsax me-1 text-success" icon-name="crown-1"></i> <strong>All Models Mode:</strong> All 9 FL &amp; Byzantine algorithms will run in parallel on holdout data. The best model will be selected, promoted to Global Model, and a 2-panel comparison chart will be generated.';
+                }
+                if (btnText) btnText.textContent = 'Aggregate All & Pick Best';
+                if (badgesBox) badgesBox.classList.remove('d-none');
+            } else {
+                const text = sel.options[sel.selectedIndex].text.split('(')[0].trim();
+                if (badge) {
+                    badge.className = 'badge bg-primary font-mono small';
+                    badge.textContent = `Manual: ${text}`;
+                }
+                if (note) {
+                    note.innerHTML = `<i class="iconsax me-1 text-primary" icon-name="info-circle"></i> <strong>Manual Mode:</strong> Model will be trained/aggregated strictly using <strong>${text}</strong> only without running competing algorithms.`;
+                }
+                if (btnText) btnText.textContent = `Aggregate with ${text} Only`;
+                if (badgesBox) badgesBox.classList.add('d-none');
+            }
+        }
+
         function viewUpdate(updateId) {
             const u = cachedUpdates.find(x => x.id === updateId);
             if (!u) {
@@ -509,6 +563,25 @@
                             </tr>
                         `;
                     }).join('');
+                    let comparePlotHtml = '';
+                    if (data.plot_url) {
+                        const plotSrc = `${data.plot_url}?t=${Date.now()}`;
+                        comparePlotHtml = `
+                            <div class="mt-3 p-3 rounded-3 border" style="background: var(--inset-bg); border-color: var(--border-subtle) !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                    <strong class="small font-mono text-uppercase text-primary">
+                                        <i class="iconsax me-1" icon-name="bar-graph-1"></i> Candidate Dry-Run Comparison Chart (Round #${data.round})
+                                    </strong>
+                                    <a href="${plotSrc}" target="_blank" class="btn btn-sm btn-outline-secondary font-mono" download="round_${data.round}_preview.png">
+                                        <i class="iconsax me-1" icon-name="download-1"></i> Download (.png)
+                                    </a>
+                                </div>
+                                <div class="text-center bg-white p-2 rounded-2 border">
+                                    <img src="${plotSrc}" class="img-fluid rounded shadow-xs" style="max-height: 440px; width: auto;" alt="Candidate Comparison">
+                                </div>
+                            </div>
+                        `;
+                    }
                     box.innerHTML = `
                         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                             <strong class="small font-mono"><i class="iconsax text-primary me-1" icon-name="ranking"></i> Multi-Algorithm Dry-Run Evaluation &middot; Round #${data.round} &middot; Base v${escHtml(data.base_version)} &middot; ${data.total_samples} samples</strong>
@@ -529,7 +602,7 @@
                                 </thead>
                                 <tbody>${rowsHtml}</tbody>
                             </table>
-                        </div>`;
+                        </div>${comparePlotHtml}`;
                     box.classList.remove('d-none');
                     log(`Evaluated and compared all 9 algorithms on Round #${data.round} pending deltas (Top pick: ${(winnerMethod || '').toUpperCase()}).`);
                 } else {
@@ -662,11 +735,32 @@
                         `;
                     }
 
+                    // Render Multi-Algorithm Comparison Plot if generated
+                    let plotHtml = '';
+                    if (data.plot_url) {
+                        const plotSrc = `${data.plot_url}?t=${Date.now()}`;
+                        plotHtml = `
+                            <div class="mt-3 p-3 rounded-3 border" style="background: var(--inset-bg); border-color: var(--border-subtle) !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                    <strong class="small font-mono text-uppercase text-primary">
+                                        <i class="iconsax me-1" icon-name="bar-graph-1"></i> Multi-Algorithm Benchmark &amp; Trade-off Radar Chart (v${escHtml(data.new_version)})
+                                    </strong>
+                                    <a href="${plotSrc}" target="_blank" class="btn btn-sm btn-outline-secondary font-mono" download="v${escHtml(data.new_version)}_fl_comparison.png">
+                                        <i class="iconsax me-1" icon-name="download-1"></i> Download Chart (.png)
+                                    </a>
+                                </div>
+                                <div class="text-center bg-white p-2 rounded-2 border">
+                                    <img src="${plotSrc}" class="img-fluid rounded shadow-xs" style="max-height: 480px; width: auto;" alt="FL Algorithm Comparison Benchmark">
+                                </div>
+                            </div>
+                        `;
+                    }
+
                     alertBox.className = 'alert alert-success mt-3 mb-0';
                     const winMsg = data.selection_strategy === 'auto_best' 
-                        ? `<strong>Auto-Select Best Completed!</strong> Evaluated competing algorithms on holdout data and selected <strong>${escHtml((data.winning_method || data.method).toUpperCase())}</strong> as the winner.` 
-                        : `<strong>Success!</strong>`;
-                    alertBox.innerHTML = `${winMsg} Round #${data.round} &rarr; Global Model <strong>v${escHtml(data.new_version)}</strong> created via <strong>${escHtml((data.winning_method || data.method).toUpperCase())}</strong>${escHtml(extraInfo)} (${data.num_updates_merged} client(s), ${data.total_samples} samples). Next open round: <strong>#${data.next_open_round}</strong>. Archived in <code>${escHtml(archivedLoc)}</code>.${evalHtml}${leaderboardHtml}`;
+                        ? `<strong>All Models Competition Complete!</strong> Evaluated competing algorithms on holdout data and selected <strong>${escHtml((data.winning_method || data.method).toUpperCase())}</strong> as the winner.` 
+                        : `<strong>Manual Aggregation Complete!</strong> Model trained/aggregated strictly using <strong>${escHtml((data.winning_method || data.method).toUpperCase())}</strong>.`;
+                    alertBox.innerHTML = `${winMsg} Round #${data.round} &rarr; Global Model <strong>v${escHtml(data.new_version)}</strong> created via <strong>${escHtml((data.winning_method || data.method).toUpperCase())}</strong>${escHtml(extraInfo)} (${data.num_updates_merged} client(s), ${data.total_samples} samples). Next open round: <strong>#${data.next_open_round}</strong>. Archived in <code>${escHtml(archivedLoc)}</code>.${evalHtml}${leaderboardHtml}${plotHtml}`;
                     
                     showGlobalPushReady(
                         data.new_version,

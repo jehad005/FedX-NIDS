@@ -1159,3 +1159,119 @@ def create_version_detail_plots(ensemble_metrics: Dict[str, Any],
         result["ensemble"]["confusion_matrix"] = str(cm_path)
 
     return result
+
+
+def create_fl_algorithm_comparison_plot(
+    leaderboard: list,
+    save_dir: Path,
+    version: str,
+) -> Optional[str]:
+    """
+    Generate comprehensive comparison charts for all evaluated FL & Byzantine aggregation algorithms.
+    Creates a 2-panel figure:
+      Panel 1: Grouped bar chart comparing Accuracy & F1-Score across all algorithms with the winner highlighted.
+      Panel 2: Radar chart comparing top candidates across Accuracy, F1, AUC, and Stability.
+    """
+    if not leaderboard:
+        return None
+    try:
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        import numpy as np
+    except Exception:
+        return None
+
+    save_dir = Path(save_dir)
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    items = sorted(leaderboard, key=lambda x: x.get("rank", 999))
+    names = [str(item.get("algorithm") or item.get("method")).split("(")[0].strip() for item in items]
+    accuracies = [float(item.get("accuracy", 0.0)) * 100.0 for item in items]
+    f1_scores = [float(item.get("f1", 0.0)) * 100.0 for item in items]
+    winner_idx = next((i for i, it in enumerate(items) if it.get("is_winner")), 0)
+
+    fig = plt.figure(figsize=(15, 6), facecolor='#ffffff')
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.25, 0.75], wspace=0.28)
+
+    # Panel 1: Bar Chart of all competing algorithms
+    ax1 = fig.add_subplot(gs[0, 0])
+    x = np.arange(len(names))
+    width = 0.38
+
+    acc_colors = ['#10b981' if i == winner_idx else '#3b82f6' for i in range(len(names))]
+    f1_colors = ['#059669' if i == winner_idx else '#6366f1' for i in range(len(names))]
+
+    rects1 = ax1.bar(x - width/2, accuracies, width, label='Accuracy (%)', color=acc_colors, alpha=0.9, edgecolor='#0f172a', linewidth=0.7)
+    rects2 = ax1.bar(x + width/2, f1_scores, width, label='F1-Score (%)', color=f1_colors, alpha=0.9, edgecolor='#0f172a', linewidth=0.7)
+
+    # Crown / Winner annotation on winning algorithm
+    win_x = x[winner_idx]
+    win_y = max(accuracies[winner_idx], f1_scores[winner_idx])
+    ax1.annotate(
+        f"WINNER #1 (Promoted)\n{names[winner_idx]} ({accuracies[winner_idx]:.2f}%)",
+        xy=(win_x, win_y),
+        xytext=(win_x, min(win_y + 10, 108)),
+        ha='center',
+        va='bottom',
+        fontsize=9,
+        fontweight='bold',
+        color='#065f46',
+        bbox=dict(boxstyle="round,pad=0.35", fc="#d1fae5", ec="#10b981", lw=1.5),
+        arrowprops=dict(arrowstyle="->", color="#10b981", lw=1.8),
+    )
+
+    for rect in rects1:
+        h = rect.get_height()
+        if h > 0:
+            ax1.text(rect.get_x() + rect.get_width() / 2.0, h + 1.2, f"{h:.1f}%", ha='center', va='bottom', fontsize=7.5, rotation=45)
+
+    ax1.set_title(f"Federated Aggregation Multi-Algorithm Benchmark (v{version})", fontsize=13, fontweight='bold', pad=15)
+    ax1.set_ylabel("Validation Score (%)", fontsize=11, fontweight='semibold')
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(names, rotation=30, ha='right', fontsize=9, fontweight='medium')
+    min_val = max(0, min(min(accuracies), min(f1_scores)) - 10)
+    ax1.set_ylim(min_val, 116)
+    ax1.grid(axis='y', linestyle='--', alpha=0.3)
+    ax1.legend(loc='lower left', framealpha=0.9)
+
+    # Panel 2: Radar Chart of Top Candidates
+    ax2 = fig.add_subplot(gs[0, 1], projection='polar')
+    radar_metrics = ['Accuracy', 'F1-Score', 'AUC', 'Drift Stability']
+    num_vars = len(radar_metrics)
+    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+    angles += angles[:1]
+
+    top_candidates = items[:min(4, len(items))]
+    palette = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b']
+
+    for c_i, cand in enumerate(top_candidates):
+        c_name = str(cand.get("algorithm") or cand.get("method")).split("(")[0].strip()
+        c_acc = float(cand.get("accuracy", 0.0))
+        c_f1 = float(cand.get("f1", 0.0))
+        c_auc = float(cand.get("auc", 0.0))
+        c_l2 = float(cand.get("delta_l2_norm", 0.0)) if cand.get("delta_l2_norm") is not None else 0.0
+        c_stab = max(0.0, 1.0 - min(c_l2, 1.0))
+
+        vals = [c_acc, c_f1, c_auc, c_stab]
+        vals += vals[:1]
+
+        is_win = cand.get("is_winner", False)
+        lw = 2.8 if is_win else 1.8
+        lbl = f"Top 1: {c_name}" if is_win else c_name
+        ax2.plot(angles, vals, 'o-', linewidth=lw, label=lbl, color=palette[c_i % len(palette)], markersize=5)
+        ax2.fill(angles, vals, alpha=0.22 if is_win else 0.08, color=palette[c_i % len(palette)])
+
+    ax2.set_xticks(angles[:-1])
+    ax2.set_xticklabels(radar_metrics, fontsize=9, fontweight='semibold')
+    ax2.set_ylim(0, 1.05)
+    ax2.set_title("Top Candidate Trade-offs", fontsize=12, fontweight='bold', pad=15)
+    ax2.legend(loc='upper right', bbox_to_anchor=(1.25, 1.15), fontsize=8, framealpha=0.9)
+    ax2.grid(True, alpha=0.3)
+
+    fig.subplots_adjust(left=0.07, right=0.95, top=0.90, bottom=0.18, wspace=0.28)
+    plot_filename = f"v{version}_fl_algorithm_comparison.png"
+    out_path = save_dir / plot_filename
+    plt.savefig(out_path, dpi=200, bbox_inches='tight')
+    plt.close(fig)
+    return str(out_path)

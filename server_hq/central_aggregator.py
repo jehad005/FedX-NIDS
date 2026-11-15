@@ -1661,6 +1661,41 @@ def run_federated_round(
     )
     next_open_round = registry.advance_open_round()
 
+    # Generate and link Multi-Algorithm comparison visual plot
+    plot_rel_url = None
+    if leaderboard_summary:
+        try:
+            import shutil
+            from server_hq.visualization import create_fl_algorithm_comparison_plot
+            plots_dir = registry.training_logs_dir / "plots"
+            plots_dir.mkdir(parents=True, exist_ok=True)
+            plot_abs_path = create_fl_algorithm_comparison_plot(
+                leaderboard=leaderboard_summary,
+                save_dir=plots_dir,
+                version=next_ver,
+            )
+            v_plots_dir = registry.version_dir(next_ver) / "plots"
+            v_plots_dir.mkdir(parents=True, exist_ok=True)
+            if plot_abs_path and Path(plot_abs_path).exists():
+                shutil.copy2(plot_abs_path, v_plots_dir / f"v{next_ver}_fl_algorithm_comparison.png")
+                shutil.copy2(plot_abs_path, v_plots_dir / "fl_algorithm_comparison.png")
+                plot_rel_url = f"/api/dashboard/plot/{next_ver}/v{next_ver}_fl_algorithm_comparison.png"
+
+                # Persist into version meta.json plot_manifest and leaderboard record
+                try:
+                    meta_path = registry.version_dir(next_ver) / "meta.json"
+                    if meta_path.exists():
+                        cur_meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                        p_manifest = cur_meta.setdefault("plot_manifest", {})
+                        p_manifest["fl_algorithm_comparison"] = plot_rel_url
+                        cur_meta["leaderboard"] = leaderboard_summary
+                        cur_meta["winning_method"] = winning_method
+                        meta_path.write_text(json.dumps(cur_meta, indent=2), encoding="utf-8")
+                except Exception:
+                    pass
+        except Exception as plot_err:
+            logger.warning(f"Could not generate FL algorithm comparison plot: {plot_err}")
+
     with registry._connect() as conn:
         try:
             for u_id in update_ids:
@@ -1686,6 +1721,7 @@ def run_federated_round(
         "selection_strategy": selected_strategy,
         "leaderboard": leaderboard_summary,
         "candidate_count": len(leaderboard_summary),
+        "plot_url": plot_rel_url,
         "method_details": method_info,
         "num_updates_merged": len(validated_entries),
         "samples": total_samples,
@@ -1848,6 +1884,33 @@ def compare_aggregation_methods(
     )
     predicted_winner = sorted_methods[0][0] if sorted_methods else "fedavg"
 
+    compare_plot_url = None
+    try:
+        from server_hq.visualization import create_fl_algorithm_comparison_plot
+        temp_lb = []
+        for r_i, (m_key, m_val) in enumerate(sorted_methods, start=1):
+            temp_lb.append({
+                "rank": r_i,
+                "method": m_key,
+                "algorithm": m_val.get("algorithm", m_key),
+                "accuracy": m_val.get("accuracy", 0.0),
+                "f1": m_val.get("f1", 0.0),
+                "auc": m_val.get("auc", 0.0),
+                "delta_l2_norm": m_val.get("delta_l2_norm", 0.0),
+                "is_winner": (r_i == 1),
+            })
+        plots_dir = registry.training_logs_dir / "plots"
+        plots_dir.mkdir(parents=True, exist_ok=True)
+        cmp_path = create_fl_algorithm_comparison_plot(
+            leaderboard=temp_lb,
+            save_dir=plots_dir,
+            version=f"round_{open_round}_preview",
+        )
+        if cmp_path and Path(cmp_path).exists():
+            compare_plot_url = f"/api/dashboard/plot/{base_ver}/vround_{open_round}_preview_fl_algorithm_comparison.png"
+    except Exception as cmp_err:
+        logger.warning(f"Could not generate compare plot: {cmp_err}")
+
     return {
         "status": "success",
         "base_version": base_ver,
@@ -1857,4 +1920,5 @@ def compare_aggregation_methods(
         "rejected_count": len(rejected_notes),
         "predicted_winner": predicted_winner,
         "methods_compared": summaries,
+        "plot_url": compare_plot_url,
     }
