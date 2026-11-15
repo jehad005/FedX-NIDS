@@ -36,10 +36,10 @@
                         <i class="iconsax" icon-name="cloud-add"></i> Model Training
                     </a>
                     <a class="nav-link" href="/models">
-                        <i class="iconsax" icon-name="cpu-charge"></i> DL Models (v1.x)
+                        <i class="iconsax" icon-name="cpu-charge"></i> DL Models
                     </a>
                     <a class="nav-link" href="/fl-models">
-                        <i class="iconsax" icon-name="hierarchy-square-2"></i> Federated Models (v2.x)
+                        <i class="iconsax" icon-name="hierarchy-square-2"></i> Federated Models
                     </a>
                     <a class="nav-link" href="/clients">
                         <i class="iconsax" icon-name="user-2"></i> Clients
@@ -272,7 +272,7 @@
                     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <i class="iconsax text-primary" icon-name="hierarchy-square-2"></i>
-                            <span class="fw-semibold">Federated Global Models (Rounds Archive · v2.x)</span>
+                            <span class="fw-semibold">Federated Global Models (Rounds Archive)</span>
                         </div>
                         <a href="/fl-models" class="btn btn-sm btn-outline-primary font-mono d-flex align-items-center gap-1">
                             <i class="iconsax" icon-name="document-code-1"></i> Open Dedicated FL Models Page &rarr;
@@ -498,7 +498,7 @@
                     if (flTable && verData && verData.versions) {
                         const flList = verData.versions.filter(v => String(v.version).startsWith('2.'));
                         if (flList.length === 0) {
-                            flTable.innerHTML = '<tr><td colspan="7" class="text-center py-3 text-muted">No Federated Global Models (v2.x) created yet.</td></tr>';
+                            flTable.innerHTML = '<tr><td colspan="7" class="text-center py-3 text-muted">No Federated Global Models created yet.</td></tr>';
                         } else {
                             flTable.innerHTML = flList.map(v => `
                                 <tr>
