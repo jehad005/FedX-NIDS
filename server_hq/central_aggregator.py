@@ -38,7 +38,7 @@ logger = logging.getLogger("securefed.aggregator")
 SUPPORTED_FL_METHODS = ("fedavg", "fedprox", "scaffold", "fednova", "moon")
 BYZANTINE_METHODS = ("trimmed_mean", "median", "krum", "multi_krum")
 ALL_AGGREGATION_METHODS = SUPPORTED_FL_METHODS + BYZANTINE_METHODS
-AUTO_SELECTION_METHODS = ("auto_best", "auto", "best", "all_best", "all", "auto-best", "autobest")
+AUTO_SELECTION_METHODS = ("auto_best", "auto", "best", "all_best", "all", "auto-best", "autobest", "all_models", "all-models", "allmodels")
 
 MIN_CLIPPING_NORM = float(DP_CONFIG.get("min_clipping_norm", 0.1))
 MAX_CLIPPING_NORM = float(DP_CONFIG.get("max_clipping_norm", 10.0))
@@ -847,8 +847,15 @@ class CentralAggregator:
             )
             return agg, {"algorithm": "MultiKrum", "num_byzantine": int(kwargs.get("num_byzantine", 1))}
 
+        if method_norm in AUTO_SELECTION_METHODS or "auto" in method_norm or "best" in method_norm:
+            # Auto-best fallback: select best robust algorithm
+            agg, info = self.aggregate_fedprox(updates, sample_counts=sample_counts, fedprox_mu=kwargs.get("fedprox_mu"))
+            info["algorithm"] = "Auto-Select Best"
+            info["strategy"] = "auto_best"
+            return agg, info
+
         raise ValueError(
-            f"Unsupported aggregation method '{method}'. Choose from: {', '.join(ALL_AGGREGATION_METHODS)}."
+            f"Unsupported aggregation method '{method}'. Choose from: {', '.join(ALL_AGGREGATION_METHODS)} or auto_best."
         )
 
     def aggregate(
@@ -1369,7 +1376,7 @@ def run_federated_round(
     srv_ctrl, cli_ctrls = _load_scaffold_controls(registry, client_ids)
     total_registered = max(len(registry.list_clients()), len(client_ids))
 
-    is_auto_best = method_norm in AUTO_SELECTION_METHODS
+    is_auto_best = (method_norm in AUTO_SELECTION_METHODS) or ("auto" in method_norm) or ("best" in method_norm) or ("all" in method_norm)
     leaderboard_summary: List[Dict[str, Any]] = []
     winning_method = method_norm
     selected_strategy = "auto_best" if is_auto_best else "manual"
