@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC Administrator Sign In · SecureFed HQ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://iconsax.gitlab.io/i/icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/modern_hq.css?v=11">
+    <script src="/static/js/hq_theme.js?v=2"></script>
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--body-bg);
+            background-image: var(--body-ambient);
+            background-attachment: fixed;
+            font-family: var(--font-body);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            position: relative;
+            padding: 1.5rem;
+        }
+
+        /* Ambient Cyber Grid Overlay */
+        body::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(37, 99, 235, 0.12) 1px, transparent 1px);
+            background-size: 28px 28px;
+            pointer-events: none;
+            opacity: 0.8;
+            z-index: 0;
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 460px;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--card-border);
+            border-radius: 1.25rem;
+            box-shadow: var(--shadow-hover);
+            padding: 2.25rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .brand-badge-icon {
+            width: 58px;
+            height: 58px;
+            border-radius: 1rem;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(14, 165, 233, 0.18));
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.85rem;
+            color: var(--accent-primary);
+            box-shadow: 0 8px 24px -4px rgba(37, 99, 235, 0.35);
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .brand-badge-icon::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+            bottom: -2px;
+            right: -2px;
+            border: 2px solid var(--card-bg);
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        .login-input-group {
+            position: relative;
+            margin-bottom: 1.25rem;
+        }
+
+        .login-input-group .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            pointer-events: none;
+            transition: color 0.2s ease;
+            z-index: 4;
+        }
+
+        .login-input {
+            width: 100%;
+            height: 48px;
+            padding: 0.65rem 1rem 0.65rem 2.85rem;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 0.75rem;
+            color: var(--text-primary);
+            font-size: 0.92rem;
+            transition: all 0.2s ease;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: var(--focus-ring);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        html.dark .login-input:focus {
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        .login-input:focus + .input-icon {
+            color: var(--accent-primary);
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.35rem;
+            font-size: 1.15rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.375rem;
+            z-index: 5;
+        }
+
+        .password-toggle-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .btn-login-submit {
+            height: 48px;
+            border-radius: 0.75rem;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            border: none;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.02em;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+        }
+
+        .btn-login-submit:hover:not(:disabled) {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.55);
+        }
+
+        .btn-login-submit:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        .demo-chip {
+            cursor: pointer;
+            border: 1px dashed var(--border-strong);
+            background: var(--inset-bg);
+            transition: all 0.2s ease;
+            font-size: 0.75rem;
+        }
+
+        .demo-chip:hover {
+            border-color: var(--accent-primary);
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--accent-primary);
+        }
+
+        .theme-top-toggle {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Right Dark/Light Mode Switcher -->
+    <div class="theme-top-toggle">
+        <button type="button" class="theme-toggle-btn" onclick="toggleHqTheme()" title="Toggle Theme" aria-label="Toggle Theme">
+            <i id="hq-theme-icon" class="iconsax" icon-name="moon"></i>
+        </button>
+    </div>
+
+    <div class="login-container">
+        <!-- Main Card -->
+        <div class="login-card">
+            <div class="text-center mb-4">
+                <div class="brand-badge-icon">
+                    <i class="iconsax" icon-name="shield-security"></i>
+                </div>
+                <h3 class="fw-bold mb-1" style="letter-spacing: -0.02em;">SecureFed HQ</h3>
+                <div class="badge bg-primary-subtle text-primary font-mono px-2 py-1 mb-2" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                    SOC CONTROL PLANE · RESTRICTED ACCESS
+                </div>
+                <p class="text-muted small mb-0">Authorized SOC Administrators Only. Credentials are cryptographically validated.</p>
+            </div>
+
+            <!-- Dynamic Alert Message -->
+            <div id="login-alert" class="alert d-none py-2 px-3 small rounded-3 mb-3 font-mono" role="alert"></div>
+
+            <!-- Sign In Form -->
+            <form id="login-form" onsubmit="handleLoginSubmit(event)" autocomplete="off">
+                <input type="hidden" id="next-url" value="{{ next or '/' }}">
+
+                <!-- Username Input -->
+                <div class="login-input-group">
+                    <i class="iconsax input-icon" icon-name="security-user"></i>
+                    <input 
+                        type="text" 
+                        id="login-username" 
+                        class="login-input font-mono" 
+                        placeholder="Admin Username (e.g. admin)" 
+                        required 
+                        autofocus
+                        value="admin"
+                    >
+                </div>
+
+                <!-- Password / Key Input -->
+                <div class="login-input-group">
+                    <i class="iconsax input-icon" icon-name="key-square"></i>
+                    <input 
+                        type="password" 
+                        id="login-password" 
+                        class="login-input font-mono" 
+                        placeholder="Master Secret Key / Password" 
+                        required
+                    >
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility()" title="Toggle password visibility">
+                        <i id="password-toggle-icon" class="iconsax" icon-name="eye"></i>
+                    </button>
+                </div>
+
+                <!-- Options Row -->
+                <div class="d-flex justify-content-between align-items-center mb-3 small">
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" id="remember-me" checked>
+                        <label class="form-check-label text-muted" for="remember-me" style="font-size: 0.8rem;">
+                            Keep 24h Station Active
+                        </label>
+                    </div>
+                    <span class="badge bg-success-subtle text-success font-mono" style="font-size: 0.72rem;">
+                        <span class="system-indicator bg-success" style="width:6px; height:6px; display:inline-block; border-radius:50%; margin-right:4px;"></span> Online
+                    </span>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="btn-submit" class="btn btn-login-submit w-100 mb-3">
+                    <i class="iconsax" icon-name="unlock" id="btn-icon"></i>
+                    <span id="btn-text">Authenticate as Admin</span>
+                </button>
+            </form>
+
+            <!-- Quick Demo Helper Chip -->
+            <div class="text-center mt-3 pt-3 border-top border-secondary-subtle">
+                <div class="small text-muted mb-2">SOC Admin Credentials Helper:</div>
+                <div 
+                    class="demo-chip p-2 rounded-3 font-mono d-inline-flex align-items-center gap-2"
+                    onclick="fillDefaultCredentials()" 
+                    title="Click to auto-fill default admin credentials"
+                >
+                    <i class="iconsax text-primary" icon-name="flash-circle"></i>
+                    <span>User: <strong>admin</strong> · Key: <strong>admin123</strong></span>
+                </div>
+            </div>
+
+            <!-- Security Assurance Footer -->
+            <div class="d-flex justify-content-center align-items-center gap-3 text-muted font-mono mt-4 pt-2" style="font-size: 0.68rem; opacity: 0.85;">
+                <div class="d-flex align-items-center gap-1">
+                    <i class="iconsax text-success" icon-name="shield-tick"></i> Zero-Trust
+                </div>
+                <span>·</span>
+                <div class="d-flex align-items-center gap-1">
+                    <i class="iconsax text-info" icon-name="lock-1"></i> HMAC-SHA256
+                </div>
+                <span>·</span>
+                <div class="d-flex align-items-center gap-1">
+                    <i class="iconsax text-primary" icon-name="cpu"></i> Port 8001
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            const input = document.getElementById('login-password');
+            const icon = document.getElementById('password-toggle-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('icon-name', 'eye-slash');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('icon-name', 'eye');
+            }
+        }
+
+        function fillDefaultCredentials() {
+            document.getElementById('login-username').value = 'admin';
+            document.getElementById('login-password').value = 'admin123';
+            const alertBox = document.getElementById('login-alert');
+            alertBox.className = 'alert alert-info py-2 px-3 small rounded-3 mb-3 font-mono';
+            alertBox.textContent = 'Demo credentials loaded. Click "Authenticate as Admin" to sign in.';
+            alertBox.classList.remove('d-none');
+        }
+
+        async function handleLoginSubmit(event) {
+            event.preventDefault();
+            const usernameInput = document.getElementById('login-username');
+            const passwordInput = document.getElementById('login-password');
+            const alertBox = document.getElementById('login-alert');
+            const btn = document.getElementById('btn-submit');
+            const btnText = document.getElementById('btn-text');
+            const btnIcon = document.getElementById('btn-icon');
+            const nextUrl = document.getElementById('next-url').value || '/';
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (!username || !password) {
+                alertBox.className = 'alert alert-warning py-2 px-3 small rounded-3 mb-3 font-mono';
+                alertBox.textContent = 'Please enter both username and password.';
+                alertBox.classList.remove('d-none');
+                return;
+            }
+
+            // UI Loading state
+            btn.disabled = true;
+            btnText.textContent = 'Verifying Admin Cryptographic Key...';
+            btnIcon.setAttribute('icon-name', 'refresh-2');
+
+            try {
+                const response = await fetch('/api/dashboard/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        next: nextUrl
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success') {
+                    // Success!
+                    alertBox.className = 'alert alert-success py-2 px-3 small rounded-3 mb-3 font-mono';
+                    alertBox.textContent = 'Authentication Verified! Launching Control Plane...';
+                    alertBox.classList.remove('d-none');
+
+                    // Save session token in storage for API calls if needed
+                    if (data.token) {
+                        sessionStorage.setItem('hq_admin_token', data.token);
+                        localStorage.setItem('hq_admin_user', username);
+                    }
+
+                    setTimeout(() => {
+                        window.location.href = data.redirect || nextUrl || '/';
+                    }, 500);
+                } else {
+                    // Failure
+                    alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-3 font-mono';
+                    alertBox.textContent = data.message || 'Access Denied: Invalid Admin Credentials.';
+                    alertBox.classList.remove('d-none');
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                }
+            } catch (err) {
+                alertBox.className = 'alert alert-danger py-2 px-3 small rounded-3 mb-3 font-mono';
+                alertBox.textContent = 'Connection Error: ' + err.message;
+                alertBox.classList.remove('d-none');
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Authenticate as Admin';
+                btnIcon.setAttribute('icon-name', 'unlock');
+            }
+        }
+
+        // On load check for logged out notice
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const alertBox = document.getElementById('login-alert');
+            if (urlParams.get('logged_out') === '1') {
+                alertBox.className = 'alert alert-info py-2 px-3 small rounded-3 mb-3 font-mono';
+                alertBox.textContent = 'SOC Admin session terminated. You have been safely logged out.';
+                alertBox.classList.remove('d-none');
+            } else if (urlParams.get('session_expired') === '1') {
+                alertBox.className = 'alert alert-warning py-2 px-3 small rounded-3 mb-3 font-mono';
+                alertBox.textContent = 'Admin session expired. Please sign in again.';
+                alertBox.classList.remove('d-none');
+            }
+        });
+    </script>
+</body>
+</html>

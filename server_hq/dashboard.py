@@ -31,13 +31,20 @@ from server_hq.visualization import (
 )
 
 from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uvicorn
 
 from server_hq.registry import ModelRegistry
 from server_hq.dashboard_page_handler import setup_dashboard_routes
+from server_hq.auth import (
+    SESSION_COOKIE_NAME,
+    create_session_token,
+    verify_session_token,
+    verify_admin_credentials,
+    _get_allowed_passwords,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -136,6 +143,50 @@ class Dashboard:
 
             raise HTTPException(status_code=404, detail="Plot file not found")
 
+        # ── Mandatory Admin Access Control Middleware ──
+        # All HQ control plane features are strictly gated behind admin authentication.
+        @self.app.middleware("http")
+        async def admin_auth_middleware(request: Request, call_next):
+            path = request.url.path
+
+            # Allow public assets and login/logout endpoints
+            if (
+                path in ("/login", "/logout", "/api/dashboard/auth/login", "/api/dashboard/auth/logout")
+                or path.startswith("/static")
+                or path.startswith("/api/v1")  # Client sync and model download endpoints
+                or path.startswith("/docs")
+                or path.startswith("/openapi.json")
+                or path.startswith("/redoc")
+            ):
+                return await call_next(request)
+
+            # Check cryptographically signed admin session cookie or X-Admin-Key header
+            cookie_token = request.cookies.get(SESSION_COOKIE_NAME)
+            header_key = request.headers.get("X-Admin-Key")
+
+            is_authenticated = False
+            if cookie_token and verify_session_token(cookie_token):
+                is_authenticated = True
+            elif header_key and (header_key.strip() in _get_allowed_passwords()):
+                is_authenticated = True
+
+            if not is_authenticated:
+                accept = request.headers.get("accept", "")
+                # If page navigation in browser, redirect immediately to login
+                if "text/html" in accept or not path.startswith("/api/"):
+                    return RedirectResponse(url=f"/login?next={path}", status_code=303)
+                # If background API call
+                return JSONResponse(
+                    status_code=401,
+                    content={
+                        "status": "error",
+                        "message": "Admin authorization required. Access Denied.",
+                        "redirect": f"/login?next={path}"
+                    }
+                )
+
+            return await call_next(request)
+
         self.setup_routes()
         # Register the dedicated dashboard pages (/models, /clients, /updates, /analytics).
         setup_dashboard_routes(self.app, self.registry)
@@ -153,6 +204,71 @@ class Dashboard:
 
     def setup_routes(self):
         """Define all dashboard routes."""
+
+        @self.app.get("/login", response_class=HTMLResponse)
+        async def login_page(request: Request, next: str = "/"):
+            """Render the SOC Admin login page or redirect if already authenticated."""
+            cookie_token = request.cookies.get(SESSION_COOKIE_NAME)
+            if cookie_token and verify_session_token(cookie_token):
+                dest = next if (next and next.startswith("/") and next != "/login") else "/"
+                return RedirectResponse(url=dest, status_code=303)
+            return self.templates.TemplateResponse(
+                request=request,
+                name="login.html",
+                context={"request": request, "next": next}
+            )
+
+        @self.app.get("/logout")
+        async def logout_page():
+            """Log out active admin session and redirect to /login."""
+            resp = RedirectResponse(url="/login?logged_out=1", status_code=303)
+            resp.delete_cookie(SESSION_COOKIE_NAME)
+            return resp
+
+        @self.app.post("/api/dashboard/auth/login")
+        async def auth_login(request: Request):
+            """Authenticate admin credentials and issue cryptographic session cookie."""
+            try:
+                body = await request.json()
+            except Exception:
+                body = {}
+            username = (body.get("username") or "").strip()
+            password = (body.get("password") or body.get("admin_key") or "").strip()
+            next_url = (body.get("next") or "/").strip()
+            if not next_url.startswith("/") or next_url == "/login":
+                next_url = "/"
+
+            if verify_admin_credentials(username, password):
+                token = create_session_token(username)
+                resp = JSONResponse({
+                    "status": "success",
+                    "message": "Authentication successful",
+                    "token": token,
+                    "redirect": next_url
+                })
+                resp.set_cookie(
+                    key=SESSION_COOKIE_NAME,
+                    value=token,
+                    max_age=86400,
+                    httponly=True,
+                    samesite="lax",
+                )
+                return resp
+
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "status": "error",
+                    "message": "Invalid Admin credentials. Access Denied."
+                }
+            )
+
+        @self.app.post("/api/dashboard/auth/logout")
+        async def auth_logout():
+            """Invalidate admin session."""
+            resp = JSONResponse({"status": "success", "message": "Signed out successfully", "redirect": "/login?logged_out=1"})
+            resp.delete_cookie(SESSION_COOKIE_NAME)
+            return resp
 
         @self.app.get("/", response_class=HTMLResponse)
         async def dashboard_home(request: Request):
@@ -796,6 +912,13 @@ class Dashboard:
         @self.app.websocket("/ws/dashboard")
         async def websocket_endpoint(websocket: WebSocket):
             """WebSocket endpoint for real-time updates."""
+            token = websocket.cookies.get(SESSION_COOKIE_NAME) or websocket.query_params.get("token")
+            if not verify_session_token(token):
+                header_key = websocket.headers.get("x-admin-key")
+                if not (header_key and header_key.strip() in _get_allowed_passwords()):
+                    await websocket.close(code=1008)
+                    return
+
             await websocket.accept()
             self.active_connections.append(websocket)
 

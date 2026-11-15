@@ -30,16 +30,25 @@
                 <nav class="nav flex-column">
                     <a class="nav-link" href="/"><i class="iconsax" icon-name="grid-apps"></i> Dashboard</a>
                     <a class="nav-link" href="/training"><i class="iconsax" icon-name="cloud-add"></i> Model Training</a>
-                    <a class="nav-link active" href="/models"><i class="iconsax" icon-name="cpu-charge"></i> Model Versions</a>
+                    <a class="nav-link active" href="/models"><i class="iconsax" icon-name="cpu-charge"></i> DL Models</a>
+                    <a class="nav-link" href="/fl-models"><i class="iconsax" icon-name="hierarchy-square-2"></i> Federated Models</a>
                     <a class="nav-link" href="/clients"><i class="iconsax" icon-name="user-2"></i> Clients</a>
                     <a class="nav-link" href="/updates"><i class="iconsax" icon-name="cloud-notif"></i> Updates</a>
                     <a class="nav-link" href="/analytics"><i class="iconsax" icon-name="bar-graph-1"></i> Analytics</a>
                     <a class="nav-link" href="/xai"><i class="iconsax" icon-name="bulb"></i> Explainable AI</a>
                 </nav>
                 <div class="status-footer mt-auto">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="text-muted">HQ Engine</span>
                         <span class="system-status"><span class="system-indicator"></span> Online</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-top border-secondary-subtle">
+                        <span class="small font-mono text-muted d-flex align-items-center gap-1">
+                            <i class="iconsax text-success" icon-name="security-user"></i> Admin
+                        </span>
+                        <a href="/logout" class="btn btn-outline-danger btn-sm py-0 px-2 font-mono" style="font-size: 0.72rem;" title="Sign out of HQ Control Plane">
+                            <i class="iconsax" icon-name="logout-1"></i> Exit
+                        </a>
                     </div>
                 </div>
             </div>
