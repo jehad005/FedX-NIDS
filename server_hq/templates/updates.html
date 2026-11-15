@@ -145,7 +145,7 @@
                             </div>
                             <div class="col-md-4 d-flex gap-2">
                                 <button id="btnCompare" type="button" class="btn btn-outline-primary flex-fill" onclick="compareMethods()" title="Preview and evaluate all 9 FL &amp; Byzantine methods on pending deltas">
-                                    <i class="iconsax me-1" icon-name="chart-21"></i> Compare All (9)
+                                    <i class="iconsax me-1" icon-name="bar-graph-1"></i> Compare All (9)
                                 </button>
                                 <button id="btnAggregate" class="btn btn-success flex-fill fw-bold" onclick="runFederatedAggregation()">
                                     <i class="iconsax me-1" icon-name="play"></i> Aggregate Now
@@ -177,7 +177,7 @@
                                 <div class="d-flex align-items-center gap-2 flex-wrap">
                                     <input type="text" id="updatesEdgePushUrl" class="form-control form-control-sm font-mono" style="width: 230px;" placeholder="Auto (registered or :5000)">
                                     <button id="btnPushAggregated" type="button" class="btn btn-primary" onclick="pushAggregatedToEdge(this)">
-                                        <i class="iconsax me-1" icon-name="export-3"></i> Push to Client Edge
+                                        <i class="iconsax me-1" icon-name="send-2"></i> Push to Client Edge
                                     </button>
                                 </div>
                             </div>
@@ -495,7 +495,7 @@
                         const accStr = info.accuracy !== null && info.accuracy !== undefined ? `${(Number(info.accuracy) * 100).toFixed(2)}%` : '—';
                         const f1Str = info.f1 !== null && info.f1 !== undefined ? Number(info.f1).toFixed(4) : '—';
                         const aucStr = info.auc !== null && info.auc !== undefined ? Number(info.auc).toFixed(4) : '—';
-                        const badge = isTop ? '<span class="badge bg-success ms-1"><i class="iconsax me-1" icon-name="crown"></i>Top Pick</span>' : '';
+                        const badge = isTop ? '<span class="badge bg-success ms-1"><i class="iconsax me-1" icon-name="crown-1"></i>Top Pick</span>' : '';
                         const rowCls = isTop ? 'table-success' : '';
                         return `
                             <tr class="${rowCls}">
@@ -618,7 +618,7 @@
                             const accStr = (Number(row.accuracy || 0) * 100).toFixed(2);
                             const rowCls = isWin ? 'table-success' : '';
                             const rankBadge = isWin 
-                                ? '<span class="badge bg-success font-mono"><i class="iconsax me-1" icon-name="crown"></i> Winner #1</span>' 
+                                ? '<span class="badge bg-success font-mono"><i class="iconsax me-1" icon-name="crown-1"></i> Winner #1</span>' 
                                 : `<span class="badge bg-secondary font-mono">#${row.rank}</span>`;
                             const statusBadge = isWin
                                 ? `<span class="badge bg-success">Promoted to v${escHtml(data.new_version)}</span>`
@@ -639,7 +639,7 @@
                         leaderboardHtml = `
                             <div class="mt-3 p-3 rounded-3 border" style="background: var(--inset-bg); border-color: var(--border-subtle) !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                                    <strong class="small font-mono text-uppercase"><i class="iconsax text-warning me-1" icon-name="cup"></i> Multi-Algorithm Competition Leaderboard (${data.leaderboard.length} Algorithms Evaluated)</strong>
+                                    <strong class="small font-mono text-uppercase"><i class="iconsax text-warning me-1" icon-name="ranking"></i> Multi-Algorithm Competition Leaderboard (${data.leaderboard.length} Algorithms Evaluated)</strong>
                                     <span class="badge bg-success font-mono">Top Performer: ${escHtml((data.winning_method || data.method).toUpperCase())}</span>
                                 </div>
                                 <div class="table-responsive">
