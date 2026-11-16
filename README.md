@@ -77,24 +77,95 @@ FedX-NIDS/
 
 ## Getting Started
 
-### 1. Clone & Install Environment
+### 1. Prerequisites
+- **Python:** 3.9, 3.10, 3.11, or 3.12 (Make sure Python is added to system PATH during installation).
+- **Git:** Installed on your system.
 
+---
+
+### 2. Clone & Install Environment
+
+Choose your operating system below:
+
+#### 🪟 Windows (Command Prompt or PowerShell)
+
+**Option A: 1-Click Automated Setup (Recommended)**
+Double-click `setup_and_run.bat` or run:
+```cmd
+setup_and_run.bat setup
+```
+
+**Option B: Manual Setup via Command Prompt (CMD)**
+```cmd
+git clone https://github.com/jehad005/FedX-NIDS.git
+cd FedX-NIDS
+
+:: Create virtual environment
+python -m venv venv
+
+:: Activate virtual environment
+call venv\Scripts\activate.bat
+
+:: Upgrade pip and install dependencies
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+**Option C: Manual Setup via PowerShell**
+```powershell
+git clone https://github.com/jehad005/FedX-NIDS.git
+cd FedX-NIDS
+
+# Create virtual environment
+python -m venv venv
+
+# If PowerShell script execution is restricted, allow it once:
+# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Activate virtual environment
+.\venv\Scripts\Activate.ps1
+
+# Upgrade pip and install dependencies
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+> [!TIP]
+> **PyTorch on Windows:** `pip install -r requirements.txt` installs standard PyTorch wheels. If you have an NVIDIA GPU and want CUDA acceleration, or want a lightweight CPU-only build, you can optionally run:
+> ```cmd
+> pip install torch --index-url https://download.pytorch.org/whl/cpu
+> ```
+
+---
+
+#### 🐧 Linux / macOS / Kali Linux
+
+**Option A: Automated Setup**
+```bash
+chmod +x setup_and_run.sh run_hq.sh run_client.sh
+./setup_and_run.sh setup
+```
+
+**Option B: Manual Setup**
 ```bash
 git clone https://github.com/jehad005/FedX-NIDS.git
 cd FedX-NIDS
 
 python3 -m venv venv
 source venv/bin/activate
+
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
 ---
 
-### 2. Running the Complete 7-Stage Pipeline
+### 3. Running the Complete 7-Stage Pipeline
 
 To run the full end-to-end pipeline (Preprocessing $\to$ 5-Fold CV $\to$ Top-2 Ensemble $\to$ 5 FL Methods $\to$ DP-SGD $\to$ SHAP XAI $\to$ HQ Model Publish):
 
 ```bash
+# Windows / Linux:
 python main.py --mode all --epochs 5 --kfold 5 --ensemble-method voting --voting-type soft
 ```
 
@@ -108,20 +179,28 @@ Command-line arguments:
 
 ---
 
-### 3. Launching the HQ Management Servers
+### 4. Launching the HQ Management Servers
 
-Launch both the **API Server** and **Management Dashboard** with a single command:
+Launch both the **API Server (Port 8000)** and **Management Dashboard (Port 8001)**:
 
+#### 🪟 Windows:
+```cmd
+# Double click run_hq.bat or run in CMD:
+run_hq.bat
+
+# Or direct Python launcher:
+python start_hq.py
+```
+
+#### 🐧 Linux / macOS:
 ```bash
-# Linux / Kali Linux (convenience launcher)
 ./run_hq.sh
 
 # Or direct Python launcher:
 python start_hq.py
 ```
 
-Or start them individually:
-
+#### Starting Individually (Any OS):
 ```bash
 # Terminal 1: HQ API Server (Port 8000)
 python -m server_hq.server_api
@@ -130,58 +209,74 @@ python -m server_hq.server_api
 python -m server_hq.dashboard
 ```
 
-- **HQ REST API:** [http://localhost:8000](http://localhost:8000)
+- **HQ REST API:** [http://localhost:8000](http://localhost:8000) (Swagger Docs: `/docs`)
 - **HQ Web Dashboard:** [http://localhost:8001](http://localhost:8001)
+  - **Admin Credentials:** Username: `admin` | Password: `admin123`
+- **Federated Models:** [http://localhost:8001/fl-models](http://localhost:8001/fl-models)
+- **Deep Learning Baseline Models:** [http://localhost:8001/models](http://localhost:8001/models)
 - **Explainable AI Dashboard:** [http://localhost:8001/xai](http://localhost:8001/xai)
 - **Model Updates & Aggregator:** [http://localhost:8001/updates](http://localhost:8001/updates)
 
 ---
 
-### 4. Running an Edge Client Node
+### 5. Running an Edge Client Node
 
-Start the Edge Client server cleanly via the cross-platform launcher:
+Start the Edge Client server on `http://localhost:5000`:
 
+#### 🪟 Windows:
+```cmd
+# Standard launch (Port 5000):
+run_client.bat
+
+# Run with custom port:
+run_client.bat 5001
+
+# Run with custom Client ID (CMD):
+set CLIENT_ID=client_node_01 && run_client.bat 5000
+
+# Run with custom Client ID (PowerShell):
+$env:CLIENT_ID="client_node_01"; .\run_client.bat 5000
+```
+
+#### 🐧 Linux / macOS:
 ```bash
-# Linux / Kali Linux
+# Standard launch (Port 5000):
 ./run_client.sh
 
-# Windows CMD
-run_client.bat
+# Run with custom port:
+./run_client.sh 5001
+
+# Run with custom Client ID:
+CLIENT_ID=client_node_01 ./run_client.sh 5000
 ```
 
 - **Edge Client Dashboard:** [http://localhost:5000](http://localhost:5000)
 
 #### Edge Client Workflow:
-1. **Model Deployment (HQ Push or Edge Pull):** Open HQ **Model Versions** (`http://localhost:8001/models`) and click **`Push to Edge`** on any published release to deploy directly to active Edge nodes (`Explicit Push Only`). Alternatively, on Edge `/sync`, click **`Sync Latest Model Now`** (or use **Advanced $\to$ Manual Model File Upload** for air-gapped `.pt` deployment).
+1. **Model Deployment (1-Click HQ Push or Edge Pull):** Open HQ **Models** (`/models` or `/fl-models`) and click **`Push to Client Edge`** on any published release to deploy directly to active Edge nodes (`:5000` or registered nodes). Alternatively, on Edge `/sync`, click **`Sync Latest Model Now`**.
 2. **DP Local Training (`/training`):** Upload a local CSV traffic file. Train locally with DP-SGD (adjust Clipping Norm & Noise Multiplier). A protected parameter delta is created locally.
 3. **Push Update (`/sync`):** Click **`Push DP Update to HQ`** to send clipped/noised parameter deltas $(\Delta W)$ to HQ without exposing raw traffic.
 4. **Traffic Inference & On-Device XAI (`/inference`):** Upload traffic flow CSV logs to classify benign vs malicious traffic along with instant Top-3 threat indicator attributions.
 
-#### Running Multiple Edge Clients Concurrently:
-You can start multiple independent edge nodes on separate ports in seconds:
-
-```bash
-# Client Node 1 (Port 5000)
-CLIENT_ID=client_node_01 ./run_client.sh 5000
-
-# Client Node 2 (Port 5001)
-CLIENT_ID=client_node_02 ./run_client.sh 5001
-```
-
 ---
 
-### 5. Federated Round Aggregation (HQ Side)
+### 6. Federated Round Aggregation & Byzantine Defense (HQ Side)
 
 Once edge clients push their parameter updates, perform a federated round:
 
 1. Navigate to **HQ Dashboard $\to$ Updates** (`http://localhost:8001/updates`).
 2. Choose your desired aggregation algorithm:
+   - `★ All Models (Evaluate All 9 & Select Best)`: Evaluates all 9 algorithms on holdout data and crowns the top-performing model as winner.
    - `FedAvg`: Weighted sample averaging.
+   - `FedProx`: Proximal regularizer for Non-IID Dirichlet drift and DP noise.
+   - `SCAFFOLD`: Variance reduction using control variates.
+   - `FedNova`: Normalized averaging handling heterogeneous local steps.
+   - `MOON`: Model-contrastive federated representation learning.
    - `Trimmed Mean`: Coordinate-wise trimming of extreme client updates (defends against gradient poisoning).
    - `Coordinate Median`: Median along each parameter dimension (defends against high-noise adversarial updates).
-   - `Krum`: Geometric Euclidean distance selection (provably robust against up to $f$ Byzantine colluding clients).
+   - `Krum` / `Multi-Krum`: Geometric Euclidean distance selection (provably robust against colluding Byzantine clients).
 3. Click **Aggregate Now**.
-4. The system automatically creates and publishes the next global version (e.g. `v1.0.9`), preserving the active dataset's dynamic feature schema (`feature_names`), ready for edge clients to pull!
+4. The system automatically evaluates candidates, logs leaderboard statistics, and publishes the next global version (`FL Global Model`, e.g. `v2.0.3`), preserving dynamic feature schemas ready for edge nodes to pull or receive!
 
 ---
 

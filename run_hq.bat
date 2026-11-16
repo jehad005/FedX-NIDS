@@ -5,10 +5,14 @@ echo    Starting SecureFed-NIDS HQ Server and Dashboard
 echo ========================================================
 cd /d "%~dp0"
 
+set PYTHON_BIN=python
+if exist venv\Scripts\python.exe (
+    set PYTHON_BIN="%~dp0venv\Scripts\python.exe"
+)
+
 if exist venv\Scripts\activate.bat (
-    echo Activating Virtual Environment...
     call venv\Scripts\activate.bat
 )
 
-python start_hq.py
+%PYTHON_BIN% start_hq.py %*
 pause
