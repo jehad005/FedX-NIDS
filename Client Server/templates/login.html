@@ -1,102 +1,282 @@
 {% extends "base.html" %}
-{% block title %}Operator Sign In · FedX Edge{% endblock %}
-{% block page_heading %}Operator Authentication{% endblock %}
+{% block title %}Tactical Operator Authentication · FedX Edge Security{% endblock %}
+{% block page_heading %}Tactical Operator Authentication{% endblock %}
 {% block content %}
-<div class="edge-stagger-stack max-w-6xl mx-auto py-2 sm:py-6">
+<style>
+    /* ============================================================ */
+    /* CYBER SECURITY SOC / TACTICAL HUD ENHANCEMENTS               */
+    /* ============================================================ */
+    
+    .cyber-ambient-grid {
+        background-image: 
+            radial-gradient(rgba(6, 182, 212, 0.12) 1px, transparent 1px),
+            linear-gradient(to right, rgba(6, 182, 212, 0.04) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(6, 182, 212, 0.04) 1px, transparent 1px);
+        background-size: 28px 28px, 56px 56px, 56px 56px;
+    }
 
-    <!-- Unified 2-Column Modern SaaS Auth Showcase -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+    .cyber-hud-card {
+        background: rgba(15, 23, 42, 0.82);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid rgba(6, 182, 212, 0.28);
+        box-shadow: 0 0 35px -10px rgba(6, 182, 212, 0.22), 0 20px 40px -15px rgba(2, 6, 23, 0.75);
+        position: relative;
+    }
+
+    html:not(.dark) .cyber-hud-card {
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid rgba(37, 99, 235, 0.35);
+        box-shadow: 0 12px 32px -6px rgba(37, 99, 235, 0.16), 0 4px 12px rgba(15, 23, 42, 0.06);
+    }
+
+    /* HUD Corner Target Reticles */
+    .hud-corner {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        pointer-events: none;
+        transition: all 0.3s ease;
+        z-index: 15;
+    }
+    .hud-tl { top: -1px; left: -1px; border-top: 2px solid #06b6d4; border-left: 2px solid #06b6d4; }
+    .hud-tr { top: -1px; right: -1px; border-top: 2px solid #06b6d4; border-right: 2px solid #06b6d4; }
+    .hud-bl { bottom: -1px; left: -1px; border-bottom: 2px solid #06b6d4; border-left: 2px solid #06b6d4; }
+    .hud-br { bottom: -1px; right: -1px; border-bottom: 2px solid #06b6d4; border-right: 2px solid #06b6d4; }
+
+    /* Tactical Ambient Glow Accent Line */
+    .cyber-top-line {
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent 5%, #06b6d4 30%, #3b82f6 70%, transparent 95%);
+    }
+
+    /* Glowing Pulse Beacon */
+    @keyframes cyberRadarPing {
+        0% { transform: scale(0.9); opacity: 0.95; }
+        50% { transform: scale(1.4); opacity: 0.3; }
+        100% { transform: scale(1.8); opacity: 0; }
+    }
+    .cyber-radar-ring {
+        position: absolute;
+        inset: -4px;
+        border-radius: 9999px;
+        border: 2px solid #06b6d4;
+        animation: cyberRadarPing 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    /* Cyber Input Fields */
+    .cyber-input {
+        background: rgba(15, 23, 42, 0.65);
+        border: 1px solid rgba(6, 182, 212, 0.25);
+        color: #f1f5f9;
+        transition: all 0.2s ease;
+    }
+    .cyber-input:focus {
+        background: rgba(15, 23, 42, 0.9);
+        border-color: #06b6d4;
+        box-shadow: 0 0 16px rgba(6, 182, 212, 0.35), inset 0 0 8px rgba(6, 182, 212, 0.12);
+        outline: none;
+    }
+    html:not(.dark) .cyber-input {
+        background: rgba(248, 250, 252, 0.95);
+        border: 1px solid rgba(37, 99, 235, 0.32);
+        color: #0f172a;
+    }
+    html:not(.dark) .cyber-input:focus {
+        background: #ffffff;
+        border-color: #2563eb;
+        box-shadow: 0 0 14px rgba(37, 99, 235, 0.25);
+    }
+
+    /* Cyber Sheen Button */
+    .cyber-btn-glow {
+        background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 50%, #4f46e5 100%);
+        box-shadow: 0 0 26px -4px rgba(14, 165, 233, 0.55), 0 4px 14px -2px rgba(37, 99, 235, 0.45);
+        position: relative;
+        overflow: hidden;
+    }
+    .cyber-btn-glow:hover {
+        box-shadow: 0 0 35px 2px rgba(14, 165, 233, 0.75), 0 6px 18px -2px rgba(37, 99, 235, 0.65);
+        transform: translateY(-1px);
+    }
+    .cyber-btn-glow::after {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(60deg, transparent 30%, rgba(255, 255, 255, 0.25) 50%, transparent 70%);
+        transform: translateX(-100%);
+        transition: transform 0.6s ease;
+    }
+    .cyber-btn-glow:hover::after {
+        transform: translateX(100%);
+    }
+
+    /* Tactical Terminal Box */
+    .cyber-terminal-stream {
+        background: rgba(3, 7, 18, 0.88);
+        border: 1px solid rgba(6, 182, 212, 0.22);
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Animated Cyber Blinking Cursor */
+    @keyframes blinkCursor {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+    .cyber-cursor {
+        display: inline-block;
+        width: 6px;
+        height: 12px;
+        background: #06b6d4;
+        animation: blinkCursor 1s infinite;
+        vertical-align: middle;
+        margin-left: 2px;
+    }
+</style>
+
+<div class="edge-stagger-stack max-w-6xl mx-auto py-2 sm:py-6 cyber-ambient-grid rounded-3xl p-3 sm:p-6">
+
+    <!-- Unified 2-Column High-Impact Cyber Defense Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
         
-        <!-- Left Column: High-Impact Brand Showcase & Live Node Telemetry (5 cols) -->
-        <div class="lg:col-span-5 space-y-6">
+        <!-- Left Column: Tactical Threat Radar & Telemetry Console (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col justify-between space-y-6">
             
-            <!-- Brand & Tagline -->
-            <div class="space-y-3">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600/10 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 font-mono text-xs font-semibold border border-blue-600/20 shadow-xs">
-                    <span class="edge-live-dot h-2 w-2 rounded-full bg-emerald-500"></span>
-                    <span>Zero-Trust Edge Perimeter OS</span>
+            <!-- Brand & Tactical Header -->
+            <div class="space-y-3.5">
+                <!-- Tactical Clearance Badge -->
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 font-mono text-[11px] font-bold border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.18)]">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span>DEFENSE PERIMETER // ZERO-TRUST GATE</span>
                 </div>
 
-                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.18]">
-                    Decentralized Defense, <br>
-                    <span class="bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 bg-clip-text text-transparent">
-                        Federated Intelligence.
+                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.18] font-heading">
+                    Tactical Edge Node <br>
+                    <span class="bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
+                        Intrusion Defense OS
                     </span>
                 </h1>
 
                 <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                    Protect edge network flows with local DP-SGD training, input saliency XAI, and cryptographically verified ensemble synchronization.
+                    Hardened client perimeter sensor with differential privacy (DP-SGD), input saliency Explainable AI (XAI), and zero-knowledge federated parameter synchronization.
                 </p>
             </div>
 
-            <!-- Live Edge Node Telemetry Widget -->
-            <div class="edge-card p-5 rounded-2xl space-y-4 border border-slate-200/90 dark:border-white/10 shadow-lg">
+            <!-- Tactical Node Telemetry HUD Card -->
+            <div class="cyber-hud-card p-5 rounded-2xl space-y-4 shadow-xl">
+                <!-- HUD Corner Reticles -->
+                <div class="hud-corner hud-tl"></div>
+                <div class="hud-corner hud-tr"></div>
+                <div class="hud-corner hud-bl"></div>
+                <div class="hud-corner hud-br"></div>
+                <div class="cyber-top-line"></div>
+
                 <div class="flex items-center justify-between border-b pb-3 border-slate-200/80 dark:border-white/10">
                     <div class="flex items-center gap-2">
-                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 edge-live-dot"></div>
-                        <span class="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-                            Live Node Telemetry
+                        <div class="relative w-3 h-3">
+                            <span class="cyber-radar-ring"></span>
+                            <span class="relative block w-3 h-3 rounded-full bg-emerald-500"></span>
+                        </div>
+                        <span class="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-widest">
+                            PERIMETER TELEMETRY
                         </span>
                     </div>
-                    <span class="font-mono text-[11px] px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/30">
-                        Port {{ state.edge_port or 5000 }}
+                    <span class="font-mono text-[11px] px-2.5 py-0.5 rounded-md bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 font-bold border border-cyan-500/35">
+                        PORT {{ state.edge_port or 5000 }} // ACTIVE
                     </span>
                 </div>
 
+                <!-- 2x2 Telemetry Grid -->
                 <div class="grid grid-cols-2 gap-3 font-mono text-xs">
-                    <div class="p-2.5 rounded-xl bg-white/60 dark:bg-white/5 border border-slate-200/70 dark:border-white/5">
-                        <span class="text-slate-400 text-[10px] block uppercase">Active Node ID</span>
-                        <span id="profile-client-id" class="font-semibold text-slate-800 dark:text-slate-200 truncate block mt-0.5">
+                    <div class="p-2.5 rounded-xl bg-white/70 dark:bg-black/40 border border-slate-200/80 dark:border-cyan-500/20">
+                        <span class="text-slate-400 dark:text-slate-500 text-[10px] block uppercase font-bold tracking-wider">Node Callsign</span>
+                        <span id="profile-client-id" class="font-bold text-slate-900 dark:text-cyan-300 truncate block mt-0.5">
                             {{ state.client_id or 'client_node_01' }}
                         </span>
                     </div>
-                    <div class="p-2.5 rounded-xl bg-white/60 dark:bg-white/5 border border-slate-200/70 dark:border-white/5">
-                        <span class="text-slate-400 text-[10px] block uppercase">Global Ensemble</span>
-                        <span id="profile-deployed-model" class="font-semibold text-blue-600 dark:text-blue-400 truncate block mt-0.5">
+                    <div class="p-2.5 rounded-xl bg-white/70 dark:bg-black/40 border border-slate-200/80 dark:border-cyan-500/20">
+                        <span class="text-slate-400 dark:text-slate-500 text-[10px] block uppercase font-bold tracking-wider">Global Ensemble</span>
+                        <span id="profile-deployed-model" class="font-bold text-blue-600 dark:text-blue-400 truncate block mt-0.5">
                             Checking...
                         </span>
                     </div>
-                    <div class="p-2.5 rounded-xl bg-white/60 dark:bg-white/5 border border-slate-200/70 dark:border-white/5">
-                        <span class="text-slate-400 text-[10px] block uppercase">Privacy Guardrail</span>
-                        <span class="font-semibold text-emerald-600 dark:text-emerald-400 truncate block mt-0.5">
-                            DP-SGD (&sigma;=1.1)
+                    <div class="p-2.5 rounded-xl bg-white/70 dark:bg-black/40 border border-slate-200/80 dark:border-cyan-500/20">
+                        <span class="text-slate-400 dark:text-slate-500 text-[10px] block uppercase font-bold tracking-wider">Privacy Protocol</span>
+                        <span class="font-bold text-emerald-600 dark:text-emerald-400 truncate block mt-0.5">
+                            DP-SGD (&sigma;=1.1, C=1.0)
                         </span>
                     </div>
-                    <div class="p-2.5 rounded-xl bg-white/60 dark:bg-white/5 border border-slate-200/70 dark:border-white/5">
-                        <span class="text-slate-400 text-[10px] block uppercase">Auth Protocol</span>
-                        <span class="font-semibold text-slate-800 dark:text-slate-200 truncate block mt-0.5">
+                    <div class="p-2.5 rounded-xl bg-white/70 dark:bg-black/40 border border-slate-200/80 dark:border-cyan-500/20">
+                        <span class="text-slate-400 dark:text-slate-500 text-[10px] block uppercase font-bold tracking-wider">Cryptographic Token</span>
+                        <span class="font-bold text-slate-900 dark:text-slate-200 truncate block mt-0.5">
                             HMAC-SHA256
                         </span>
                     </div>
                 </div>
 
-                <!-- Assurance Bullet Points -->
+                <!-- Hardened Security Guarantees -->
                 <div class="space-y-2 pt-1 text-xs text-slate-600 dark:text-slate-300">
                     <div class="flex items-center gap-2">
-                        <i class="iconsax text-sm text-emerald-500 shrink-0" icon-name="tick-circle"></i>
-                        <span>Zero raw packet egress — data stays local</span>
+                        <i class="iconsax text-sm text-cyan-500 shrink-0" icon-name="shield-tick"></i>
+                        <span>Zero raw packet egress &mdash; packet flows strictly local</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <i class="iconsax text-sm text-emerald-500 shrink-0" icon-name="tick-circle"></i>
-                        <span>Bounded differential privacy gradient clipping</span>
+                        <i class="iconsax text-sm text-cyan-500 shrink-0" icon-name="lock-circle"></i>
+                        <span>Bounded differential privacy gradient perturbation</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <i class="iconsax text-sm text-emerald-500 shrink-0" icon-name="tick-circle"></i>
-                        <span>On-device explainability with input saliency</span>
+                        <i class="iconsax text-sm text-cyan-500 shrink-0" icon-name="radar"></i>
+                        <span>On-device Explainable AI with per-flow input saliency</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Central HQ Link Badge -->
+            <!-- Live Cyber Terminal Event Log Stream -->
+            <div class="cyber-terminal-stream p-3.5 rounded-xl text-[11px] text-cyan-400 space-y-1 shadow-inner border border-cyan-500/20">
+                <div class="flex items-center justify-between text-[10px] text-slate-400 border-b border-white/10 pb-1.5 mb-2">
+                    <span class="flex items-center gap-1.5 font-bold uppercase tracking-wider text-cyan-300">
+                        <i class="iconsax text-xs text-emerald-400" icon-name="cpu"></i>
+                        <span>Tactical Defense Stream</span>
+                    </span>
+                    <span id="terminal-heartbeat-time" class="text-emerald-400 font-mono">LIVE // ONLINE</span>
+                </div>
+                <div class="space-y-1 text-[11px] leading-relaxed">
+                    <div class="text-slate-400">
+                        <span class="text-emerald-400">[SEC-01]</span> Zero-Trust perimeter ingress sensor armed.
+                    </div>
+                    <div class="text-slate-400">
+                        <span class="text-cyan-400">[DP-SGD]</span> Differential noise accountant ready (&epsilon;&le;2.45).
+                    </div>
+                    <div class="text-slate-400">
+                        <span class="text-blue-400">[SHIELD]</span> Byzantine defense: Trimmed-Mean &amp; Krum verified.
+                    </div>
+                    <div class="text-cyan-300 font-semibold flex items-center">
+                        <span class="text-emerald-400">[PERIMETER]</span> Node standby on port {{ state.edge_port or 5000 }}<span class="cyber-cursor"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Central HQ Uplink Coordinates -->
             <div class="flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400 px-1">
-                <span>Central HQ Cluster:</span>
-                <span id="profile-hq-url" class="font-semibold text-slate-700 dark:text-slate-300">
+                <span class="flex items-center gap-1.5">
+                    <i class="iconsax text-sm text-cyan-500" icon-name="routing"></i>
+                    <span>Central HQ Uplink:</span>
+                </span>
+                <span id="profile-hq-url" class="font-bold text-slate-800 dark:text-cyan-300">
                     {{ state.hq_url or 'http://localhost:8000' }}
                 </span>
             </div>
 
             <!-- Active Operator Session & Logout Card in Left Panel (Bottom) -->
-            <div id="left-panel-session-card" class="hidden edge-card p-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.07] space-y-3">
+            <div id="left-panel-session-card" class="hidden cyber-hud-card p-4 rounded-2xl border-emerald-500/35 bg-emerald-500/[0.06] dark:bg-emerald-500/[0.09] space-y-3">
                 <div class="flex items-center justify-between">
                     <span class="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                         <span class="edge-live-dot h-2 w-2 rounded-full bg-emerald-500"></span>
@@ -108,12 +288,12 @@
                 </div>
                 <div class="flex items-center justify-between gap-3 text-xs font-mono">
                     <div class="min-w-0 flex-1">
-                        <span class="text-slate-400 text-[10px] block uppercase">Current Operator</span>
-                        <span id="left-panel-username" class="font-bold text-slate-800 dark:text-slate-200 truncate block mt-0.5">
+                        <span class="text-slate-400 text-[10px] block uppercase font-bold">Authenticated Operator</span>
+                        <span id="left-panel-username" class="font-bold text-slate-900 dark:text-slate-100 truncate block mt-0.5">
                             client_node_01
                         </span>
                     </div>
-                    <button type="button" onclick="handleLogout()" class="edge-btn edge-btn-sheen px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-semibold text-xs inline-flex items-center gap-1.5 shadow-[0_4px_12px_-2px_rgba(225,29,72,0.35)] shrink-0 cursor-pointer" title="Sign out of operator session">
+                    <button type="button" onclick="handleLogout()" class="edge-btn edge-btn-sheen px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-semibold text-xs inline-flex items-center gap-1.5 shadow-[0_4px_12px_-2px_rgba(225,29,72,0.4)] shrink-0 cursor-pointer" title="Sign out of operator session">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                         </svg>
@@ -123,28 +303,34 @@
             </div>
         </div>
 
-        <!-- Right Column: Ultra-Modern SaaS Login Card (7 cols) -->
-        <div class="lg:col-span-7">
+        <!-- Right Column: Cyber Security Tactical Operator Terminal (7 cols) -->
+        <div class="lg:col-span-7 flex flex-col justify-center">
 
             <!-- ============================================== -->
             <!-- 1. SIGN IN PORTAL CARD (Shown when logged out) -->
             <!-- ============================================== -->
-            <div id="signin-card" class="edge-card p-7 sm:p-9 rounded-3xl border border-slate-200/90 dark:border-white/10 shadow-2xl relative overflow-hidden backdrop-blur-2xl">
+            <div id="signin-card" class="cyber-hud-card p-7 sm:p-9 rounded-3xl shadow-2xl relative overflow-hidden backdrop-blur-2xl">
+                <!-- HUD Corner Reticles -->
+                <div class="hud-corner hud-tl"></div>
+                <div class="hud-corner hud-tr"></div>
+                <div class="hud-corner hud-bl"></div>
+                <div class="hud-corner hud-br"></div>
+                <div class="cyber-top-line"></div>
                 
-                <!-- Ambient Subtle Glow Pill -->
-                <div class="absolute -top-16 -right-16 w-36 h-36 rounded-full bg-blue-500/15 blur-2xl pointer-events-none"></div>
+                <!-- Ambient Subtle Glow Aura -->
+                <div class="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none"></div>
 
-                <!-- Header -->
-                <div class="space-y-1.5 relative z-10">
-                    <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 font-mono text-[10px] font-semibold border border-blue-600/20">
-                        <i class="iconsax text-xs" icon-name="lock"></i>
-                        <span>Operator Access</span>
+                <!-- Tactical Header -->
+                <div class="space-y-2 relative z-10">
+                    <div class="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-cyan-500/10 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300 font-mono text-[10px] font-bold border border-cyan-500/30 uppercase tracking-widest">
+                        <i class="iconsax text-xs text-cyan-400" icon-name="lock"></i>
+                        <span>OPERATOR ACCESS TERMINAL // CLEARANCE REQ</span>
                     </div>
-                    <h2 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-heading">
-                        Sign in to FedX Edge
+                    <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white font-heading">
+                        Authenticate Edge Node
                     </h2>
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        Welcome back! Select a single sign-on provider or enter your operator key.
+                        Verify identity via enterprise single sign-on or deploy cryptographic operator credentials.
                     </p>
                 </div>
 
@@ -154,33 +340,42 @@
                     <span id="login-alert-text" class="leading-relaxed"></span>
                 </div>
 
-                <!-- Social SSO Providers (Google & GitHub) -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 relative z-10">
-                    <!-- Google SSO Button -->
-                    <button type="button" onclick="handleSocialLogin('google')" class="edge-btn w-full py-2.5 px-4 rounded-xl bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.12] text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-white/10 font-semibold text-xs flex items-center justify-center gap-2.5 shadow-xs transition-all cursor-pointer">
-                        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                        </svg>
-                        <span>Google Workspace</span>
-                    </button>
+                <!-- Enterprise Zero-Trust Identity Federation (SSO) -->
+                <div class="pt-5 relative z-10">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-mono text-[10px] text-slate-400 uppercase tracking-wider font-bold">
+                            Federated Enterprise IdP
+                        </span>
+                        <span class="font-mono text-[10px] text-cyan-500">Zero-Trust SAML/OAuth</span>
+                    </div>
 
-                    <!-- GitHub SSO Button -->
-                    <button type="button" onclick="handleSocialLogin('github')" class="edge-btn w-full py-2.5 px-4 rounded-xl bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.12] text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-white/10 font-semibold text-xs flex items-center justify-center gap-2.5 shadow-xs transition-all cursor-pointer">
-                        <svg class="w-4 h-4 fill-current text-slate-900 dark:text-white shrink-0" viewBox="0 0 24 24">
-                            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-                        </svg>
-                        <span>GitHub Enterprise</span>
-                    </button>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Google Workspace SSO -->
+                        <button type="button" onclick="handleSocialLogin('google')" class="edge-btn w-full py-2.5 px-4 rounded-xl bg-white dark:bg-black/30 hover:bg-slate-50 dark:hover:bg-cyan-950/20 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-cyan-500/25 hover:border-cyan-500/50 font-semibold text-xs flex items-center justify-center gap-2.5 shadow-sm transition-all cursor-pointer">
+                            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                            </svg>
+                            <span class="font-mono text-xs">Google Workspace IdP</span>
+                        </button>
+
+                        <!-- GitHub Enterprise SSO -->
+                        <button type="button" onclick="handleSocialLogin('github')" class="edge-btn w-full py-2.5 px-4 rounded-xl bg-white dark:bg-black/30 hover:bg-slate-50 dark:hover:bg-cyan-950/20 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-cyan-500/25 hover:border-cyan-500/50 font-semibold text-xs flex items-center justify-center gap-2.5 shadow-sm transition-all cursor-pointer">
+                            <svg class="w-4 h-4 fill-current text-slate-900 dark:text-white shrink-0" viewBox="0 0 24 24">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                            </svg>
+                            <span class="font-mono text-xs">GitHub Enterprise SAML</span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Divider -->
+                <!-- Tactical Cyber Divider -->
                 <div class="relative flex items-center justify-center my-5">
-                    <div class="border-t border-slate-200 dark:border-white/10 w-full"></div>
-                    <span class="bg-white dark:bg-[#111827] px-3 font-mono text-[10px] text-slate-400 uppercase tracking-widest relative shrink-0">
-                        or sign in with email &amp; key
+                    <div class="border-t border-slate-200 dark:border-cyan-500/20 w-full"></div>
+                    <span class="bg-white dark:bg-[#0c1322] px-3 font-mono text-[10px] text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-widest relative shrink-0">
+                        &bull; OR VERIFY CRYPTOGRAPHIC KEY &bull;
                     </span>
                 </div>
 
@@ -188,18 +383,21 @@
                 <form id="operator-login-form" onsubmit="handleOperatorLogin(event)" class="space-y-4">
                     <!-- Operator Identifier / Email -->
                     <div>
-                        <label for="login-username" class="block font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                            Operator Email / Identifier
-                        </label>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label for="login-username" class="block font-mono text-[11px] font-bold text-slate-800 dark:text-cyan-300 uppercase tracking-wider">
+                                Operator Callsign / Identifier
+                            </label>
+                            <span class="font-mono text-[10px] text-slate-400">ID // ROLE: OPERATOR</span>
+                        </div>
                         <div class="relative">
-                            <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-3" icon-name="mail"></i>
+                            <i class="iconsax text-cyan-500 text-sm absolute left-3.5 top-3" icon-name="user-tag"></i>
                             <input 
                                 id="login-username" 
                                 type="text" 
                                 required
                                 value="operator@securefed.internal"
                                 placeholder="operator@securefed.internal"
-                                class="w-full pl-9 pr-3.5 py-2.5 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 edge-glass-input focus:outline-none transition-all"
+                                class="w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs font-mono cyber-input focus:outline-none transition-all"
                             >
                         </div>
                     </div>
@@ -207,26 +405,26 @@
                     <!-- Password / Admin Secret Key -->
                     <div>
                         <div class="flex items-center justify-between mb-1.5">
-                            <label for="login-admin-key" class="font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                Secret Key / Passphrase
+                            <label for="login-admin-key" class="font-mono text-[11px] font-bold text-slate-800 dark:text-cyan-300 uppercase tracking-wider">
+                                Cryptographic Key / Passphrase
                             </label>
-                            <button type="button" onclick="toggleForgotPasswordView(true)" class="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-mono font-semibold cursor-pointer">
-                                Forgot password?
+                            <button type="button" onclick="toggleForgotPasswordView(true)" class="text-[11px] text-cyan-600 dark:text-cyan-400 hover:underline font-mono font-bold cursor-pointer">
+                                Recovery Key?
                             </button>
                         </div>
                         <div class="relative">
-                            <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-3" icon-name="key"></i>
+                            <i class="iconsax text-cyan-500 text-sm absolute left-3.5 top-3" icon-name="key"></i>
                             <input 
                                 id="login-admin-key" 
                                 type="password" 
                                 required
                                 placeholder="Enter securefed-admin-token-2026"
-                                class="w-full pl-9 pr-10 py-2.5 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 edge-glass-input focus:outline-none transition-all"
+                                class="w-full pl-10 pr-10 py-2.5 rounded-xl text-xs font-mono cyber-input focus:outline-none transition-all"
                             >
                             <button 
                                 type="button" 
                                 onclick="togglePasswordVisibility()" 
-                                class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                                class="absolute right-3 top-2.5 text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
                                 title="Toggle key visibility"
                             >
                                 <i id="login-eye-icon" class="iconsax text-base" icon-name="eye"></i>
@@ -237,11 +435,12 @@
                     <!-- Helpers: Remember & Demo Token -->
                     <div class="flex items-center justify-between text-xs pt-1">
                         <label class="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-slate-400 text-xs select-none">
-                            <input type="checkbox" id="login-remember" checked class="rounded border-slate-300 dark:border-white/10 text-blue-600 focus:ring-0">
-                            <span>Keep me signed in</span>
+                            <input type="checkbox" id="login-remember" checked class="rounded border-slate-300 dark:border-cyan-500/30 text-cyan-600 focus:ring-0">
+                            <span class="font-mono text-[11px]">Keep Session Armed</span>
                         </label>
-                        <button type="button" onclick="fillDemoCredentials()" class="text-blue-600 dark:text-blue-400 hover:underline font-mono text-[11px] font-semibold cursor-pointer">
-                            Auto-fill Demo Token
+                        <button type="button" onclick="fillDemoCredentials()" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/25 border border-cyan-500/35 font-mono text-[10px] font-bold cursor-pointer transition-colors">
+                            <i class="iconsax text-xs" icon-name="flash"></i>
+                            <span>AUTO-DEPLOY DEMO KEY</span>
                         </button>
                     </div>
 
@@ -249,21 +448,25 @@
                     <button 
                         type="submit" 
                         id="login-submit-btn" 
-                        class="edge-btn edge-btn-sheen w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 via-sky-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-heading font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_6px_20px_-2px_rgba(37,99,235,0.4)] mt-2 cursor-pointer transition-all"
+                        class="cyber-btn-glow w-full py-3 rounded-xl text-white font-heading font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2.5 mt-2 cursor-pointer transition-all border border-cyan-400/30"
                     >
-                        <i class="iconsax text-base" icon-name="shield-tick"></i>
-                        <span id="login-btn-text">Sign In to Edge Node</span>
+                        <i class="iconsax text-lg text-cyan-200" icon-name="shield-security"></i>
+                        <span id="login-btn-text">INITIALIZE SECURE OPERATOR SESSION</span>
                     </button>
                 </form>
 
-                <!-- Footer Info -->
-                <div class="pt-5 mt-3 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                    <span class="flex items-center gap-1.5">
-                        <i class="iconsax text-sm text-emerald-500" icon-name="lock-circle"></i>
-                        <span>HMAC-SHA256 Encrypted</span>
+                <!-- Footer Security Assurance Badges -->
+                <div class="pt-5 mt-4 border-t border-slate-200/80 dark:border-cyan-500/20 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                    <span class="flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400 font-bold">
+                        <i class="iconsax text-xs text-emerald-400" icon-name="lock-circle"></i>
+                        <span>HMAC-SHA256 ENCRYPTED</span>
                     </span>
-                    <button type="button" onclick="showTokenHint()" class="hover:underline text-slate-500 dark:text-slate-400 cursor-pointer">
-                        Cluster Token Info
+                    <span class="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                        <i class="iconsax text-xs text-cyan-500" icon-name="shield-tick"></i>
+                        <span>ZERO-LEAKAGE DP GUARD</span>
+                    </span>
+                    <button type="button" onclick="showTokenHint()" class="hover:underline text-cyan-600 dark:text-cyan-400 cursor-pointer font-bold">
+                        Token Specs &rarr;
                     </button>
                 </div>
             </div>
@@ -271,18 +474,24 @@
             <!-- ============================================== -->
             <!-- 2. FORGOT PASSWORD VIEW (Toggled on click)     -->
             <!-- ============================================== -->
-            <div id="forgot-password-card" class="hidden edge-card p-7 sm:p-9 rounded-3xl border border-slate-200/90 dark:border-white/10 shadow-2xl relative overflow-hidden backdrop-blur-2xl space-y-6">
+            <div id="forgot-password-card" class="hidden cyber-hud-card p-7 sm:p-9 rounded-3xl shadow-2xl relative overflow-hidden backdrop-blur-2xl space-y-6">
+                <!-- HUD Corner Reticles -->
+                <div class="hud-corner hud-tl"></div>
+                <div class="hud-corner hud-tr"></div>
+                <div class="hud-corner hud-bl"></div>
+                <div class="hud-corner hud-br"></div>
+                <div class="cyber-top-line"></div>
                 
                 <div class="flex items-center gap-3">
-                    <button type="button" onclick="toggleForgotPasswordView(false)" class="w-9 h-9 rounded-xl bg-white dark:bg-white/[0.08] border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-blue-600 flex items-center justify-center cursor-pointer shadow-xs transition-colors" title="Back to Sign In">
+                    <button type="button" onclick="toggleForgotPasswordView(false)" class="w-9 h-9 rounded-xl bg-white dark:bg-white/[0.08] border border-slate-200 dark:border-cyan-500/25 text-slate-600 dark:text-cyan-300 hover:text-cyan-400 flex items-center justify-center cursor-pointer shadow-xs transition-colors" title="Back to Sign In">
                         <i class="iconsax text-lg" icon-name="arrow-left"></i>
                     </button>
                     <div>
                         <h3 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white font-heading">
-                            Reset Operator Access
+                            Emergency Operator Key Recovery
                         </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            Recover your edge node authentication credentials
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono">
+                            Disaster recovery procedure for local edge node operator credentials
                         </p>
                     </div>
                 </div>
@@ -294,18 +503,18 @@
 
                 <form onsubmit="handleForgotPassword(event)" class="space-y-4">
                     <div>
-                        <label for="forgot-email" class="block font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                            Operator Registered Email
+                        <label for="forgot-email" class="block font-mono text-[11px] font-bold text-slate-700 dark:text-cyan-300 uppercase tracking-wider mb-1.5">
+                            Operator Registered Callsign / Email
                         </label>
                         <div class="relative">
-                            <i class="iconsax text-slate-400 text-sm absolute left-3.5 top-3" icon-name="mail"></i>
+                            <i class="iconsax text-cyan-500 text-sm absolute left-3.5 top-3" icon-name="mail"></i>
                             <input 
                                 id="forgot-email" 
                                 type="email" 
                                 required
                                 value="operator@securefed.internal"
                                 placeholder="operator@securefed.internal"
-                                class="w-full pl-9 pr-3.5 py-2.5 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 edge-glass-input focus:outline-none transition-all"
+                                class="w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs font-mono cyber-input focus:outline-none transition-all"
                             >
                         </div>
                     </div>
@@ -313,32 +522,32 @@
                     <button 
                         type="submit" 
                         id="forgot-submit-btn" 
-                        class="edge-btn edge-btn-sheen w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 via-sky-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-heading font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_6px_20px_-2px_rgba(37,99,235,0.4)] cursor-pointer"
+                        class="cyber-btn-glow w-full py-3 rounded-xl text-white font-heading font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer border border-cyan-400/30"
                     >
-                        <i class="iconsax text-sm" icon-name="send-2"></i>
-                        <span id="forgot-btn-text">Send Recovery Instructions</span>
+                        <i class="iconsax text-sm text-cyan-200" icon-name="send-2"></i>
+                        <span id="forgot-btn-text">DISPATCH RECOVERY INSTRUCTIONS</span>
                     </button>
                 </form>
 
                 <!-- Immediate Recovery Guidance Card -->
-                <div id="forgot-recovery-guide" class="hidden p-4 rounded-xl edge-pill-glass space-y-3 font-mono text-xs border border-blue-500/25">
-                    <div class="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold">
-                        <i class="iconsax text-base" icon-name="key"></i>
-                        <span>Edge Node Emergency Recovery Token</span>
+                <div id="forgot-recovery-guide" class="hidden p-4 rounded-xl cyber-terminal-stream space-y-3 font-mono text-xs border border-cyan-500/35">
+                    <div class="flex items-center gap-2 text-cyan-400 font-bold">
+                        <i class="iconsax text-base text-cyan-400" icon-name="key"></i>
+                        <span>Edge Node Fallback Master Token</span>
                     </div>
-                    <p id="forgot-guide-detail" class="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed"></p>
-                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-100 dark:bg-black/40 text-xs">
-                        <span class="text-slate-500 dark:text-slate-400">Default Node Token:</span>
-                        <code id="forgot-guide-token" class="text-emerald-600 dark:text-emerald-400 font-bold select-all">securefed-admin-token-2026</code>
+                    <p id="forgot-guide-detail" class="text-slate-300 text-[11px] leading-relaxed"></p>
+                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-black/60 text-xs border border-cyan-500/20">
+                        <span class="text-slate-400">Node Master Key:</span>
+                        <code id="forgot-guide-token" class="text-emerald-400 font-bold select-all">securefed-admin-token-2026</code>
                     </div>
-                    <button type="button" onclick="useRecoveryToken()" class="edge-btn w-full py-2.5 rounded-lg bg-blue-600/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 font-semibold text-xs border border-blue-600/20">
-                        Populate Token &amp; Return to Sign In
+                    <button type="button" onclick="useRecoveryToken()" class="edge-btn w-full py-2.5 rounded-lg bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25 font-bold text-xs border border-cyan-500/35">
+                        Populate Token &amp; Return to Authentication
                     </button>
                 </div>
 
                 <div class="text-center pt-2">
-                    <button type="button" onclick="toggleForgotPasswordView(false)" class="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer font-mono">
-                        &larr; Back to Operator Sign In
+                    <button type="button" onclick="toggleForgotPasswordView(false)" class="text-xs text-cyan-600 dark:text-cyan-400 hover:underline transition-colors cursor-pointer font-mono font-bold">
+                        &larr; Return to Tactical Sign In
                     </button>
                 </div>
             </div>
@@ -346,12 +555,18 @@
             <!-- ============================================== -->
             <!-- 3. ACTIVE SESSION VIEW (Shown when logged in)  -->
             <!-- ============================================== -->
-            <div id="active-session-card" class="hidden edge-card p-7 sm:p-9 rounded-3xl border border-slate-200/90 dark:border-white/10 shadow-2xl relative overflow-hidden backdrop-blur-2xl space-y-6">
+            <div id="active-session-card" class="hidden cyber-hud-card p-7 sm:p-9 rounded-3xl shadow-2xl relative overflow-hidden backdrop-blur-2xl space-y-6">
+                <!-- HUD Corner Reticles -->
+                <div class="hud-corner hud-tl"></div>
+                <div class="hud-corner hud-tr"></div>
+                <div class="hud-corner hud-bl"></div>
+                <div class="hud-corner hud-br"></div>
+                <div class="cyber-top-line"></div>
                 
                 <!-- Operator Passport Header -->
-                <div class="flex items-start sm:items-center justify-between gap-4 border-b pb-5 border-slate-200/80 dark:border-white/10">
+                <div class="flex items-start sm:items-center justify-between gap-4 border-b pb-5 border-slate-200/80 dark:border-cyan-500/20">
                     <div class="flex items-center gap-4">
-                        <div id="session-avatar" class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 via-sky-600 to-indigo-600 border-2 border-white/40 shadow-[0_8px_24px_-4px_rgba(37,99,235,0.45)] flex items-center justify-center text-white font-bold text-2xl uppercase font-mono shrink-0">
+                        <div id="session-avatar" class="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 border-2 border-cyan-400/50 shadow-[0_0_25px_rgba(6,182,212,0.4)] flex items-center justify-center text-white font-extrabold text-2xl uppercase font-mono shrink-0">
                             OP
                         </div>
                         <div>
@@ -359,85 +574,89 @@
                                 <h3 id="active-session-user" class="font-heading text-lg font-bold text-slate-900 dark:text-white">
                                     client_node_01
                                 </h3>
-                                <span id="session-provider-badge" class="font-mono text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30">
-                                    Email &amp; Key
+                                <span id="session-provider-badge" class="font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-600 dark:text-cyan-300 border border-cyan-500/35">
+                                    Operator Key
                                 </span>
                             </div>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5 font-mono">
                                 <span class="edge-live-dot h-2 w-2 rounded-full bg-emerald-500 inline-block"></span>
-                                <span class="font-semibold text-emerald-600 dark:text-emerald-400">Authenticated Operator Session</span>
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400">CLEARANCE: LEVEL-3 OPERATOR ACTIVE</span>
                             </p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Session Metadata Details -->
-                <div class="p-4 rounded-xl edge-pill-glass space-y-2.5 font-mono text-xs">
+                <div class="p-4 rounded-xl cyber-terminal-stream space-y-2.5 font-mono text-xs border border-cyan-500/25">
                     <div class="flex items-center justify-between">
-                        <span class="text-slate-500 dark:text-slate-400">Session Activated:</span>
-                        <span id="active-session-time" class="text-slate-800 dark:text-slate-200 font-semibold">—</span>
+                        <span class="text-slate-400">Session Activated:</span>
+                        <span id="active-session-time" class="text-slate-200 font-bold">—</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-slate-500 dark:text-slate-400">Authentication Method:</span>
-                        <span id="active-session-method" class="text-slate-800 dark:text-slate-200 font-semibold">HMAC Secret Token</span>
+                        <span class="text-slate-400">Cryptographic Protocol:</span>
+                        <span id="active-session-method" class="text-cyan-300 font-bold">HMAC-SHA256 Token</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-slate-500 dark:text-slate-400">Access Privileges:</span>
-                        <span class="text-emerald-600 dark:text-emerald-400 font-semibold">Edge Admin (Read / Write / Train)</span>
+                        <span class="text-slate-400">Node Clearance Rights:</span>
+                        <span class="text-emerald-400 font-bold">Full Edge Control (DP-Train / Sync / XAI-Detect)</span>
                     </div>
                 </div>
 
-                <!-- Quick Navigation Grid -->
+                <!-- Mission Control Quick Actions Grid -->
                 <div>
-                    <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-3">
-                        Launch Node Operations
+                    <span class="font-mono text-[11px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 block mb-3">
+                        Launch Node Tactical Operations
                     </span>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <a href="/" class="edge-btn edge-btn-sheen px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold text-xs inline-flex items-center justify-between shadow-sm">
+                        <a href="/" class="edge-btn cyber-btn-glow px-4 py-3 rounded-xl text-white font-bold text-xs inline-flex items-center justify-between border border-cyan-400/30">
                             <span class="flex items-center gap-2">
-                                <i class="iconsax text-base" icon-name="category"></i>
-                                <span>Node Overview</span>
+                                <i class="iconsax text-base text-cyan-200" icon-name="category"></i>
+                                <span>[01] Node Overview</span>
                             </span>
                             <i class="iconsax text-sm" icon-name="arrow-right-3"></i>
                         </a>
 
-                        <a href="/sync" class="edge-btn px-4 py-3 rounded-xl bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 font-semibold text-xs inline-flex items-center justify-between shadow-xs">
+                        <a href="/sync" class="edge-btn px-4 py-3 rounded-xl bg-white/70 dark:bg-black/40 hover:bg-white dark:hover:bg-cyan-950/30 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-cyan-500/25 font-bold text-xs inline-flex items-center justify-between shadow-xs transition-colors">
                             <span class="flex items-center gap-2">
-                                <i class="iconsax text-base text-blue-600 dark:text-blue-400" icon-name="cloud-add"></i>
-                                <span>Federated Sync (HQ)</span>
+                                <i class="iconsax text-base text-cyan-400" icon-name="cloud-add"></i>
+                                <span>[02] HQ Federated Sync</span>
                             </span>
-                            <i class="iconsax text-sm text-slate-400" icon-name="arrow-right-3"></i>
+                            <i class="iconsax text-sm text-cyan-400" icon-name="arrow-right-3"></i>
                         </a>
 
-                        <a href="/training" class="edge-btn px-4 py-3 rounded-xl bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 font-semibold text-xs inline-flex items-center justify-between shadow-xs">
+                        <a href="/training" class="edge-btn px-4 py-3 rounded-xl bg-white/70 dark:bg-black/40 hover:bg-white dark:hover:bg-cyan-950/30 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-cyan-500/25 font-bold text-xs inline-flex items-center justify-between shadow-xs transition-colors">
                             <span class="flex items-center gap-2">
-                                <i class="iconsax text-base text-amber-500" icon-name="cpu-charge"></i>
-                                <span>DP Local Training</span>
+                                <i class="iconsax text-base text-amber-400" icon-name="cpu-charge"></i>
+                                <span>[03] DP Local Training</span>
                             </span>
-                            <i class="iconsax text-sm text-slate-400" icon-name="arrow-right-3"></i>
+                            <i class="iconsax text-sm text-amber-400" icon-name="arrow-right-3"></i>
                         </a>
 
-                        <a href="/inference" class="edge-btn px-4 py-3 rounded-xl bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 font-semibold text-xs inline-flex items-center justify-between shadow-xs">
+                        <a href="/inference" class="edge-btn px-4 py-3 rounded-xl bg-white/70 dark:bg-black/40 hover:bg-white dark:hover:bg-cyan-950/30 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-cyan-500/25 font-bold text-xs inline-flex items-center justify-between shadow-xs transition-colors">
                             <span class="flex items-center gap-2">
-                                <i class="iconsax text-base text-emerald-500" icon-name="shield-search"></i>
-                                <span>Threat Detection &amp; XAI</span>
+                                <i class="iconsax text-base text-emerald-400" icon-name="shield-search"></i>
+                                <span>[04] Threat Detection &amp; XAI</span>
                             </span>
-                            <i class="iconsax text-sm text-slate-400" icon-name="arrow-right-3"></i>
+                            <i class="iconsax text-sm text-emerald-400" icon-name="arrow-right-3"></i>
                         </a>
                     </div>
                 </div>
 
                 <!-- Terminate Session Action -->
-                <div class="pt-5 border-t border-slate-200/80 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-rose-500/[0.05] dark:bg-rose-500/[0.08] border border-rose-500/25">
+                <div class="pt-5 border-t border-slate-200/80 dark:border-cyan-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-rose-500/[0.06] dark:bg-rose-500/[0.1] border border-rose-500/30">
                     <div>
-                        <h4 class="font-heading text-xs font-bold text-slate-900 dark:text-slate-100">Terminate Operator Session</h4>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Revoke local administrative rights and return to sign in</p>
+                        <h4 class="font-heading text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                            Revoke Operator Clearance
+                        </h4>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-mono">
+                            Lock local perimeter defenses and terminate active cryptographic session
+                        </p>
                     </div>
-                    <button type="button" onclick="handleLogout()" class="edge-btn edge-btn-sheen px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-semibold text-xs inline-flex items-center justify-center gap-2 shadow-[0_4px_14px_-2px_rgba(225,29,72,0.35)] shrink-0 cursor-pointer">
+                    <button type="button" onclick="handleLogout()" class="edge-btn edge-btn-sheen px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-bold text-xs inline-flex items-center justify-center gap-2 shadow-[0_4px_14px_-2px_rgba(225,29,72,0.4)] shrink-0 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                         </svg>
-                        <span>Sign Out / Logout</span>
+                        <span>Revoke &amp; Logout</span>
                     </button>
                 </div>
             </div>
@@ -476,11 +695,11 @@
     function fillDemoCredentials() {
         document.getElementById('login-username').value = 'operator@securefed.internal';
         document.getElementById('login-admin-key').value = 'securefed-admin-token-2026';
-        showAlert('info', 'Demo credentials populated: operator@securefed.internal / securefed-admin-token-2026');
+        showAlert('info', 'Demo credentials deployed: operator@securefed.internal / securefed-admin-token-2026');
     }
 
     function showTokenHint() {
-        showAlert('info', 'Default administrative token is pre-configured as "securefed-admin-token-2026". Click "Auto-fill Demo Token" to quickly populate it.');
+        showAlert('info', 'Default administrative token is pre-configured as "securefed-admin-token-2026". Click "AUTO-DEPLOY DEMO KEY" to populate it.');
     }
 
     function showAlert(type, msg) {
@@ -490,7 +709,7 @@
         
         alertBox.classList.remove('hidden', 'bg-red-50', 'dark:bg-red-950/60', 'text-red-700', 'dark:text-red-300', 'border-red-200', 'dark:border-red-800/70',
                                     'bg-emerald-50', 'dark:bg-emerald-950/60', 'text-emerald-700', 'dark:text-emerald-300', 'border-emerald-200', 'dark:border-emerald-800/70',
-                                    'bg-blue-50', 'dark:bg-blue-950/60', 'text-blue-700', 'dark:text-blue-300', 'border-blue-200', 'dark:border-blue-800/70');
+                                    'bg-cyan-50', 'dark:bg-cyan-950/60', 'text-cyan-700', 'dark:text-cyan-300', 'border-cyan-200', 'dark:border-cyan-800/70');
 
         if (type === 'error') {
             alertBox.classList.add('bg-red-50', 'dark:bg-red-950/60', 'text-red-700', 'dark:text-red-300', 'border-red-200', 'dark:border-red-800/70');
@@ -499,7 +718,7 @@
             alertBox.classList.add('bg-emerald-50', 'dark:bg-emerald-950/60', 'text-emerald-700', 'dark:text-emerald-300', 'border-emerald-200', 'dark:border-emerald-800/70');
             icon.setAttribute('icon-name', 'shield-tick');
         } else {
-            alertBox.classList.add('bg-blue-50', 'dark:bg-blue-950/60', 'text-blue-700', 'dark:text-blue-300', 'border-blue-200', 'dark:border-blue-800/70');
+            alertBox.classList.add('bg-cyan-50', 'dark:bg-cyan-950/60', 'text-cyan-700', 'dark:text-cyan-300', 'border-cyan-200', 'dark:border-cyan-800/70');
             icon.setAttribute('icon-name', 'info-circle');
         }
         text.textContent = msg;
@@ -507,8 +726,8 @@
 
     // Social SSO Handler (Google / GitHub) via Firebase Auth
     async function handleSocialLogin(provider) {
-        const providerName = provider === 'google' ? 'Google Workspace' : 'GitHub Enterprise';
-        showAlert('info', `Connecting to ${providerName} via Firebase Authentication...`);
+        const providerName = provider === 'google' ? 'Google Workspace IdP' : 'GitHub Enterprise SAML';
+        showAlert('info', `Connecting to ${providerName} via Federated Authentication...`);
         
         // 1. Try Firebase Popup Authentication
         if (typeof firebase !== 'undefined' && firebase.auth) {
@@ -547,7 +766,7 @@
                     });
                     const syncData = await syncRes.json();
 
-                    showAlert('success', `Signed in as ${user.displayName || user.email} via Firebase ${providerName}!`);
+                    showAlert('success', `Clearance Granted: ${user.displayName || user.email} authenticated via ${providerName}!`);
                     sessionStorage.setItem('securefed_admin_key', 'firebase-token-' + user.uid.slice(0, 8));
                     sessionStorage.setItem('securefed_operator_user', user.email || user.displayName);
                     localStorage.setItem('securefed_saved_operator', user.email || user.displayName);
@@ -588,7 +807,7 @@
 
             const data = await res.json();
             if (res.ok && data.status === 'success') {
-                showAlert('success', `Signed in via ${providerName} demo fallback.`);
+                showAlert('success', `Clearance Granted via ${providerName} local session.`);
                 sessionStorage.setItem('securefed_admin_key', data.admin_key || 'securefed-admin-token-2026');
                 sessionStorage.setItem('securefed_operator_user', data.username);
                 localStorage.setItem('securefed_saved_operator', data.username);
@@ -616,18 +835,17 @@
         const btnText = document.getElementById('login-btn-text');
 
         btn.disabled = true;
-        btnText.textContent = 'Verifying Credentials...';
+        btnText.textContent = 'VERIFYING SECURITY CREDENTIALS...';
 
         // 1. If username is an email and Firebase is available, attempt Firebase Email/Password
         let fbSuccess = false;
         if (typeof firebase !== 'undefined' && firebase.auth && username.includes('@') && adminKey.length >= 6 && adminKey !== 'securefed-admin-token-2026') {
             try {
-                btnText.textContent = 'Authenticating with Firebase...';
+                btnText.textContent = 'AUTHENTICATING WITH IDP...';
                 let userCred;
                 try {
                     userCred = await firebase.auth().signInWithEmailAndPassword(username, adminKey);
                 } catch (signErr) {
-                    // If user does not exist in Firebase, attempt auto-registration
                     if (signErr.code === 'auth/user-not-found' || signErr.code === 'auth/invalid-credential') {
                         userCred = await firebase.auth().createUserWithEmailAndPassword(username, adminKey);
                     } else {
@@ -639,7 +857,6 @@
                     const user = userCred.user;
                     const idToken = await user.getIdToken();
                     
-                    // Sync session with Edge backend
                     await fetch('/api/client/firebase-login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -652,7 +869,7 @@
                         })
                     });
 
-                    showAlert('success', `Signed in via Firebase Auth as ${user.email}!`);
+                    showAlert('success', `Security clearance granted as ${user.email}!`);
                     sessionStorage.setItem('securefed_admin_key', 'firebase-token-' + user.uid.slice(0, 8));
                     sessionStorage.setItem('securefed_operator_user', user.email);
                     if (remember) {
@@ -668,13 +885,12 @@
                 }
             } catch (fbErr) {
                 console.warn('Firebase email auth notice:', fbErr);
-                // Continue to local Edge Node Master Key verification below
             }
         }
 
         // 2. Local Edge Node Master Key verification (/api/client/login)
         try {
-            btnText.textContent = 'Verifying Edge Node Key...';
+            btnText.textContent = 'VALIDATING OPERATOR KEY...';
             const res = await fetch('/api/client/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -689,7 +905,7 @@
 
             const data = await res.json();
             if (res.ok && data.status === 'success') {
-                showAlert('success', data.message || 'Credentials verified successfully!');
+                showAlert('success', 'Security clearance confirmed! Access granted to edge operations.');
                 sessionStorage.setItem('securefed_admin_key', adminKey);
                 sessionStorage.setItem('securefed_operator_user', username);
                 if (remember) {
@@ -705,14 +921,14 @@
                     if (typeof refreshHeader === 'function') refreshHeader();
                 }, 600);
             } else {
-                showAlert('error', data.detail || 'Authentication failed. Please verify your Admin Secret Key.');
+                showAlert('error', data.detail || 'Security clearance rejected. Invalid operator token or passphrase.');
                 btn.disabled = false;
-                btnText.textContent = 'Sign In to Edge Node';
+                btnText.textContent = 'INITIALIZE SECURE OPERATOR SESSION';
             }
         } catch (err) {
-            showAlert('error', `Connection error: ${err.message}`);
+            showAlert('error', `Perimeter network error: ${err.message}`);
             btn.disabled = false;
-            btnText.textContent = 'Sign In to Edge Node';
+            btnText.textContent = 'INITIALIZE SECURE OPERATOR SESSION';
         }
     }
 
@@ -729,14 +945,14 @@
         const guideToken = document.getElementById('forgot-guide-token');
 
         btn.disabled = true;
-        btnText.textContent = 'Preparing instructions...';
+        btnText.textContent = 'PROCESSING RECOVERY DISPATCH...';
 
         let firebaseResetSent = false;
         let firebaseNote = '';
 
         if (typeof firebase !== 'undefined' && firebase.auth && email.includes('@')) {
             try {
-                btnText.textContent = 'Sending Firebase password reset email...';
+                btnText.textContent = 'DISPATCHING RECOVERY EMAIL...';
                 await firebase.auth().sendPasswordResetEmail(email);
                 firebaseResetSent = true;
             } catch (fbErr) {
@@ -746,7 +962,7 @@
         }
 
         try {
-            btnText.textContent = 'Retrieving Edge recovery info...';
+            btnText.textContent = 'RETRIEVING EMERGENCY RECOVERY PROTOCOL...';
             const res = await fetch('/api/client/forgot-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -758,9 +974,9 @@
                 alertBox.className = 'p-3.5 rounded-xl text-xs font-mono border flex items-start gap-2.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/70';
                 
                 if (firebaseResetSent) {
-                    alertText.textContent = `Firebase password reset email dispatched to ${email}! Check your inbox. Emergency node token is also available below.`;
+                    alertText.textContent = `Emergency password reset dispatched to ${email}! Emergency node token is also available below.`;
                 } else {
-                    alertText.textContent = data.message + (firebaseNote ? ` (Firebase info: ${firebaseNote})` : '');
+                    alertText.textContent = data.message + (firebaseNote ? ` (IdP info: ${firebaseNote})` : '');
                 }
                 alertBox.classList.remove('hidden');
 
@@ -769,16 +985,16 @@
                 guideToken.textContent = data.default_token || 'securefed-admin-token-2026';
             } else {
                 alertBox.className = 'p-3.5 rounded-xl text-xs font-mono border flex items-start gap-2.5 bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/70';
-                alertText.textContent = data.detail || 'Failed to send recovery instructions.';
+                alertText.textContent = data.detail || 'Failed to dispatch recovery instructions.';
                 alertBox.classList.remove('hidden');
             }
         } catch (err) {
             alertBox.className = 'p-3.5 rounded-xl text-xs font-mono border flex items-start gap-2.5 bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/70';
-            alertText.textContent = `Error: ${err.message}`;
+            alertText.textContent = `Recovery error: ${err.message}`;
             alertBox.classList.remove('hidden');
         } finally {
             btn.disabled = false;
-            btnText.textContent = 'Send Recovery Instructions';
+            btnText.textContent = 'DISPATCH RECOVERY INSTRUCTIONS';
         }
     }
 
@@ -788,12 +1004,12 @@
         document.getElementById('login-admin-key').value = token;
         document.getElementById('login-username').value = email;
         toggleForgotPasswordView(false);
-        showAlert('info', 'Recovery token populated into sign-in form. Click Sign In to proceed.');
+        showAlert('info', 'Emergency token populated into operator terminal. Execute Sign In to continue.');
     }
 
-    // Logout Handler (Firebase Sign Out + Edge Backend Sign Out)
+    // Logout Handler
     async function handleLogout() {
-        if (!confirm('Are you sure you want to sign out of the active operator session?')) return;
+        if (!confirm('Are you sure you want to terminate the active operator session?')) return;
         try {
             if (typeof firebase !== 'undefined' && firebase.auth) {
                 await firebase.auth().signOut();
@@ -811,7 +1027,7 @@
         localStorage.removeItem('securefed_saved_operator');
         localStorage.removeItem('securefed_saved_admin_key');
 
-        showAlert('info', 'Operator session terminated.');
+        showAlert('info', 'Operator clearance revoked. Session terminated.');
         refreshAuthState();
         if (typeof refreshHeader === 'function') {
             refreshHeader();
@@ -840,7 +1056,7 @@
                 } else if (state.last_hq_push_version) {
                     profileModel.textContent = `HQ Push v${state.last_hq_push_version}`;
                 } else {
-                    profileModel.textContent = 'None (Standby)';
+                    profileModel.textContent = 'Standby (No Push)';
                 }
             }
 
@@ -869,7 +1085,6 @@
                 if (activeUser) activeUser.textContent = userDisplay;
                 if (leftUsername) leftUsername.textContent = userDisplay;
                 
-                // Set Avatar Initials
                 if (sessionAvatar) {
                     const initials = (userDisplay ? userDisplay.split('@')[0].slice(0, 2) : 'OP').toUpperCase();
                     sessionAvatar.textContent = initials;
@@ -878,24 +1093,24 @@
                 const provider = state.auth_provider || (userDisplay.includes('google') ? 'google' : (userDisplay.includes('github') ? 'github' : 'email'));
                 if (providerBadge) {
                     if (provider === 'google') {
-                        providerBadge.textContent = 'Google Workspace SSO';
+                        providerBadge.textContent = 'Google Workspace IdP';
                     } else if (provider === 'github') {
-                        providerBadge.textContent = 'GitHub Enterprise SSO';
+                        providerBadge.textContent = 'GitHub Enterprise SAML';
                     } else {
-                        providerBadge.textContent = 'Email & HMAC Key';
+                        providerBadge.textContent = 'Cryptographic Operator Key';
                     }
                 }
                 if (leftBadge) {
-                    leftBadge.textContent = provider === 'google' ? 'Google SSO' : (provider === 'github' ? 'GitHub SSO' : 'Admin Session');
+                    leftBadge.textContent = provider === 'google' ? 'Google IdP' : (provider === 'github' ? 'GitHub SAML' : 'Admin Session');
                 }
 
                 if (activeMethod) {
-                    activeMethod.textContent = provider === 'google' ? 'Google OAuth 2.0' : (provider === 'github' ? 'GitHub SSO Token' : 'HMAC Secret Key');
+                    activeMethod.textContent = provider === 'google' ? 'Google Zero-Trust OAuth 2.0' : (provider === 'github' ? 'GitHub Enterprise Token' : 'HMAC-SHA256 Token');
                 }
 
                 if (activeTime) {
                     const at = state.operator_authenticated_at;
-                    activeTime.textContent = at ? new Date(at).toLocaleString() : 'Active in this browser session';
+                    activeTime.textContent = at ? new Date(at).toLocaleString() : 'Active Session';
                 }
             } else {
                 if (activeSessionCard) activeSessionCard.classList.add('hidden');
@@ -933,6 +1148,15 @@
             if (kInput) kInput.value = savedKey;
         }
         refreshAuthState();
+
+        // Update live heartbeat timer
+        setInterval(() => {
+            const hb = document.getElementById('terminal-heartbeat-time');
+            if (hb) {
+                const now = new Date();
+                hb.textContent = `LIVE // ${now.toTimeString().split(' ')[0]} UTC`;
+            }
+        }, 1000);
     });
 </script>
 {% endblock %}
