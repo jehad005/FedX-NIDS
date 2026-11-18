@@ -29,7 +29,7 @@ import base64
 import zlib
 import json
 import threading
-from contextlib import contextmanager
+from contextlib import contextmanager, asynccontextmanager
 import numpy as np
 import pandas as pd
 import torch
@@ -164,8 +164,8 @@ def _save_persisted_state() -> None:
             "training_logs": (CLIENT_STATE.get("training_logs") or [])[-20:],
             "weights_path": LOCAL_MODEL_CONTAINER.get("weights_path"),
             "update_path": LOCAL_MODEL_CONTAINER.get("update_path"),
-            "sample_count": int(LOCAL_MODEL_CONTAINER.get("sample_count", 0)),
-            "round": int(LOCAL_MODEL_CONTAINER.get("round", 0)),
+            "sample_count": int(LOCAL_MODEL_CONTAINER.get("sample_count") or 0),
+            "round": int(LOCAL_MODEL_CONTAINER.get("round") or 0),
         }
         _STATE_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     except Exception:
@@ -260,8 +260,8 @@ def _restore_persisted_state() -> None:
         LOCAL_MODEL_CONTAINER["model"] = loaded_model
         LOCAL_MODEL_CONTAINER["weights_path"] = str(weights_candidate)
         LOCAL_MODEL_CONTAINER["base_state"] = clone_state_dict(loaded_model)
-        LOCAL_MODEL_CONTAINER["sample_count"] = int(saved.get("sample_count", 0))
-        LOCAL_MODEL_CONTAINER["round"] = max(1, int(saved.get("round", 1) or 1))
+        LOCAL_MODEL_CONTAINER["sample_count"] = int(saved.get("sample_count") or 0)
+        LOCAL_MODEL_CONTAINER["round"] = max(1, int(saved.get("round") or 1))
         if saved.get("update_path") and Path(saved["update_path"]).exists():
             LOCAL_MODEL_CONTAINER["update_path"] = saved["update_path"]
 
@@ -829,7 +829,7 @@ def set_auto_push(payload: AutoPushConfigRequest):
 
 
 def _edge_self_url() -> str:
-    port = int(CLIENT_STATE.get("edge_port", os.getenv("EDGE_PORT", "5000")))
+    port = int(CLIENT_STATE.get("edge_port") or os.getenv("EDGE_PORT") or 5000)
     return f"http://127.0.0.1:{port}"
 
 
@@ -891,7 +891,7 @@ def _sync_model_from_hq(raw_hq: str, requested_version: str, admin_key: str, sou
             raise HTTPException(status_code=metadata_response.status_code, detail="HQ could not provide the published feature schema.")
         metadata = metadata_response.json()
         feature_names = metadata.get("feature_names", [])
-        if not feature_names or len(feature_names) != int(data.get("input_dim", 0)):
+        if not feature_names or len(feature_names) != int(data.get("input_dim") or 0):
             raise ValueError("HQ metadata has no valid published feature schema for this model.")
 
         loaded_model.to("cpu")
@@ -971,8 +971,8 @@ def _build_model_from_package_dict(loaded_raw: dict) -> nn.Module:
     from models.architectures import ModelFactory
     from models.ensemble import EnsembleModel
 
-    in_d = int(loaded_raw.get("input_dim", 83))
-    n_cls = int(loaded_raw.get("num_classes", 2))
+    in_d = int(loaded_raw.get("input_dim") or 83)
+    n_cls = int(loaded_raw.get("num_classes") or 2)
     sd = loaded_raw["model_state_dict"]
     keys = list(sd.keys())
 
@@ -1437,20 +1437,20 @@ def _heartbeat_worker():
         _STOP_HEARTBEAT_EVENT.wait(15.0)
 
 
-@app.on_event("startup")
-def _start_heartbeat_daemon():
-    CLIENT_STATE["edge_port"] = int(os.getenv("EDGE_PORT", CLIENT_STATE.get("edge_port", 5000)))
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Modern FastAPI lifespan handler replacing deprecated on_event."""
+    CLIENT_STATE["edge_port"] = int(os.getenv("EDGE_PORT") or CLIENT_STATE.get("edge_port") or 5000)
     _restore_persisted_state()
-    if os.getenv("DISABLE_AUTO_SYNC_THREAD") == "1":
-        return
-    _STOP_HEARTBEAT_EVENT.clear()
-    thread = threading.Thread(target=_heartbeat_worker, name="securefed-hq-heartbeat", daemon=True)
-    thread.start()
-
-
-@app.on_event("shutdown")
-def _stop_heartbeat_daemon():
+    if os.getenv("DISABLE_AUTO_SYNC_THREAD") != "1":
+        _STOP_HEARTBEAT_EVENT.clear()
+        thread = threading.Thread(target=_heartbeat_worker, name="securefed-hq-heartbeat", daemon=True)
+        thread.start()
+    yield
     _STOP_HEARTBEAT_EVENT.set()
+
+
+app.router.lifespan_context = lifespan
 
 
 if __name__ == "__main__":
@@ -1465,6 +1465,27 @@ if __name__ == "__main__":
         port = int(os.environ["PORT"])
     os.environ["EDGE_PORT"] = str(port)
     CLIENT_STATE["edge_port"] = port
+
+    # Auto-release port if occupied by previous session
+    import socket, subprocess, signal, time
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as _s:
+        _s.settimeout(0.5)
+        if _s.connect_ex(("127.0.0.1", port)) == 0:
+            print(f"[!] Port {port} is currently bound. Freeing port for fresh startup...")
+            try:
+                subprocess.run(["fuser", "-k", f"{port}/tcp"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                time.sleep(0.6)
+            except Exception:
+                pass
+            try:
+                _out = subprocess.check_output(["lsof", "-ti", f":{port}"], text=True).strip()
+                for _pid in _out.split():
+                    if _pid.isdigit():
+                        os.kill(int(_pid), signal.SIGKILL)
+                time.sleep(0.6)
+            except Exception:
+                pass
+
     print("=" * 60)
     print(f" SecureFed Edge Client running on http://127.0.0.1:{port}")
     print(" Deployment Mode: Explicit HQ Push / Manual Sync only")

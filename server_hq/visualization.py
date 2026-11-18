@@ -6,7 +6,11 @@ Generates comprehensive plots for model training, comparison, and evaluation.
 from pathlib import Path
 from datetime import datetime
 import json
+import os
 from typing import Dict, Any, Optional
+
+# Ensure headless matplotlib cache directory exists to avoid font-cache delay & warnings
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib_cache")
 
 # Plotting libraries are optional — the dashboard must start even without them.
 # If any are missing, plot generation will raise a clear error which the

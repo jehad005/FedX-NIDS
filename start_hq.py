@@ -15,6 +15,9 @@ This will start:
 import sys
 import subprocess
 import time
+import socket
+import os
+import signal
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -41,6 +44,40 @@ def ensure_directories():
         d.mkdir(parents=True, exist_ok=True)
 
     print(f"[✓] Directories ensured")
+
+
+def is_port_in_use(port: int) -> bool:
+    """Check if TCP port is currently bound."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.5)
+        return s.connect_ex(("127.0.0.1", port)) == 0
+
+
+def release_port(port: int):
+    """Gracefully release port if occupied by a stale server process."""
+    if not is_port_in_use(port):
+        return
+    print(f"[!] Port {port} is currently bound. Freeing port for fresh startup...")
+    try:
+        subprocess.run(["fuser", "-k", f"{port}/tcp"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(0.8)
+    except Exception:
+        pass
+
+    if is_port_in_use(port):
+        try:
+            out = subprocess.check_output(["lsof", "-ti", f":{port}"], text=True).strip()
+            for pid_str in out.split():
+                if pid_str.isdigit():
+                    os.kill(int(pid_str), signal.SIGKILL)
+            time.sleep(0.8)
+        except Exception:
+            pass
+
+    if is_port_in_use(port):
+        print(f"[!] Warning: Port {port} could not be cleared automatically.")
+    else:
+        print(f"[✓] Port {port} released.")
 
 
 def run_api_server():
@@ -82,6 +119,10 @@ def main():
 
     # Ensure directories
     ensure_directories()
+
+    # Clear lingering processes from prior runs to prevent [Errno 98] Address already in use
+    release_port(8000)
+    release_port(8001)
 
     # Start API server
     api_process = run_api_server()

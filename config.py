@@ -4,7 +4,12 @@ Central configuration for all project components.
 """
 
 import os
+import warnings
 from pathlib import Path
+
+# Silence harmless PyTorch weights_only Future/User warnings when loading model checkpoints
+warnings.filterwarnings("ignore", category=FutureWarning, message=".*weights_only.*")
+warnings.filterwarnings("ignore", category=UserWarning, message=".*weights_only.*")
 
 PROJECT_ROOT = Path(__file__).parent
 DATA_DIR = PROJECT_ROOT / "data"

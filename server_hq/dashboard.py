@@ -18,6 +18,9 @@ import os
 import sys
 import threading
 import uuid
+import ipaddress
+from contextlib import asynccontextmanager
+from urllib.parse import urlparse
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Any
@@ -74,9 +77,79 @@ class _TrainingStoppedError(Exception):
     """Raised internally when a background training job is stopped by the user."""
 
 
+def _sanitize_edge_target(raw_target: str) -> Optional[str]:
+    """Validate and normalize an edge target into a valid HTTP/HTTPS URL.
+    Returns normalized URL or None if invalid.
+    """
+    if not raw_target:
+        return None
+    val = str(raw_target).strip().rstrip("/")
+    if not val:
+        return None
+
+    # Already has scheme
+    if val.startswith(("http://", "https://")):
+        try:
+            parsed = urlparse(val)
+            host = parsed.hostname
+            if not host:
+                return None
+            if host.lower() == "localhost":
+                return val
+            try:
+                ipaddress.ip_address(host)
+                return val
+            except ValueError:
+                if "." in host and " " not in host and not host.startswith("."):
+                    return val
+                return None
+        except Exception:
+            return None
+
+    # No scheme - check if it's an IP:port or localhost:port
+    if " " in val:
+        return None
+    host_part = val.split(":")[0]
+    port_part = val.split(":")[1] if ":" in val else "5000"
+    if not port_part.isdigit():
+        return None
+
+    if host_part.lower() == "localhost":
+        return f"http://localhost:{port_part}"
+
+    try:
+        ipaddress.ip_address(host_part)
+        return f"http://{host_part}:{port_part}"
+    except ValueError:
+        if "." in host_part and not host_part.startswith("."):
+            return f"http://{host_part}:{port_part}"
+        return None
+
+
+def _sync_post_pull_model(edge_url: str, payload: dict) -> dict:
+    """Synchronous worker function executed inside asyncio thread pool."""
+    import requests
+    try:
+        resp = requests.post(
+            f"{edge_url}/api/client/pull-model",
+            json=payload,
+            timeout=8,
+        )
+        if resp.status_code == 200:
+            msg = "Deployed"
+            try:
+                msg = resp.json().get("message", "Deployed")
+            except Exception:
+                pass
+            return {"edge_url": edge_url, "status": "success", "detail": msg}
+        else:
+            return {"edge_url": edge_url, "status": "error", "detail": resp.text[:200]}
+    except Exception as exc:
+        return {"edge_url": edge_url, "status": "unreachable", "detail": str(exc)}
+
+
 class Dashboard:
     def __init__(self, registry: Optional[ModelRegistry] = None):
-        self.app = FastAPI(title="SecureFed-NIDS HQ Dashboard", version="2.0.0")
         self.registry = registry if registry is not None else ModelRegistry()
 
         # Setup templates with default Jinja2
@@ -86,6 +159,33 @@ class Dashboard:
         self.active_connections: List[WebSocket] = []
         self._stop_events: Dict[str, threading.Event] = {}
         self._training_tasks: Dict[str, asyncio.Task] = {}
+
+        @asynccontextmanager
+        async def lifespan(app: FastAPI):
+            print(f"SecureFed-NIDS HQ Dashboard starting up at {datetime.now()}")
+            self.ensure_database_tables()
+            # Restart any jobs that were left in 'queued' state
+            try:
+                conn = sqlite3.connect(self.registry.db_path)
+                cursor = conn.cursor()
+                cursor.execute("SELECT job_id FROM training_jobs WHERE status = 'queued'")
+                queued = cursor.fetchall()
+                conn.close()
+                for (jid,) in queued:
+                    print(f"Restarting queued job {jid}")
+                    self._stop_events[jid] = threading.Event()
+                    self._training_tasks[jid] = asyncio.create_task(self._run_training_job(jid))
+            except Exception as e:
+                print(f"Error restarting queued jobs: {e}")
+            yield
+            print(f"SecureFed-NIDS HQ Dashboard shutting down at {datetime.now()}")
+            for connection in list(self.active_connections):
+                try:
+                    await connection.close()
+                except Exception:
+                    pass
+
+        self.app = FastAPI(title="SecureFed-NIDS HQ Dashboard", version="2.0.0", lifespan=lifespan)
 
         # HQ training workspace
         self.training_uploads_dir = ROOT / "hq_store" / "training_uploads"
@@ -626,19 +726,28 @@ class Dashboard:
             requested_edge = (body.get("edge_url") or "").strip().rstrip("/")
             targets = []
             if requested_edge:
-                targets = [requested_edge]
+                cleaned = _sanitize_edge_target(requested_edge)
+                if cleaned:
+                    targets.append(cleaned)
             else:
+                # 1. Query dashboard_clients for registered IP addresses
+                try:
+                    for cl in self.get_clients():
+                        ip = cl.get("ip_address")
+                        if ip:
+                            c_url = _sanitize_edge_target(ip)
+                            if c_url and c_url not in targets:
+                                targets.append(c_url)
+                except Exception:
+                    pass
+
+                # 2. Query registry clients display_name
                 for client in self.registry.list_clients():
-                    disp = (client.get("display_name") or "").strip().rstrip("/")
-                    if disp.startswith(("http://", "https://")) and disp not in targets:
-                        targets.append(disp)
-                    elif disp and not disp.startswith(("http://", "https://")):
-                        if any(c.isdigit() for c in disp):
-                            host_part = disp.split(":")[0]
-                            port_part = disp.split(":")[1] if ":" in disp else "5000"
-                            formatted = f"http://{host_part}:{port_part}"
-                            if formatted not in targets:
-                                targets.append(formatted)
+                    disp = (client.get("display_name") or "").strip()
+                    c_url = _sanitize_edge_target(disp)
+                    if c_url and c_url not in targets:
+                        targets.append(c_url)
+
                 if not targets:
                     targets = ["http://127.0.0.1:5000"]
 
@@ -646,22 +755,21 @@ class Dashboard:
             api_port = int(API_CONFIG.get("port", 8000))
             hq_api_url = f"http://{hq_host}:{api_port}"
 
-            results = []
-            success_count = 0
-            for edge_url in targets:
-                try:
-                    resp = requests.post(
-                        f"{edge_url}/api/client/pull-model",
-                        json={"admin_key": admin_key, "version": record["version"], "hq_url": hq_api_url, "source": "HQ Push"},
-                        timeout=30,
-                    )
-                    if resp.status_code == 200:
-                        success_count += 1
-                        results.append({"edge_url": edge_url, "status": "success", "detail": resp.json().get("message", "Deployed")})
-                    else:
-                        results.append({"edge_url": edge_url, "status": "error", "detail": resp.text})
-                except Exception as exc:
-                    results.append({"edge_url": edge_url, "status": "unreachable", "detail": str(exc)})
+            payload = {
+                "admin_key": admin_key,
+                "version": record["version"],
+                "hq_url": hq_api_url,
+                "source": "HQ Push",
+            }
+
+            # Concurrent non-blocking push to all targets via asyncio.to_thread (8s timeout)
+            push_tasks = [
+                asyncio.to_thread(_sync_post_pull_model, edge_url, payload)
+                for edge_url in targets
+            ]
+            results = await asyncio.gather(*push_tasks)
+            results = list(results)
+            success_count = sum(1 for r in results if r.get("status") == "success")
 
             status = "success" if success_count > 0 else "error"
             push_info = None
@@ -969,37 +1077,8 @@ class Dashboard:
             )
 
     def setup_events(self):
-        """Setup application startup/shutdown events."""
-
-        @self.app.on_event("startup")
-        async def startup_event():
-            """Initialize dashboard on startup and restart any queued jobs."""
-            print(f"SecureFed-NIDS HQ Dashboard starting up at {datetime.now()}")
-            self.ensure_database_tables()
-            # Restart any jobs that were left in 'queued' state
-            # (they were created before a server restart and lost their asyncio tasks)
-            try:
-                conn = sqlite3.connect(self.registry.db_path)
-                cursor = conn.cursor()
-                cursor.execute("SELECT job_id FROM training_jobs WHERE status = 'queued'")
-                queued = cursor.fetchall()
-                conn.close()
-                for (jid,) in queued:
-                    print(f"Restarting queued job {jid}")
-                    self._stop_events[jid] = threading.Event()
-                    self._training_tasks[jid] = asyncio.create_task(self._run_training_job(jid))
-            except Exception as e:
-                print(f"Error restarting queued jobs: {e}")
-
-        @self.app.on_event("shutdown")
-        async def shutdown_event():
-            """Cleanup on shutdown."""
-            print(f"SecureFed-NIDS HQ Dashboard shutting down at {datetime.now()}")
-            for connection in self.active_connections:
-                try:
-                    await connection.close()
-                except:
-                    pass
+        """Lifecycle events are managed via FastAPI lifespan context manager."""
+        pass
 
     def _set_training_job(self, job_id: str, **fields) -> None:
         """Update a training_jobs row by field name (only allowed fields)."""

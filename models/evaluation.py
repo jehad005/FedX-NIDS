@@ -382,6 +382,7 @@ def plot_and_save_confusion_matrix(
     np.ndarray
         Confusion matrix
     """
+    os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib_cache")
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
