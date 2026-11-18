@@ -519,11 +519,14 @@
 </head>
 <body class="text-slate-900 dark:text-slate-100 min-h-screen md:h-screen md:overflow-hidden">
 <div class="min-h-screen md:h-screen flex flex-col md:flex-row md:overflow-hidden">
-    <!-- Independent Fixed Left Navigation Rail -->
-    <aside class="edge-sidebar w-full md:w-64 md:h-screen overflow-y-auto flex flex-col md:fixed md:inset-y-0 md:left-0 z-30">
+    <!-- Mobile Backdrop Overlay -->
+    <div id="mobile-sidebar-backdrop" onclick="closeMobileSidebar()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 hidden md:hidden transition-opacity duration-300 opacity-0 pointer-events-none" aria-hidden="true"></div>
+
+    <!-- Independent Left Navigation Rail (Desktop Fixed, Mobile Slide-out Drawer) -->
+    <aside id="edge-sidebar" class="edge-sidebar fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] md:w-64 md:h-screen overflow-y-auto flex flex-col md:fixed md:inset-y-0 md:left-0 -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
         <!-- Brand Header -->
         <div class="px-5 py-4 border-b border-slate-200/80 dark:border-white/10 flex justify-between items-center gap-2">
-            <a href="/" class="edge-brand-link flex items-center gap-3 group no-underline cursor-pointer" title="Go to Edge Node Overview">
+            <a href="/" onclick="if (window.innerWidth < 768) closeMobileSidebar()" class="edge-brand-link flex items-center gap-3 group no-underline cursor-pointer" title="Go to Edge Node Overview">
                 <div class="edge-brand-icon w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-sky-600 to-indigo-600 border border-white/35 shadow-[0_6px_18px_-4px_rgba(37,99,235,0.42)] flex items-center justify-center text-white shrink-0">
                     <i class="iconsax text-lg" icon-name="shield-tick"></i>
                 </div>
@@ -535,37 +538,42 @@
                     </div>
                 </div>
             </a>
-            <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn w-8 h-8 rounded-xl bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center border border-slate-200/80 dark:border-white/10 shadow-xs" title="Switch to Dark Mode" aria-label="Toggle theme">
-                <i id="theme-icon" class="iconsax text-base" icon-name="moon"></i>
-            </button>
+            <div class="flex items-center gap-1.5">
+                <button type="button" onclick="toggleDarkMode()" class="theme-toggle-btn w-8 h-8 rounded-xl bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center border border-slate-200/80 dark:border-white/10 shadow-xs" title="Switch to Dark Mode" aria-label="Toggle theme">
+                    <i id="theme-icon" class="iconsax text-base" icon-name="moon"></i>
+                </button>
+                <button type="button" onclick="closeMobileSidebar()" class="md:hidden w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center border border-slate-200 dark:border-white/10 shadow-xs cursor-pointer" aria-label="Close menu">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
         </div>
 
         <!-- Navigation Menu -->
         <nav class="flex-1 px-3.5 py-4 space-y-1.5 text-[13.5px] font-medium">
             <div class="px-3 pb-2 pt-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Node Operations</div>
             
-            <a href="/" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'overview' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+            <a href="/" onclick="if (window.innerWidth < 768) closeMobileSidebar()" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'overview' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                 <i class="iconsax text-lg" icon-name="category"></i>
                 <span>Node Overview</span>
             </a>
 
-            <a href="/sync" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'sync' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+            <a href="/sync" onclick="if (window.innerWidth < 768) closeMobileSidebar()" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'sync' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                 <i class="iconsax text-lg" icon-name="cloud-add"></i>
                 <span>Federated Sync (HQ)</span>
             </a>
 
-            <a href="/training" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'training' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+            <a href="/training" onclick="if (window.innerWidth < 768) closeMobileSidebar()" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'training' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                 <i class="iconsax text-lg" icon-name="cpu-charge"></i>
                 <span>DP Local Training</span>
             </a>
 
-            <a href="/inference" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'inference' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+            <a href="/inference" onclick="if (window.innerWidth < 768) closeMobileSidebar()" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'inference' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                 <i class="iconsax text-lg" icon-name="shield-search"></i>
                 <span>Threat Detection &amp; XAI</span>
             </a>
 
             <div class="pt-2">
-                <a href="/login" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'login' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
+                <a href="/login" onclick="if (window.innerWidth < 768) closeMobileSidebar()" class="edge-nav-link flex items-center gap-3 py-2.5 px-3 rounded-xl border-l-[3px] {% if active_page == 'login' %}bg-gradient-to-r from-blue-600/12 to-sky-500/8 text-blue-700 border-blue-600 dark:from-blue-500/15 dark:to-sky-500/5 dark:text-blue-400 dark:border-blue-500 font-semibold shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)] translate-x-0.5{% else %}border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100{% endif %}">
                     <i class="iconsax text-lg" icon-name="key"></i>
                     <span id="nav-login-label">Operator Access</span>
                 </a>
@@ -627,54 +635,66 @@
     </aside>
 
     <!-- Main Independent Scrollable Workspace -->
-    <div class="md:ml-64 flex-1 md:h-screen md:overflow-y-auto flex flex-col">
-        <!-- Top Header Bar -->
-        <header class="edge-topbar z-20 px-6 sm:px-8 py-3 flex items-center justify-between gap-4">
-            <!-- Left: Breadcrumb & Active Page Heading -->
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="w-8 h-8 rounded-xl bg-blue-600/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-600/20 shadow-xs">
+    <div class="md:ml-64 flex-1 md:h-screen md:overflow-y-auto flex flex-col min-w-0">
+        <!-- Top Header Bar (Fully Mobile Responsive) -->
+        <header class="edge-topbar z-20 px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2.5 sm:gap-4">
+            <!-- Left: Mobile Menu Toggle + Breadcrumb & Heading -->
+            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                <!-- Mobile Hamburger Button -->
+                <button type="button" onclick="toggleMobileSidebar()" class="md:hidden w-9 h-9 rounded-xl bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 flex items-center justify-center border border-slate-200/80 dark:border-white/10 shadow-xs shrink-0 cursor-pointer" aria-label="Toggle navigation menu">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+
+                <div class="w-8 h-8 rounded-xl bg-blue-600/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 hidden xs:flex items-center justify-center shrink-0 border border-blue-600/20 shadow-xs">
                     <i class="iconsax text-base" icon-name="shield-tick"></i>
                 </div>
                 <div class="min-w-0">
-                    <div class="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 dark:text-slate-500 leading-none uppercase tracking-wider">
-                        <span>FedX Edge</span>
-                        <span class="text-slate-300 dark:text-slate-600">/</span>
+                    <div class="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono text-slate-400 dark:text-slate-500 leading-none uppercase tracking-wider truncate">
+                        <span class="hidden xs:inline">FedX Edge</span>
+                        <span class="hidden xs:inline text-slate-300 dark:text-slate-600">/</span>
                         <span class="text-blue-600 dark:text-blue-400 font-semibold">{{ active_page or 'Overview' }}</span>
                     </div>
-                    <h1 class="font-heading text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 mt-1 leading-tight tracking-tight truncate">
+                    <h1 class="font-heading text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-slate-100 mt-0.5 sm:mt-1 leading-tight tracking-tight truncate max-w-[130px] sm:max-w-xs md:max-w-none">
                         {% block page_heading %}Client Node Management{% endblock %}
                     </h1>
                 </div>
             </div>
             
-            <!-- Right: Minimalist Telemetry & Operator Access Strip -->
-            <div class="flex items-center gap-2 sm:gap-2.5 text-xs font-mono shrink-0">
+            <!-- Right: Responsive Telemetry & Operator Access -->
+            <div class="flex items-center gap-1.5 sm:gap-2.5 text-xs font-mono shrink-0">
                 <!-- Hidden inputs preserved for API scripts -->
                 <span id="header-client-id" class="hidden">{{ state.client_id or 'client_node_01' }}</span>
                 <span id="header-hq-url" class="hidden">{{ state.hq_url or 'http://localhost:8000' }}</span>
 
-                <!-- Central HQ Live Status Indicator -->
-                <div class="hidden sm:inline-flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-500/[0.08] dark:bg-emerald-500/15 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 shadow-xs cursor-default" title="Central HQ Cluster: {{ state.hq_url or 'http://localhost:8000' }}">
+                <!-- Central HQ Live Status Indicator (md and up) -->
+                <div class="hidden md:inline-flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-500/[0.08] dark:bg-emerald-500/15 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 shadow-xs cursor-default" title="Central HQ Cluster: {{ state.hq_url or 'http://localhost:8000' }}">
                     <span class="edge-live-dot w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span class="font-semibold text-[11px] hidden md:inline">HQ Cluster</span>
+                    <span class="font-semibold text-[11px]">HQ Cluster</span>
                     <span class="text-[10px] text-emerald-600/80 dark:text-emerald-400/80">Online</span>
                 </div>
 
-                <!-- Active Deployed Global Model Badge -->
-                <div id="header-pushed-pill" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-500/[0.08] dark:bg-blue-500/15 border border-blue-500/25 text-blue-700 dark:text-blue-300 shadow-xs cursor-default" title="Currently deployed global model">
-                    <i class="iconsax text-sm text-blue-600 dark:text-blue-400" icon-name="hierarchy-square-2"></i>
-                    <span id="header-last-pushed" class="font-semibold text-[11px]">Standby</span>
+                <!-- Active Deployed Global Model Badge (sm and up) -->
+                <div id="header-pushed-pill" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-500/[0.08] dark:bg-blue-500/15 border border-blue-500/25 text-blue-700 dark:text-blue-300 shadow-xs cursor-default max-w-[140px] truncate" title="Currently deployed global model">
+                    <i class="iconsax text-sm text-blue-600 dark:text-blue-400 shrink-0" icon-name="hierarchy-square-2"></i>
+                    <span id="header-last-pushed" class="font-semibold text-[11px] truncate">Standby</span>
                 </div>
+
+                <!-- Top bar mobile theme toggle (visible on mobile) -->
+                <button type="button" onclick="toggleDarkMode()" class="md:hidden w-8 h-8 rounded-xl bg-white/80 dark:bg-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center border border-slate-200/80 dark:border-white/10 shadow-xs shrink-0 cursor-pointer" aria-label="Toggle Theme">
+                    <i class="iconsax text-sm" icon-name="moon"></i>
+                </button>
 
                 <!-- Operator Session Profile & Logout Group -->
                 <div class="flex items-center gap-1 pl-1 border-l border-slate-200 dark:border-white/10">
-                    <a href="/login" id="header-operator-pill" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200/80 dark:hover:bg-white/[0.12] text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 font-semibold text-xs shadow-xs transition-all no-underline cursor-pointer" title="Operator Credentials &amp; Session">
-                        <i id="header-operator-icon" class="iconsax text-sm text-amber-500" icon-name="lock-1"></i>
-                        <span id="header-operator-label">Sign In</span>
+                    <a href="/login" id="header-operator-pill" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200/80 dark:hover:bg-white/[0.12] text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 font-semibold text-xs shadow-xs transition-all no-underline cursor-pointer" title="Operator Credentials &amp; Session">
+                        <i id="header-operator-icon" class="iconsax text-sm text-amber-500 shrink-0" icon-name="lock-1"></i>
+                        <span id="header-operator-label" class="hidden xs:inline">Sign In</span>
                     </a>
 
                     <!-- Clean Quick Logout Button -->
-                    <button type="button" id="header-logout-btn" onclick="globalLogout()" class="hidden w-8 h-8 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/25 flex items-center justify-center transition-all shadow-xs cursor-pointer" title="Sign Out of Session">
+                    <button type="button" id="header-logout-btn" onclick="globalLogout()" class="hidden w-8 h-8 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/25 flex items-center justify-center transition-all shadow-xs cursor-pointer shrink-0" title="Sign Out of Session">
                         <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                         </svg>
@@ -683,11 +703,12 @@
             </div>
         </header>
 
-        <!-- Page Content -->
-        <main class="p-6 sm:p-8 max-w-7xl w-full mx-auto flex-1">
+        <!-- Page Content (Responsive Padding) -->
+        <main class="p-3.5 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto flex-1">
             {% block content %}{% endblock %}
         </main>
     </div>
+</div>
 </div>
 
 <script>
@@ -722,6 +743,54 @@ function toggleDarkMode() {
     }
     updateThemeIcon();
 }
+
+/* Mobile Responsive Sidebar Off-Canvas Drawer Controller */
+function toggleMobileSidebar() {
+    const sidebar = document.getElementById('edge-sidebar');
+    if (!sidebar) return;
+    if (sidebar.classList.contains('-translate-x-full')) {
+        openMobileSidebar();
+    } else {
+        closeMobileSidebar();
+    }
+}
+
+function openMobileSidebar() {
+    const sidebar = document.getElementById('edge-sidebar');
+    const backdrop = document.getElementById('mobile-sidebar-backdrop');
+    if (sidebar) {
+        sidebar.classList.remove('-translate-x-full');
+    }
+    if (backdrop) {
+        backdrop.classList.remove('hidden', 'pointer-events-none', 'opacity-0');
+        backdrop.classList.add('opacity-100');
+    }
+    document.body.classList.add('overflow-hidden', 'md:overflow-auto');
+}
+
+function closeMobileSidebar() {
+    const sidebar = document.getElementById('edge-sidebar');
+    const backdrop = document.getElementById('mobile-sidebar-backdrop');
+    if (sidebar) {
+        sidebar.classList.add('-translate-x-full');
+    }
+    if (backdrop) {
+        backdrop.classList.add('opacity-0', 'pointer-events-none');
+        backdrop.classList.remove('opacity-100');
+        setTimeout(() => {
+            if (backdrop && backdrop.classList.contains('pointer-events-none')) {
+                backdrop.classList.add('hidden');
+            }
+        }, 280);
+    }
+    document.body.classList.remove('overflow-hidden', 'md:overflow-auto');
+}
+
+window.addEventListener('resize', () => {
+    if (window.innerWidth >= 768) {
+        closeMobileSidebar();
+    }
+});
 
 document.addEventListener('DOMContentLoaded', updateThemeIcon);
 

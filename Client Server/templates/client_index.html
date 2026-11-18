@@ -54,12 +54,12 @@
         </div>
 
         <!-- Right: Action Buttons -->
-        <div class="flex items-center gap-2.5 shrink-0">
-            <a href="/sync" class="edge-btn edge-btn-sheen px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs inline-flex items-center gap-2 shadow-sm shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full sm:w-auto shrink-0">
+            <a href="/sync" class="edge-btn edge-btn-sheen px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs inline-flex items-center justify-center gap-2 flex-1 sm:flex-initial shadow-sm shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
                 <i class="iconsax text-base" icon-name="cloud-add"></i>
                 <span>Sync HQ</span>
             </a>
-            <a href="/inference" class="edge-btn px-4 py-2.5 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 font-semibold text-xs inline-flex items-center gap-2 shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98]">
+            <a href="/inference" class="edge-btn px-4 py-2.5 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 font-semibold text-xs inline-flex items-center justify-center gap-2 flex-1 sm:flex-initial shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98]">
                 <i class="iconsax text-base text-emerald-500" icon-name="shield-search"></i>
                 <span>Inspect Traffic</span>
             </a>
@@ -157,56 +157,56 @@
                 <!-- Ledger Rows -->
                 <div class="space-y-2 mt-3.5 font-mono text-xs">
                     <!-- Row 1: Deployment Origin -->
-                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50/60 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 sm:p-2 rounded-xl bg-slate-50/60 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 gap-1.5 sm:gap-2">
                         <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                             <i class="iconsax text-sm text-slate-400" icon-name="route-1"></i>
                             <span>Deployment Origin</span>
                         </div>
-                        <span id="dossier-source" class="font-semibold text-slate-800 dark:text-slate-200 px-2 py-0.5 rounded-md bg-white dark:bg-white/5 border border-slate-200/70 dark:border-white/10">
+                        <span id="dossier-source" class="font-semibold text-slate-800 dark:text-slate-200 px-2 py-0.5 rounded-md bg-white dark:bg-white/5 border border-slate-200/70 dark:border-white/10 self-start sm:self-auto">
                             Central HQ Push
                         </span>
                     </div>
 
                     <!-- Row 2: Authorized Operator -->
-                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50/60 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 sm:p-2 rounded-xl bg-slate-50/60 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 gap-1.5 sm:gap-2">
                         <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                             <i class="iconsax text-sm text-slate-400" icon-name="user-2-tag"></i>
                             <span>Authorized Operator</span>
                         </div>
-                        <span id="dossier-authorizer" class="font-semibold text-slate-800 dark:text-slate-200 px-2 py-0.5 rounded-md bg-white dark:bg-white/5 border border-slate-200/70 dark:border-white/10">
+                        <span id="dossier-authorizer" class="font-semibold text-slate-800 dark:text-slate-200 px-2 py-0.5 rounded-md bg-white dark:bg-white/5 border border-slate-200/70 dark:border-white/10 self-start sm:self-auto">
                             admin_hq
                         </span>
                     </div>
 
                     <!-- Row 3: Last Synchronized -->
-                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50/60 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 sm:p-2 rounded-xl bg-slate-50/60 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 gap-1.5 sm:gap-2">
                         <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                             <i class="iconsax text-sm text-slate-400" icon-name="clock"></i>
                             <span>Last Synchronized</span>
                         </div>
-                        <span id="dossier-timestamp" class="font-semibold text-slate-800 dark:text-slate-200 px-2 py-0.5 rounded-md bg-white dark:bg-white/5 border border-slate-200/70 dark:border-white/10">
+                        <span id="dossier-timestamp" class="font-semibold text-slate-800 dark:text-slate-200 px-2 py-0.5 rounded-md bg-white dark:bg-white/5 border border-slate-200/70 dark:border-white/10 self-start sm:self-auto">
                             —
                         </span>
                     </div>
 
                     <!-- Row 4: Privacy Mechanism -->
-                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50/60 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 sm:p-2 rounded-xl bg-slate-50/60 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 gap-1.5 sm:gap-2">
                         <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                             <i class="iconsax text-sm text-emerald-500" icon-name="shield-tick"></i>
                             <span>Privacy Mechanism</span>
                         </div>
-                        <span class="font-semibold text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                        <span class="font-semibold text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 self-start sm:self-auto">
                             DP-SGD (Clip <span id="dossier-clip">1.0</span>, &sigma;=<span id="dossier-noise">1.1</span>)
                         </span>
                     </div>
 
                     <!-- Row 5: Automated Push to HQ -->
-                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50/60 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 sm:p-2 rounded-xl bg-slate-50/60 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 gap-1.5 sm:gap-2">
                         <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                             <i class="iconsax text-sm text-emerald-500" icon-name="cloud-connection"></i>
                             <span>Automated Push to HQ</span>
                         </div>
-                        <span id="dossier-autopush" class="inline-flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                        <span id="dossier-autopush" class="inline-flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 self-start sm:self-auto">
                             <span class="edge-live-dot h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Enabled
                         </span>
                     </div>
