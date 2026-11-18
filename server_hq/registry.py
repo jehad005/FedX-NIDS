@@ -23,7 +23,10 @@ HQ_STORE_DIR = PROJECT_ROOT / "hq_store"
 MODELS_DIR = HQ_STORE_DIR / "models"
 UPDATES_DIR = HQ_STORE_DIR / "updates"
 AGGREGATED_UPDATES_DIR = HQ_STORE_DIR / "aggregated_updates"
-DB_PATH = Path(DATABASE_CONFIG.get("path", PROJECT_ROOT / "data" / "securefed_nids.db"))
+_default_db = PROJECT_ROOT / "database" / "securefed_nids.db"
+if not _default_db.exists() and (PROJECT_ROOT / "data" / "securefed_nids.db").exists():
+    _default_db = PROJECT_ROOT / "data" / "securefed_nids.db"
+DB_PATH = Path(DATABASE_CONFIG.get("path", _default_db))
 
 VERSION_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
 
@@ -151,6 +154,41 @@ class ModelRegistry:
                     processed_at TIMESTAMP,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (client_id) REFERENCES dashboard_clients (client_id)
+                );
+
+                -- Post-Training Results & Telemetry Tables
+                CREATE TABLE IF NOT EXISTS training_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    version TEXT NOT NULL,
+                    epoch INTEGER NOT NULL,
+                    train_loss REAL,
+                    val_loss REAL,
+                    train_acc REAL,
+                    val_acc REAL,
+                    learning_rate REAL,
+                    recorded_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS evaluation_plots (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    version TEXT NOT NULL,
+                    plot_type TEXT NOT NULL,
+                    file_path TEXT NOT NULL,
+                    title TEXT,
+                    created_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS fl_leaderboard (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    round_idx INTEGER NOT NULL,
+                    base_version TEXT NOT NULL,
+                    resulting_version TEXT,
+                    method TEXT NOT NULL,
+                    accuracy REAL,
+                    f1 REAL,
+                    auc REAL,
+                    is_winner INTEGER DEFAULT 0,
+                    recorded_at TEXT NOT NULL
                 );
                 """
             )
@@ -831,3 +869,100 @@ class ModelRegistry:
         }
         (round_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
         return round_dir
+
+    # ------------------------------------------------------------------
+    # Post-Training Results, History & Plots Tracking
+    # ------------------------------------------------------------------
+    def record_training_epoch(
+        self,
+        version: str,
+        epoch: int,
+        train_loss: Optional[float] = None,
+        val_loss: Optional[float] = None,
+        train_acc: Optional[float] = None,
+        val_acc: Optional[float] = None,
+        learning_rate: Optional[float] = None,
+    ) -> None:
+        """Record epoch-by-epoch loss & accuracy for training curves."""
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO training_history
+                (version, epoch, train_loss, val_loss, train_acc, val_acc, learning_rate, recorded_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (normalize_version(version), int(epoch), train_loss, val_loss, train_acc, val_acc, learning_rate, utc_now()),
+            )
+
+    def record_evaluation_plot(
+        self,
+        version: str,
+        plot_type: str,
+        file_path: Union[str, Path],
+        title: Optional[str] = None,
+    ) -> None:
+        """Record post-training evaluation plot path and metadata."""
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO evaluation_plots
+                (version, plot_type, file_path, title, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (normalize_version(version), str(plot_type), str(file_path), title, utc_now()),
+            )
+
+    def record_fl_leaderboard(
+        self,
+        round_idx: int,
+        base_version: str,
+        resulting_version: Optional[str],
+        method: str,
+        accuracy: float,
+        f1: float,
+        auc: float,
+        is_winner: bool = False,
+    ) -> None:
+        """Record candidate FL algorithm benchmark scores in a federated round."""
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO fl_leaderboard
+                (round_idx, base_version, resulting_version, method, accuracy, f1, auc, is_winner, recorded_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (int(round_idx), normalize_version(base_version), normalize_version(resulting_version) if resulting_version else None,
+                 str(method), float(accuracy), float(f1), float(auc), 1 if is_winner else 0, utc_now()),
+            )
+
+    def get_training_history(self, version: str) -> List[Dict[str, Any]]:
+        """Retrieve epoch training history for learning curves."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM training_history WHERE version = ? ORDER BY epoch ASC",
+                (normalize_version(version),),
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_evaluation_plots(self, version: str) -> List[Dict[str, Any]]:
+        """Retrieve generated plots for a model version."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM evaluation_plots WHERE version = ? ORDER BY id ASC",
+                (normalize_version(version),),
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_fl_leaderboard(self, round_idx: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Retrieve FL algorithms leaderboard comparison."""
+        with self._connect() as conn:
+            if round_idx is not None:
+                rows = conn.execute(
+                    "SELECT * FROM fl_leaderboard WHERE round_idx = ? ORDER BY accuracy DESC",
+                    (int(round_idx),),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM fl_leaderboard ORDER BY round_idx DESC, accuracy DESC",
+                ).fetchall()
+            return [dict(r) for r in rows]

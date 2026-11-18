@@ -8,6 +8,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent
 DATA_DIR = PROJECT_ROOT / "data"
+DATABASE_DIR = PROJECT_ROOT / "database"
 LOGS_DIR = PROJECT_ROOT / "logs"
 MODELS_DIR = PROJECT_ROOT / "models"
 
@@ -277,8 +278,10 @@ MONITORING_CONFIG = {
 }
 
 DATABASE_CONFIG = {
-    "type": "sqlite",
-    "path": DATA_DIR / "securefed_nids.db",
+    "type": os.getenv("DATABASE_TYPE", "sqlite"),
+    "dir": DATABASE_DIR,
+    "path": Path(os.getenv("DATABASE_PATH", DATABASE_DIR / "securefed_nids.db")),
+    "url": os.getenv("DATABASE_URL"),
     "pool_size": 10,
     "max_overflow": 20,
 }
