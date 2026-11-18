@@ -105,7 +105,9 @@
                                     <div class="col-md-6">
                                         <label class="form-label fw-semibold">Target Architecture</label>
                                         <select class="form-select" id="model-select">
-                                            <option value="ensemble" selected>SecureFed Global Ensemble (Published v1.0.x)</option>
+                                            <option value="ensemble" selected>{{ model_name|default('SecureFed Global Ensemble') }} (v{{ latest_version|default('2.0.2') }} Full Ensemble)</option>
+                                            <option value="gru">GRU Sub-Tower (v{{ latest_version|default('2.0.2') }})</option>
+                                            <option value="lstm">LSTM Sub-Tower (v{{ latest_version|default('2.0.2') }})</option>
                                             <option value="bilstm">BiLSTM Model</option>
                                             <option value="transformer">Transformer Model</option>
                                             <option value="cnn">1D-CNN Model</option>
@@ -151,11 +153,37 @@
             }[ch]));
         }
 
+        async function loadModels() {
+            const select = document.getElementById('model-select');
+            try {
+                const response = await fetch('/api/xai/models');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.models && data.models.length > 0) {
+                        select.innerHTML = '';
+                        data.models.forEach(m => {
+                            const opt = document.createElement('option');
+                            opt.value = m.value;
+                            opt.textContent = m.label;
+                            if (m.active) opt.selected = true;
+                            select.appendChild(opt);
+                        });
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not load dynamic XAI models:', err);
+            }
+        }
+
         async function loadDatasets() {
             const container = document.getElementById('dataset-list');
-            container.innerHTML = '<div class="col-12 text-muted"><i class="iconsax spin" icon-name="refresh"></i> Loading datasets...</div>';
+            container.innerHTML = '<div class="col-12 text-muted"><i class="iconsax spin me-1" icon-name="refresh"></i> Loading datasets...</div>';
             try {
                 const response = await fetch('/api/xai/datasets');
+                if (response.status === 401) {
+                    container.innerHTML = '<div class="col-12 text-warning"><i class="iconsax me-2" icon-name="info-circle"></i>Session expired. <a href="/login" class="alert-link">Please sign in</a> to browse datasets.</div>';
+                    return;
+                }
                 const data = await response.json();
                 const datasets = (data.datasets && data.datasets.length > 0) ? data.datasets : ['RT_IOT2022', 'Friday-WorkingHours-Afternoon-DDos'];
                 container.innerHTML = '';
@@ -185,7 +213,10 @@
             window.selectedDataset = name || element.dataset.dataset || element.querySelector('h6').textContent;
         }
 
-        document.addEventListener('DOMContentLoaded', loadDatasets);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadModels();
+            loadDatasets();
+        });
 
         async function generateExplanation() {
             if (!window.selectedDataset) {
@@ -195,47 +226,103 @@
 
             const model = document.getElementById('model-select').value;
             const container = document.getElementById('explanation-content');
-            container.innerHTML = '<div class="text-center text-muted py-4"><i class="iconsax fs-2 mb-2" icon-name="refresh"></i><div>Running model inference & computing attributions...</div></div>';
+            container.innerHTML = '<div class="text-center text-muted py-5"><i class="iconsax spin fs-2 mb-2 text-primary" icon-name="refresh"></i><div class="fw-semibold">Computing PyTorch gradient attribution & flow saliency...</div><small class="text-muted">Extracting features and evaluating attack class sensitivity</small></div>';
 
-            const response = await fetch('/api/explain', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    dataset: window.selectedDataset,
-                    model: model
-                })
-            });
+            try {
+                const response = await fetch('/api/explain', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        dataset: window.selectedDataset,
+                        model: model
+                    })
+                });
 
-            const data = await response.json();
-            renderExplanation(data);
+                if (response.status === 401) {
+                    container.innerHTML = '<div class="alert alert-warning mb-0"><i class="iconsax me-2" icon-name="info-circle"></i>Session expired. <a href="/login" class="alert-link">Please sign in again</a> to run attribution.</div>';
+                    return;
+                }
+
+                const data = await response.json();
+                renderExplanation(data);
+            } catch (err) {
+                container.innerHTML = `<div class="alert alert-danger mb-0"><i class="iconsax me-2" icon-name="danger"></i>Network error while computing explanation: ${escHtml(err.message)}</div>`;
+            }
         }
 
         function renderExplanation(data) {
             const container = document.getElementById('explanation-content');
 
             if (data.status === 'error') {
-                container.innerHTML = `<div class="alert alert-danger">${escHtml(data.message || 'Explanation error')}</div>`;
+                container.innerHTML = `<div class="alert alert-danger mb-0"><i class="iconsax me-2" icon-name="danger"></i>${escHtml(data.message || 'Explanation error')}</div>`;
                 return;
             }
 
             if (!data.features || data.features.length === 0) {
-                container.innerHTML = '<p class="text-muted">No features available for explanation</p>';
+                container.innerHTML = '<p class="text-muted mb-0">No features available for explanation</p>';
                 return;
             }
 
-            let html = '<div class="row" style="max-height: 400px; overflow-y: auto;">';
+            // Summary stats & metadata banner
+            const predText = String(data.prediction || 'Unknown');
+            const matched = Number(data.matched_features || 0);
+            const total = Number(data.total_features || 78);
+            const coveragePct = Math.round((matched / Math.max(total, 1)) * 100);
 
-            // Sort by absolute attribution value
+            let html = `
+                <div class="xai-summary-panel mb-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary-subtle gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-mono">${escHtml(data.model || 'Model')}</span>
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle font-mono">${escHtml(data.dataset || 'Dataset')}</span>
+                        </div>
+                        <small class="text-muted font-mono"><i class="iconsax text-success me-1" icon-name="shield-tick"></i>Attribution Engine: Active Gradient Saliency</small>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-3 col-sm-6">
+                            <div class="xai-stat-box">
+                                <small class="text-muted d-block">Top Indicator</small>
+                                <span class="fw-semibold text-primary font-mono text-truncate d-block" title="${escHtml(data.top_feature)}">${escHtml(data.top_feature)}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="xai-stat-box">
+                                <small class="text-muted d-block">Confidence Score</small>
+                                <span class="fw-semibold text-success font-mono">${(Number(data.confidence || 0) * 100).toFixed(1)}%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="xai-stat-box">
+                                <small class="text-muted d-block">Predicted Class</small>
+                                <span class="badge ${predText.includes('Attack') ? 'bg-danger' : 'bg-success'}">${escHtml(predText)}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="xai-stat-box">
+                                <small class="text-muted d-block">Feature Coverage</small>
+                                <span class="fw-semibold font-mono text-info">${matched} / ${total} (${coveragePct}%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Feature Attribution Bars
+            html += '<h6 class="fw-semibold mb-3"><i class="iconsax text-primary me-2" icon-name="sort"></i>Top Contributing Flow Features</h6>';
+            html += '<div class="row" style="max-height: 480px; overflow-y: auto; padding-right: 6px;">';
+
             const sorted = [...data.features].sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
             const maxVal = Math.max(...sorted.map(f => Math.abs(f.value)), 1e-6);
 
             sorted.forEach(f => {
-                const barWidth = (Math.abs(f.value) / maxVal) * 100;
+                const barWidth = Math.min(100, Math.max(3, (Math.abs(f.value) / maxVal) * 100));
                 const color = f.value > 0 ? '#dc2626' : '#2563eb';
+                const signLabel = f.value > 0 ? `+${f.value.toFixed(4)} (Attack-pushing)` : `${f.value.toFixed(4)} (Benign-pushing)`;
                 html += `
-                    <div class="col-12 col-md-6">
-                        <div class="feature-label mb-1">${escHtml(f.name)}
-                            <span class="text-muted">(${f.value > 0 ? '+' : ''}${f.value.toFixed(3)})</span>
+                    <div class="col-12 col-md-6 mb-2">
+                        <div class="feature-label mb-1">
+                            <span class="text-truncate me-2" title="${escHtml(f.name)}">${escHtml(f.name)}</span>
+                            <span class="font-mono text-muted" style="font-size: 0.72rem;">${signLabel}</span>
                         </div>
                         <div class="feature-bar">
                             <div class="feature-bar-fill" style="width: ${barWidth}%; background: ${color}"></div>
@@ -245,34 +332,6 @@
             });
 
             html += '</div>';
-
-            // Summary stats
-            const predText = String(data.prediction || 'Unknown');
-            html += `
-                <div class="mt-4 xai-summary-panel">
-                    <h6 class="fw-semibold mb-3"><i class="iconsax text-primary me-2" icon-name="bulb"></i>Attribution Summary</h6>
-                    <div class="row g-2">
-                        <div class="col-md-4">
-                            <div class="xai-stat-box">
-                                <small class="text-muted d-block">Top Indicator</small>
-                                <span class="fw-semibold text-primary font-mono">${escHtml(data.top_feature)}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="xai-stat-box">
-                                <small class="text-muted d-block">Confidence Score</small>
-                                <span class="fw-semibold text-success font-mono">${(Number(data.confidence || 0) * 100).toFixed(1)}%</span>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="xai-stat-box">
-                                <small class="text-muted d-block">Predicted Class</small>
-                                <span class="badge ${predText.includes('Attack') ? 'bg-danger' : 'bg-success'}">${escHtml(predText)}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
 
             container.innerHTML = html;
         }

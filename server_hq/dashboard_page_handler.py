@@ -213,14 +213,64 @@ def setup_dashboard_routes(app, registry):
     @app.get("/xai", response_class=HTMLResponse)
     async def xai_page(request: Request):
         """Explainable AI (SHAP) Dashboard."""
+        latest_rec = registry.get_version("latest")
+        latest_ver = latest_rec["version"] if latest_rec else "2.0.2"
+        model_name = latest_rec.get("model_name", "SecureFed Global Ensemble") if latest_rec else "SecureFed Global Ensemble"
         return templates.TemplateResponse(
             request=request,
             name="xai_dashboard.html",
             context={
                 "request": request,
+                "latest_version": latest_ver,
+                "model_name": model_name,
                 "timestamp": datetime.now().isoformat(),
             },
         )
+
+    @app.get("/api/xai/models")
+    async def xai_models():
+        """List active global model architectures and sub-towers for XAI attribution."""
+        try:
+            record = registry.get_version("latest")
+            options = []
+            if record:
+                ver = record.get("version", "2.0.2")
+                name = record.get("model_name", "SecureFed Global Ensemble")
+                options.append({
+                    "value": "ensemble",
+                    "label": f"{name} (v{ver} Full Ensemble)",
+                    "active": True
+                })
+                # Check sub-architectures inside weights
+                try:
+                    import torch
+                    weights_path = record.get("weights_path")
+                    if weights_path and Path(weights_path).exists():
+                        try:
+                            m = torch.load(weights_path, map_location="cpu", weights_only=False)
+                        except TypeError:
+                            m = torch.load(weights_path, map_location="cpu")
+                        if hasattr(m, "models"):
+                            for sub in m.models:
+                                sub_name = sub.__class__.__name__
+                                val = sub_name.lower()
+                                options.append({
+                                    "value": val,
+                                    "label": f"{sub_name} Sub-Tower (v{ver})",
+                                    "active": False
+                                })
+                except Exception:
+                    pass
+
+            if not options:
+                options = [
+                    {"value": "ensemble", "label": "SecureFed Global Ensemble (v2.0.2)", "active": True},
+                    {"value": "gru", "label": "GRU Sub-Tower (v2.0.2)", "active": False},
+                    {"value": "lstm", "label": "LSTM Sub-Tower (v2.0.2)", "active": False},
+                ]
+            return {"status": "success", "models": options}
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"status": "error", "message": str(e), "models": []})
 
     @app.get("/api/xai/datasets")
     async def xai_datasets():
@@ -300,13 +350,114 @@ def setup_dashboard_routes(app, registry):
                         break
 
             # 3. Extract & standardize features matching the published model schema
+            # Cross-dataset canonical synonym mappings (Zeek RT-IoT2022 <-> CIC-IDS2017)
+            FEATURE_SYNONYMS = {
+                "destination_port": ["id.resp_p", "id_resp_p", "resp_p", "dst_port", "dport"],
+                "source_port": ["id.orig_p", "id_orig_p", "orig_p", "src_port", "sport"],
+                "flow_duration": ["flow_duration", "duration"],
+                "total_fwd_packets": ["fwd_pkts_tot", "fwd_pkts", "tot_fwd_pkts"],
+                "total_backward_packets": ["bwd_pkts_tot", "bwd_pkts", "tot_bwd_pkts"],
+                "total_length_of_fwd_packets": ["fwd_pkts_payload.tot", "fwd_pkts_payload_tot", "fwd_subflow_bytes"],
+                "total_length_of_bwd_packets": ["bwd_pkts_payload.tot", "bwd_pkts_payload_tot", "bwd_subflow_bytes"],
+                "fwd_packet_length_max": ["fwd_pkts_payload.max", "fwd_pkts_payload_max"],
+                "fwd_packet_length_min": ["fwd_pkts_payload.min", "fwd_pkts_payload_min"],
+                "fwd_packet_length_mean": ["fwd_pkts_payload.avg", "fwd_pkts_payload_avg"],
+                "fwd_packet_length_std": ["fwd_pkts_payload.std", "fwd_pkts_payload_std"],
+                "bwd_packet_length_max": ["bwd_pkts_payload.max", "bwd_pkts_payload_max"],
+                "bwd_packet_length_min": ["bwd_pkts_payload.min", "bwd_pkts_payload_min"],
+                "bwd_packet_length_mean": ["bwd_pkts_payload.avg", "bwd_pkts_payload_avg"],
+                "bwd_packet_length_std": ["bwd_pkts_payload.std", "bwd_pkts_payload_std"],
+                "flow_bytes_s": ["payload_bytes_per_second", "flow_bytes_per_sec"],
+                "flow_packets_s": ["flow_pkts_per_sec", "flow_packets_per_sec"],
+                "flow_iat_mean": ["flow_iat.avg", "flow_iat_avg"],
+                "flow_iat_std": ["flow_iat.std", "flow_iat_std"],
+                "flow_iat_max": ["flow_iat.max", "flow_iat_max"],
+                "flow_iat_min": ["flow_iat.min", "flow_iat_min"],
+                "fwd_iat_total": ["fwd_iat.tot", "fwd_iat_tot"],
+                "fwd_iat_mean": ["fwd_iat.avg", "fwd_iat_avg"],
+                "fwd_iat_std": ["fwd_iat.std", "fwd_iat_std"],
+                "fwd_iat_max": ["fwd_iat.max", "fwd_iat_max"],
+                "fwd_iat_min": ["fwd_iat.min", "fwd_iat_min"],
+                "bwd_iat_total": ["bwd_iat.tot", "bwd_iat_tot"],
+                "bwd_iat_mean": ["bwd_iat.avg", "bwd_iat_avg"],
+                "bwd_iat_std": ["bwd_iat.std", "bwd_iat_std"],
+                "bwd_iat_max": ["bwd_iat.max", "bwd_iat_max"],
+                "bwd_iat_min": ["bwd_iat.min", "bwd_iat_min"],
+                "fwd_psh_flags": ["fwd_psh_flag_count", "fwd_psh_flags"],
+                "bwd_psh_flags": ["bwd_psh_flag_count", "bwd_psh_flags"],
+                "fwd_urg_flags": ["fwd_urg_flag_count", "fwd_urg_flags"],
+                "bwd_urg_flags": ["bwd_urg_flag_count", "bwd_urg_flags"],
+                "fwd_header_length": ["fwd_header_size_tot", "fwd_header_length"],
+                "bwd_header_length": ["bwd_header_size_tot", "bwd_header_length"],
+                "fwd_packets_s": ["fwd_pkts_per_sec", "fwd_packets_per_sec"],
+                "bwd_packets_s": ["bwd_pkts_per_sec", "bwd_packets_per_sec"],
+                "min_packet_length": ["flow_pkts_payload.min", "flow_pkts_payload_min"],
+                "max_packet_length": ["flow_pkts_payload.max", "flow_pkts_payload_max"],
+                "packet_length_mean": ["flow_pkts_payload.avg", "flow_pkts_payload_avg"],
+                "packet_length_std": ["flow_pkts_payload.std", "flow_pkts_payload_std"],
+                "packet_length_variance": ["flow_pkts_payload.std", "flow_pkts_payload_std"],
+                "fin_flag_count": ["flow_fin_flag_count", "fin_flag_count"],
+                "syn_flag_count": ["flow_syn_flag_count", "syn_flag_count"],
+                "rst_flag_count": ["flow_rst_flag_count", "rst_flag_count"],
+                "psh_flag_count": ["flow_psh_flag_count", "psh_flag_count", "fwd_psh_flag_count"],
+                "ack_flag_count": ["flow_ack_flag_count", "ack_flag_count"],
+                "urg_flag_count": ["flow_urg_flag_count", "urg_flag_count", "fwd_urg_flag_count"],
+                "cwe_flag_count": ["flow_cwr_flag_count", "cwe_flag_count"],
+                "ece_flag_count": ["flow_ece_flag_count", "ece_flag_count"],
+                "down_up_ratio": ["down_up_ratio"],
+                "average_packet_size": ["flow_pkts_payload.avg", "flow_pkts_payload_avg"],
+                "avg_fwd_segment_size": ["fwd_pkts_payload.avg", "fwd_pkts_payload_avg"],
+                "avg_bwd_segment_size": ["bwd_pkts_payload.avg", "bwd_pkts_payload_avg"],
+                "fwd_header_length.1": ["fwd_header_size_tot", "fwd_header_length"],
+                "fwd_avg_bytes_bulk": ["fwd_bulk_bytes", "fwd_bulk_rate"],
+                "fwd_avg_packets_bulk": ["fwd_bulk_packets"],
+                "fwd_avg_bulk_rate": ["fwd_bulk_rate"],
+                "bwd_avg_bytes_bulk": ["bwd_bulk_bytes", "bwd_bulk_rate"],
+                "bwd_avg_packets_bulk": ["bwd_bulk_packets"],
+                "bwd_avg_bulk_rate": ["bwd_bulk_rate"],
+                "subflow_fwd_packets": ["fwd_subflow_pkts", "subflow_fwd_packets", "fwd_pkts_tot"],
+                "subflow_fwd_bytes": ["fwd_subflow_bytes", "subflow_fwd_bytes", "fwd_pkts_payload.tot"],
+                "subflow_bwd_packets": ["bwd_subflow_pkts", "subflow_bwd_packets", "bwd_pkts_tot"],
+                "subflow_bwd_bytes": ["bwd_subflow_bytes", "subflow_bwd_bytes", "bwd_pkts_payload.tot"],
+                "init_win_bytes_forward": ["fwd_init_window_size", "init_win_bytes_forward"],
+                "init_win_bytes_backward": ["bwd_init_window_size", "init_win_bytes_backward"],
+                "act_data_pkt_fwd": ["fwd_data_pkts_tot", "act_data_pkt_fwd"],
+                "min_seg_size_forward": ["fwd_header_size_min", "min_seg_size_forward"],
+                "active_mean": ["active.avg", "active_avg"],
+                "active_std": ["active.std", "active_std"],
+                "active_max": ["active.max", "active_max"],
+                "active_min": ["active.min", "active_min"],
+                "idle_mean": ["idle.avg", "idle_avg"],
+                "idle_std": ["idle.std", "idle_std"],
+                "idle_max": ["idle.max", "idle_max"],
+                "idle_min": ["idle.min", "idle_min"],
+            }
+
+            # Build bidirectional lookup table for maximum dataset compatibility
+            ALIAS_MAP = {}
+            for target_k, aliases in FEATURE_SYNONYMS.items():
+                k_norm = target_k.strip().lower().replace(" ", "_").replace("-", "_").replace("/", "_")
+                ALIAS_MAP.setdefault(k_norm, set()).add(k_norm)
+                for alias in aliases:
+                    a_norm = alias.strip().lower().replace(" ", "_").replace("-", "_").replace("/", "_")
+                    ALIAS_MAP.setdefault(k_norm, set()).add(a_norm)
+                    ALIAS_MAP.setdefault(a_norm, set()).add(k_norm)
+
             df = pd.read_csv(csv_path, nrows=128)
-            norm_cols = {str(c).strip().lower().replace(" ", "_").replace("-", "_"): c for c in df.columns}
+            norm_cols = {str(c).strip().lower().replace(" ", "_").replace("-", "_").replace("/", "_"): c for c in df.columns}
             X = np.zeros((len(df), len(feature_names)), dtype=np.float32)
             matched = 0
             for idx, feat in enumerate(feature_names):
-                key = str(feat).strip().lower().replace(" ", "_").replace("-", "_")
+                key = str(feat).strip().lower().replace(" ", "_").replace("-", "_").replace("/", "_")
                 src_col = norm_cols.get(key)
+                if src_col is None:
+                    # Check synonyms
+                    candidates = ALIAS_MAP.get(key, [])
+                    for candidate in candidates:
+                        if candidate in norm_cols:
+                            src_col = norm_cols[candidate]
+                            break
+
                 if src_col is None:
                     continue
                 matched += 1
@@ -373,6 +524,7 @@ def setup_dashboard_routes(app, registry):
                 "dataset": dataset_name,
                 "model": f"v{record['version']} ({model_choice})",
                 "matched_features": matched,
+                "total_features": len(feature_names),
                 "features": top_24,
                 "top_feature": top_24[0]["name"] if top_24 else "N/A",
                 "confidence": round(avg_conf, 4),
