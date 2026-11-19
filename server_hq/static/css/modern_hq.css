@@ -1424,7 +1424,57 @@ html.dark .cumulative-fl-tip code {
     border-radius: 4px;
 }
 html.dark .bg-light, html.dark .bg-white { background-color: var(--inset-bg) !important; color: var(--text-primary) !important; }
-html.dark .table { color: var(--text-primary) !important; --bs-table-bg: transparent; --bs-table-color: var(--text-primary); --bs-table-border-color: var(--border-subtle); }
+html.dark .text-dark { color: var(--text-primary) !important; }
+html.dark .table {
+    color: var(--text-primary) !important;
+    --bs-table-bg: transparent !important;
+    --bs-table-color: var(--text-primary) !important;
+    --bs-table-striped-color: var(--text-primary) !important;
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.025) !important;
+    --bs-table-hover-color: #ffffff !important;
+    --bs-table-hover-bg: rgba(99, 102, 241, 0.08) !important;
+    --bs-table-border-color: var(--border-subtle) !important;
+    --bs-table-active-bg: rgba(99, 102, 241, 0.15) !important;
+    --bs-table-active-color: #ffffff !important;
+}
+html.dark .table > :not(caption) > * > * {
+    color: var(--text-primary) !important;
+    background-color: transparent;
+    border-bottom-color: var(--border-subtle) !important;
+}
+html.dark .table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-color-type: var(--text-primary) !important;
+    --bs-table-bg-type: rgba(255, 255, 255, 0.025) !important;
+    background-color: rgba(255, 255, 255, 0.025) !important;
+    color: var(--text-primary) !important;
+    box-shadow: none !important;
+}
+html.dark .table-striped > tbody > tr:nth-of-type(even) > * {
+    --bs-table-color-type: var(--text-primary) !important;
+    --bs-table-bg-type: transparent !important;
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+    box-shadow: none !important;
+}
+html.dark .table-hover > tbody > tr:hover > * {
+    --bs-table-color-type: #ffffff !important;
+    --bs-table-bg-type: rgba(99, 102, 241, 0.1) !important;
+    background-color: rgba(99, 102, 241, 0.1) !important;
+    color: #ffffff !important;
+}
+html.dark .table-success,
+html.dark .table-success > th,
+html.dark .table-success > td,
+html.dark .table-success > * {
+    --bs-table-bg: rgba(16, 185, 129, 0.15) !important;
+    --bs-table-color: #34d399 !important;
+    background-color: rgba(16, 185, 129, 0.15) !important;
+    color: #34d399 !important;
+}
+html.dark .table td, html.dark .table th {
+    color: var(--text-primary) !important;
+    border-color: var(--border-subtle) !important;
+}
 html.dark .modal-content { background-color: var(--card-bg) !important; color: var(--text-primary) !important; border: 1px solid var(--card-border) !important; }
 html.dark .modal-header { border-bottom-color: var(--border-subtle) !important; }
 html.dark .alert-info { background: rgba(3, 105, 161, 0.14); border-color: rgba(56, 189, 248, 0.25); color: #bae6fd; }

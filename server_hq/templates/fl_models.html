@@ -12,6 +12,85 @@
         .radar-card-preview {
             background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 70%);
         }
+
+        /* FL Dossier High-Contrast Tables */
+        .fl-dossier-table {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            width: 100% !important;
+            margin-bottom: 0 !important;
+        }
+        .fl-dossier-table thead th {
+            background-color: #0f172a !important;
+            color: #f8fafc !important;
+            font-size: 0.74rem !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            padding: 8px 12px !important;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.12) !important;
+            vertical-align: middle !important;
+        }
+        html:not(.dark) .fl-dossier-table thead th {
+            background-color: #f1f5f9 !important;
+            color: #1e293b !important;
+            border-bottom: 2px solid #cbd5e1 !important;
+        }
+        .fl-dossier-table tbody tr {
+            transition: background-color 0.15s ease;
+        }
+        .fl-dossier-table tbody td {
+            padding: 8px 12px !important;
+            vertical-align: middle !important;
+            font-size: 0.82rem !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+        }
+        html.dark .fl-dossier-table tbody tr:nth-of-type(odd) td {
+            background-color: rgba(255, 255, 255, 0.025) !important;
+            color: #f8fafc !important;
+        }
+        html.dark .fl-dossier-table tbody tr:nth-of-type(even) td {
+            background-color: transparent !important;
+            color: #f8fafc !important;
+        }
+        html:not(.dark) .fl-dossier-table tbody tr:nth-of-type(odd) td {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+        html:not(.dark) .fl-dossier-table tbody tr:nth-of-type(even) td {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+        html.dark .fl-dossier-table tbody tr:hover td {
+            background-color: rgba(99, 102, 241, 0.12) !important;
+            color: #ffffff !important;
+        }
+        html:not(.dark) .fl-dossier-table tbody tr:hover td {
+            background-color: rgba(99, 102, 241, 0.06) !important;
+        }
+        /* Winner Row Highlight */
+        html.dark .fl-dossier-table tr.table-winner-row td {
+            background-color: rgba(16, 185, 129, 0.15) !important;
+            color: #34d399 !important;
+            font-weight: 600 !important;
+            border-top: 1px solid rgba(16, 185, 129, 0.3) !important;
+            border-bottom: 1px solid rgba(16, 185, 129, 0.3) !important;
+        }
+        html.dark .fl-dossier-table tr.table-winner-row td:first-child {
+            border-left: 3px solid #10b981 !important;
+        }
+        html:not(.dark) .fl-dossier-table tr.table-winner-row td {
+            background-color: #ecfdf5 !important;
+            color: #065f46 !important;
+            font-weight: 600 !important;
+            border-top: 1px solid #a7f3d0 !important;
+            border-bottom: 1px solid #a7f3d0 !important;
+        }
+        html:not(.dark) .fl-dossier-table tr.table-winner-row td:first-child {
+            border-left: 3px solid #059669 !important;
+        }
     </style>
 </head>
 <body>
@@ -472,9 +551,17 @@
             if (!metrics || !Object.keys(metrics).length) return '';
             let rows = '';
             for (const [name, row] of Object.entries(metrics)) {
-                const isWinner = row.is_winner;
-                rows += `<tr class="${isWinner ? 'table-success fw-bold' : ''}">
-                    <td>${escHtml(name.toUpperCase())}${isWinner ? ' <span class="badge bg-success ms-1">Winner #1</span>' : ''}</td>
+                const isWinner = Boolean(row.is_winner);
+                const trainTime = row.training_time_seconds !== undefined ? `${row.training_time_seconds}s` : (row.eval_time_seconds !== undefined ? `${row.eval_time_seconds}s` : '—');
+                let inferTime = '—';
+                if (row.inference_time_per_sample_ms !== undefined) {
+                    inferTime = `${Number(row.inference_time_per_sample_ms).toFixed(3)}ms`;
+                }
+                rows += `<tr class="${isWinner ? 'table-winner-row' : ''}">
+                    <td>
+                        <span class="font-mono ${isWinner ? 'fw-bold' : ''}">${escHtml(name.toUpperCase())}</span>
+                        ${isWinner ? ' <span class="badge bg-success text-white ms-1">Winner #1</span>' : ''}
+                    </td>
                     <td>${percentMetric(row.accuracy)}</td>
                     <td>${percentMetric(row.precision)}</td>
                     <td>${percentMetric(row.recall)}</td>
@@ -482,14 +569,14 @@
                     <td>${percentMetric(row.mcc)}</td>
                     <td>${percentMetric(row.specificity)}</td>
                     <td>${percentMetric(row.auc)}</td>
-                    <td>${row.training_time_seconds !== undefined ? `${row.training_time_seconds}s` : '—'}</td>
-                    <td>${row.inference_time_per_sample_ms !== undefined ? `${row.inference_time_per_sample_ms}ms` : '—'}</td>
+                    <td>${trainTime}</td>
+                    <td>${inferTime}</td>
                 </tr>`;
             }
             return `${sectionTitle(title)}
             <div class="table-responsive mb-3">
-                <table class="table table-sm table-striped table-hover small mb-0">
-                    <thead class="table-dark">
+                <table class="table table-sm small mb-0 fl-dossier-table">
+                    <thead>
                         <tr>
                             <th>Model / FL Method</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>MCC</th><th>Specificity</th><th>AUC</th><th>Train</th><th>Infer</th>
                         </tr>
@@ -499,28 +586,46 @@
             </div>`;
         }
 
-        function kfoldTable(kfold) {
+        function kfoldTable(kfold, winningMethod = 'fedprox') {
             if (!kfold || !Object.keys(kfold).length) return '';
             let rows = '';
             for (const [name, row] of Object.entries(kfold)) {
+                const isWinner = (name.toLowerCase() === (winningMethod || '').toLowerCase());
                 const stdAcc = row.std_accuracy !== undefined ? ` ± ${(row.std_accuracy * 100).toFixed(2)}%` : '';
-                rows += `<tr>
-                    <td>${escHtml(name.toUpperCase())}</td>
-                    <td>${percentMetric(row.mean_accuracy)}${stdAcc}</td>
-                    <td>${prettyMetric(row.mean_precision)}</td>
-                    <td>${prettyMetric(row.mean_recall)}</td>
-                    <td>${prettyMetric(row.mean_f1)}</td>
-                    <td>${prettyMetric(row.mean_mcc)}</td>
-                    <td>${prettyMetric(row.mean_specificity)}</td>
-                    <td>${prettyMetric(row.mean_auc)}</td>
-                    <td>${row.mean_train_time !== undefined ? `${prettyMetric(row.mean_train_time, 2)}s` : '—'}</td>
-                    <td>${row.mean_infer_time !== undefined ? `${prettyMetric(row.mean_infer_time, 3)}ms` : '—'}</td>
+                
+                // Format train time nicely
+                const trainTime = row.mean_train_time !== undefined ? `${Number(row.mean_train_time).toFixed(2)}s` : '—';
+                
+                // Format infer time nicely: row.mean_infer_time is in seconds (e.g. 7.7e-05 s = 0.077 ms)
+                let inferTime = '—';
+                if (row.mean_infer_time !== undefined) {
+                    const ms = row.mean_infer_time < 0.01 ? (row.mean_infer_time * 1000) : row.mean_infer_time;
+                    inferTime = `${Number(ms).toFixed(3)}ms`;
+                }
+
+                rows += `<tr class="${isWinner ? 'table-winner-row' : ''}">
+                    <td>
+                        <span class="font-mono ${isWinner ? 'fw-bold' : ''}">${escHtml(name.toUpperCase())}</span>
+                        ${isWinner ? ' <span class="badge bg-success text-white ms-1">Winner #1</span>' : ''}
+                    </td>
+                    <td>
+                        <span class="font-mono">${percentMetric(row.mean_accuracy)}</span>
+                        ${stdAcc ? `<span class="text-secondary small font-mono ms-1" style="opacity:0.85;">${stdAcc}</span>` : ''}
+                    </td>
+                    <td>${percentMetric(row.mean_precision)}</td>
+                    <td>${percentMetric(row.mean_recall)}</td>
+                    <td>${percentMetric(row.mean_f1)}</td>
+                    <td>${percentMetric(row.mean_mcc)}</td>
+                    <td>${percentMetric(row.mean_specificity)}</td>
+                    <td>${percentMetric(row.mean_auc)}</td>
+                    <td>${trainTime}</td>
+                    <td>${inferTime}</td>
                 </tr>`;
             }
             return `${sectionTitle('5-Fold Cross Validation · Mean ± Standard Deviation')}
             <div class="table-responsive mb-3">
-                <table class="table table-sm table-striped table-hover small mb-0">
-                    <thead class="table-dark">
+                <table class="table table-sm small mb-0 fl-dossier-table">
+                    <thead>
                         <tr><th>Model / FL Method</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>MCC</th><th>Specificity</th><th>AUC</th><th>Train</th><th>Infer</th></tr>
                     </thead>
                     <tbody>${rows}</tbody>
@@ -535,17 +640,18 @@
                 const t = row.paired_t_test || {};
                 const m = row.mcnemar || {};
                 const conclusion = t.conclusion || m.conclusion || 'No significant difference';
+                const isSig = conclusion.includes('significant') && !conclusion.includes('No');
                 rows += `<tr>
-                    <td><strong>${escHtml(comp)}</strong></td>
+                    <td><strong class="font-mono">${escHtml(comp)}</strong></td>
                     <td>${t.t_statistic !== undefined ? `${t.t_statistic} (p=${t.p_value})` : '—'}</td>
                     <td>${m.chi2_statistic !== undefined ? `${m.chi2_statistic} (p=${m.p_value})` : '—'}</td>
-                    <td><span class="badge ${conclusion.includes('significant') && !conclusion.includes('No') ? 'bg-success' : 'bg-secondary'}">${escHtml(conclusion)}</span></td>
+                    <td><span class="badge ${isSig ? 'bg-success text-white' : 'bg-secondary text-white'}">${escHtml(conclusion)}</span></td>
                 </tr>`;
             }
             return `${sectionTitle('Statistical Significance Tests')}
             <div class="table-responsive mb-3">
-                <table class="table table-sm table-striped table-hover small mb-0">
-                    <thead class="table-dark"><tr><th>Comparison</th><th>Paired t-test (t / p)</th><th>McNemar (χ² / p)</th><th>Conclusion</th></tr></thead>
+                <table class="table table-sm small mb-0 fl-dossier-table">
+                    <thead><tr><th>Comparison</th><th>Paired t-test (t / p)</th><th>McNemar (χ² / p)</th><th>Conclusion</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>`;
@@ -593,7 +699,7 @@
             <div class="p-3 mb-3 rounded border bg-light small">
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 pb-2 border-bottom">
                     <div>
-                        <span class="fw-bold text-dark fs-6">${escHtml(meta.model_name || data.record?.model_name || 'FL Global Model')} (v${escHtml(ver)})</span>
+                        <span class="fw-bold fs-6">${escHtml(meta.model_name || data.record?.model_name || 'FL Global Model')} (v${escHtml(ver)})</span>
                         <span class="badge bg-primary ms-2">${escHtml(meta.architecture || data.record?.architecture || 'Top Fadarate Learning')}</span>
                     </div>
                     <div>
@@ -603,11 +709,11 @@
                 <div class="fw-bold text-muted mb-2"><i class="iconsax me-1" icon-name="link-2"></i>API Endpoints for Version v${escHtml(ver)}</div>
                 <div class="mb-1"><strong>Model Download (Edge Sync):</strong> <code class="text-primary">${escHtml(apiBase)}/api/v1/model/download/${escHtml(ver)}</code></div>
                 <div class="mb-1"><strong>Feature Schema Metadata:</strong> <code class="text-success">${escHtml(apiBase)}/api/v1/model/metadata/${escHtml(ver)}</code></div>
-                <div><strong>Direct File (.pt) Download:</strong> <code class="text-dark">${escHtml(apiBase)}/api/v1/model/file/${escHtml(ver)}</code></div>
+                <div><strong>Direct File (.pt) Download:</strong> <code class="text-primary">${escHtml(apiBase)}/api/v1/model/file/${escHtml(ver)}</code></div>
             </div>`;
 
             html += metricTable(metrics, 'Evaluation metrics and timing across all 9 FL algorithms');
-            html += kfoldTable(kfold);
+            html += kfoldTable(kfold, meta.winning_method || data.record?.fl_method || 'fedprox');
             html += statisticalTable(statistical);
 
             if (Object.keys(ensemble).length) {
