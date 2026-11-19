@@ -692,7 +692,10 @@ class CentralAggregator:
             raise ValueError("No updates provided for Trimmed Mean aggregation.")
 
         n_clients = len(updates)
-        k_trim = int(n_clients * trim_ratio)
+        if trim_ratio > 0 and n_clients >= 3:
+            k_trim = max(1, int(round(n_clients * trim_ratio)))
+        else:
+            k_trim = int(n_clients * trim_ratio)
         if k_trim * 2 >= n_clients:
             k_trim = max(0, (n_clients - 1) // 2)
 
