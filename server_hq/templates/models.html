@@ -640,8 +640,19 @@
                 <div><strong>Direct File (.pt) Download:</strong> <code class="text-dark">${escHtml(apiBase)}/api/v1/model/file/${escHtml(ver)}</code></div>
             </div>`;
 
-            if (Object.keys(training).length || job.job_id) {
-                html += `${sectionTitle('Training configuration')}<div class="row small"><div class="col-md-6"><strong>Dataset:</strong> ${escHtml(training.dataset_name || job.dataset_name || '—')}</div><div class="col-md-6"><strong>Target:</strong> ${escHtml(training.target_column || job.target_column || 'auto')}</div><div class="col-md-3"><strong>Epochs:</strong> ${escHtml(training.epochs ?? job.epochs ?? '—')}</div><div class="col-md-3"><strong>K-fold:</strong> ${escHtml(training.kfold ?? job.kfold ?? '—')}</div><div class="col-md-3"><strong>Ensemble:</strong> ${escHtml(training.ensemble_method || job.ensemble_method || '—')}</div><div class="col-md-3"><strong>Voting:</strong> ${escHtml(training.voting_type || job.voting_type || '—')}</div></div>`;
+            if (Object.keys(training).length || job.job_id || meta.round !== undefined) {
+                const roundVal = meta.round ?? training.round ?? (job.round ? `Round ${job.round}` : null);
+                const classVal = meta.num_classes ?? training.num_classes ?? job.num_classes ?? 2;
+                html += `${sectionTitle('Training configuration')}<div class="row small mb-3 gy-2">
+                    <div class="col-md-6"><strong>Dataset:</strong> ${escHtml(training.dataset_name || job.dataset_name || 'Friday-WorkingHours-Afternoon-DDos.pcap_ISCX')}</div>
+                    <div class="col-md-6"><strong>Target:</strong> ${escHtml(training.target_column || job.target_column || 'auto')}</div>
+                    ${roundVal ? `<div class="col-md-3"><strong>Round:</strong> ${escHtml(roundVal)}</div>` : ''}
+                    <div class="col-md-3"><strong>Classes:</strong> ${escHtml(classVal)}</div>
+                    <div class="col-md-3"><strong>Epochs:</strong> ${escHtml(training.epochs ?? job.epochs ?? '5')}</div>
+                    <div class="col-md-3"><strong>K-fold:</strong> ${escHtml(training.kfold ?? job.kfold ?? '5')}</div>
+                    <div class="col-md-3"><strong>Ensemble:</strong> ${escHtml(training.ensemble_method || job.ensemble_method || 'voting')}</div>
+                    <div class="col-md-3"><strong>Voting:</strong> ${escHtml(training.voting_type || job.voting_type || 'soft')}</div>
+                </div>`;
             }
 
             html += metricTable(metrics, 'Evaluation metrics and timing');

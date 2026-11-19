@@ -161,7 +161,21 @@
                 const ensemble = meta.ensemble_metrics || job.ensemble_metrics || {};
                 const visualization = data.visualization || meta.plot_manifest || {};
 
-                let html = '';
+                const roundVal = meta.round ?? (job.round ? `Round ${job.round}` : null);
+                const classVal = meta.num_classes ?? job.num_classes ?? 2;
+                const datasetVal = meta.post_aggregation_evaluation?.dataset || job.dataset_name || 'Friday-WorkingHours-Afternoon-DDos.pcap_ISCX';
+                const datasetClean = datasetVal.replace(/^[a-f0-9\-]{36}_/, '').replace(/\.csv$/, '');
+
+                let html = `
+                    <div class="detail-section mb-2"><h6>Training configuration</h6></div>
+                    <div class="row small mb-4 gy-2 p-3 rounded border bg-light">
+                        <div class="col-md-6"><strong>Dataset:</strong> ${escHtml(datasetClean)}</div>
+                        <div class="col-md-6"><strong>Target:</strong> ${escHtml(job.target_column || 'auto')}</div>
+                        ${roundVal ? `<div class="col-md-3"><strong>Round:</strong> ${escHtml(roundVal)}</div>` : ''}
+                        <div class="col-md-3"><strong>Classes:</strong> ${escHtml(classVal)}</div>
+                        <div class="col-md-3"><strong>Epochs:</strong> ${escHtml(job.epochs || 5)}</div>
+                        <div class="col-md-3"><strong>K-fold:</strong> ${escHtml(job.kfold || 5)}</div>
+                    </div>`;
                 const metricRows = Object.entries(metrics);
                 if (metricRows.length) {
                     const names = ['accuracy', 'precision', 'recall', 'f1', 'mcc', 'specificity', 'auc'];

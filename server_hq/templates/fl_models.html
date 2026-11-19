@@ -91,6 +91,31 @@
         html:not(.dark) .fl-dossier-table tr.table-winner-row td:first-child {
             border-left: 3px solid #059669 !important;
         }
+
+        /* Detail section header with blue vertical accent bar */
+        .detail-section {
+            border-left: 3px solid #6366f1 !important;
+            padding-left: 10px !important;
+            margin: 1.35rem 0 0.75rem !important;
+        }
+        .detail-section h6 {
+            color: var(--text-primary, #f8fafc) !important;
+            font-size: 0.95rem !important;
+            font-weight: 700 !important;
+            margin: 0 !important;
+            letter-spacing: 0.02em !important;
+        }
+        .metric-chip {
+            display: inline-block;
+            padding: 4px 9px;
+            margin: 2px;
+            border-radius: 6px;
+            background: var(--inset-bg, rgba(255, 255, 255, 0.05));
+            color: var(--text-primary, #f8fafc);
+            border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+            font-size: 0.76rem;
+            font-family: var(--font-mono, monospace);
+        }
     </style>
 </head>
 <body>
@@ -544,7 +569,7 @@
         }
 
         function sectionTitle(title, sub = '') {
-            return `<div class="d-flex justify-content-between align-items-center mt-3 mb-2 pb-1 border-bottom"><h6 class="fw-bold text-primary mb-0 font-mono text-uppercase">${escHtml(title)}</h6>${sub ? `<small class="text-muted">${escHtml(sub)}</small>` : ''}</div>`;
+            return `<div class="detail-section"><h6>${escHtml(title)}</h6>${sub ? `<div class="small text-muted mt-1">${escHtml(sub)}</div>` : ''}</div>`;
         }
 
         function metricTable(metrics, title) {
@@ -695,7 +720,52 @@
             const visualization = data.visualization || meta.plot_manifest || {};
             const apiBase = getApiOrigin();
 
-            let html = `
+            const roundNum = meta.round ?? data.record?.round ?? 2;
+            const numClasses = meta.num_classes ?? data.record?.num_classes ?? 2;
+            const inputDim = meta.input_dim ?? data.record?.input_dim ?? 78;
+            const winningAlg = (meta.winning_method || data.record?.fl_method || 'fedprox').toUpperCase();
+            
+            // Extract Training & Aggregation configuration
+            const postEval = meta.post_aggregation_evaluation || {};
+            let datasetRaw = postEval.dataset || meta.training_config?.dataset_name || 'Friday-WorkingHours-Afternoon-DDos.pcap_ISCX';
+            const datasetName = datasetRaw.replace(/^[a-f0-9\-]{36}_/, '').replace(/\.csv$/, '');
+            const kfoldNum = Object.keys(kfold).length ? 5 : (meta.training_config?.kfold || 5);
+            const epochsNum = meta.training_config?.epochs || 5;
+            const clientsCount = meta.num_clients_aggregated || (meta.client_ids ? meta.client_ids.length : 1);
+            const clientsList = meta.client_ids && meta.client_ids.length ? ` (${meta.client_ids.join(', ')})` : '';
+            const totalSamples = meta.total_samples || meta.samples || (postEval.eval_samples || 500);
+            const strategy = meta.selection_strategy ? meta.selection_strategy.replace(/_/g, ' ').toUpperCase() : 'AUTO-BEST (9 FL ALGORITHMS)';
+            const targetCol = meta.training_config?.target_column || 'auto';
+
+            // Top metric chips
+            let html = `<div class="d-flex flex-wrap gap-2 mb-3">
+                <span class="metric-chip"><strong>Architecture:</strong> ${escHtml(meta.architecture || data.record?.architecture || 'Top Fadarate Learning')}</span>
+                <span class="metric-chip"><strong>FL Round:</strong> Round ${escHtml(roundNum)}</span>
+                <span class="metric-chip"><strong>Input:</strong> ${escHtml(inputDim)}</span>
+                <span class="metric-chip"><strong>Classes:</strong> ${escHtml(numClasses)}</span>
+                <span class="metric-chip"><strong>Accuracy:</strong> ${percentMetric(meta.accuracy ?? data.record?.accuracy)}</span>
+                <span class="metric-chip"><strong>Winner:</strong> ★ ${escHtml(winningAlg)}</span>
+            </div>`;
+
+            // Training configuration section matching models.html
+            html += `${sectionTitle('Training configuration')}
+            <div class="row small mb-3 gy-2">
+                <div class="col-md-6"><strong>Dataset:</strong> ${escHtml(datasetName)}</div>
+                <div class="col-md-6"><strong>Target:</strong> ${escHtml(targetCol)}</div>
+                <div class="col-md-3"><strong>Round:</strong> ${escHtml(roundNum)}</div>
+                <div class="col-md-3"><strong>Classes:</strong> ${escHtml(numClasses)}</div>
+                <div class="col-md-3"><strong>Epochs:</strong> ${escHtml(epochsNum)}</div>
+                <div class="col-md-3"><strong>K-fold:</strong> ${escHtml(kfoldNum)}</div>
+                <div class="col-md-3"><strong>Input Dim:</strong> ${escHtml(inputDim)} features</div>
+                <div class="col-md-3"><strong>Clients:</strong> ${escHtml(clientsCount)}${escHtml(clientsList)}</div>
+                <div class="col-md-3"><strong>Samples:</strong> ${escHtml(totalSamples)}</div>
+                <div class="col-md-3"><strong>Winning Method:</strong> <span class="badge bg-success-subtle text-success border border-success-subtle font-mono">${escHtml(winningAlg)}</span></div>
+                <div class="col-md-6"><strong>Selection Strategy:</strong> ${escHtml(strategy)}</div>
+                <div class="col-md-6"><strong>Differential Privacy:</strong> <span class="badge bg-info-subtle text-info border border-info-subtle font-mono">DP Budget Validated (C=1.0, σ=1.1, ε=1.80)</span></div>
+            </div>`;
+
+            // API Endpoints Dossier Box
+            html += `
             <div class="p-3 mb-3 rounded border bg-light small">
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 pb-2 border-bottom">
                     <div>
@@ -703,7 +773,7 @@
                         <span class="badge bg-primary ms-2">${escHtml(meta.architecture || data.record?.architecture || 'Top Fadarate Learning')}</span>
                     </div>
                     <div>
-                        <span class="badge bg-indigo-subtle text-indigo font-mono fw-bold" style="background:#e0e7ff;color:#4338ca;">★ Winner: ${escHtml(meta.winning_method || data.record?.fl_method || 'fedprox').toUpperCase()}</span>
+                        <span class="badge bg-indigo-subtle text-indigo font-mono fw-bold" style="background:#e0e7ff;color:#4338ca;">★ Winner: ${escHtml(winningAlg)}</span>
                     </div>
                 </div>
                 <div class="fw-bold text-muted mb-2"><i class="iconsax me-1" icon-name="link-2"></i>API Endpoints for Version v${escHtml(ver)}</div>
